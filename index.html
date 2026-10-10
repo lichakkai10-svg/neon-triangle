@@ -213,8 +213,8 @@ body.aim #cross{transform:scale(.45)}
 <!-- Three.js：以 import map 由 CDN 載入（已鎖定撰寫時的最新版本 0.186.1；要升級可改版本號或改為 three@latest） -->
 <script type="importmap">
 { "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+  "three": "./vendor/three@0.186.1/build/three.module.js",
+  "three/addons/": "./vendor/three@0.186.1/examples/jsm/"
 } }
 </script>
 </head>
@@ -256,7 +256,8 @@ body.aim #cross{transform:scale(.45)}
   <h1>霓虹三角</h1>
   <h2>NEON TRIANGLE · M1–M10 合輯 + M1c</h2>
   <div id="loadBar"><i></i></div>
-  <div id="loadTxt" class="mono">載入模型中… 0%</div>
+  <div id="loadTxt" class="mono">載入引擎中…</div>
+<script>setTimeout(function(){var t=document.getElementById("loadTxt");if(t&&/引擎|0%/.test(t.textContent))t.textContent="連線／解壓模型中…";},2500);</script>
   <div id="credits">模型：Quaternius（CC0／CC-BY）· Clint Chilcott、PuKkBuMXDD（CC-BY 3.0）· 經 Poly Pizza ｜ 地圖數據 © OpenStreetMap contributors（ODbL）</div>
 </div>
 <div id="fade"></div>
