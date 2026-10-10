@@ -14279,6 +14279,122 @@ Object.assign(window.NT, {
   UNIFORM, uniformAcquire, uniformActivate
 });
 /* =========================================================================
+ * M1c · batch-2 門面＋CC0 車日夜材質板
+ *  · batch2：ifc-lobby-day / public-housing-day / star-ferry-pier-day
+ *  · p1-cc0-vehicles-day-night.jpg → taxi／minibus／eu van／policeSuv
+ *  · HOOKS.tod 切換 emissive（夜亮日淡）
+ * ========================================================================= */
+const B2ART = {
+  ready: false,
+  tex: {},
+  files: {
+    ifc: 'ifc-lobby-day.jpg',
+    estate: 'public-housing-day.jpg',
+    ferry: 'star-ferry-pier-day.jpg',
+    vehDN: 'p1-cc0-vehicles-day-night.jpg'
+  },
+  applied: {}
+};
+
+async function b2Load() {
+  if (B2ART.ready || typeof loadTex !== 'function') return B2ART.ready;
+  await Promise.all(Object.entries(B2ART.files).map(async ([k, f]) => {
+    try { B2ART.tex[k] = await loadTex(f, true, false); } catch (e) { console.warn('[b2art]', f, e && e.message); }
+  }));
+  B2ART.ready = Object.keys(B2ART.tex).length > 0;
+  return B2ART.ready;
+}
+
+function b2FacadePlane(L, tex, name, emiNight) {
+  if (!L || !L.facade || !tex || L.facade.getObjectByName(name)) return;
+  const def = L.def, W = (def.w || 16) * 0.92, H = Math.min(24, (def.h || 20) * 0.72);
+  const mat = new THREE.MeshStandardMaterial({
+    map: tex, roughness: 0.65, metalness: 0.08,
+    emissiveMap: tex, emissive: new THREE.Color(0xffffff),
+    emissiveIntensity: (typeof TOD !== 'undefined' && TOD.mode === 'day') ? 0.08 : (emiNight || 0.35),
+    polygonOffset: true, polygonOffsetFactor: -1
+  });
+  mat.userData.b2Emi = { day: 0.08, night: emiNight || 0.35 };
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(W, H), mat);
+  m.name = name; m.userData.noMerge = true; m.userData.artB2 = true;
+  m.position.set(0, H / 2 + 0.35, (def.d || 10) / 2 + 0.08);
+  L.facade.add(m);
+}
+
+function b2ApplyFacades() {
+  if (typeof LM === 'undefined' || !LM.byId) return;
+  if (B2ART.tex.ifc) b2FacadePlane(LM.byId.ifc_lobby, B2ART.tex.ifc, 'art-b2-ifc', 0.4);
+  if (B2ART.tex.estate) b2FacadePlane(LM.byId.estate_corridor, B2ART.tex.estate, 'art-b2-estate', 0.25);
+  if (B2ART.tex.ferry) b2FacadePlane(LM.byId.starferry_tst, B2ART.tex.ferry, 'art-b2-ferry', 0.3);
+  B2ART.applied.facades = true;
+}
+
+function b2ApplyVehicleSheet() {
+  if (!B2ART.tex.vehDN || typeof VPROTO === 'undefined') return;
+  const tex = B2ART.tex.vehDN;
+  const targets = [
+    ['taxi', VPROTO.taxi],
+    ['minibus', VPROTO.minibus],
+    ['police', VPROTO.police],
+    ['policeSuv', VPROTO.policeSuv]
+  ];
+  for (const [key, root] of targets) {
+    if (!root || root.getObjectByName('art-b2-veh-' + key)) continue;
+    const sz = root.userData.size || { x: 2, y: 1.8, z: 4.8 };
+    const mat = new THREE.MeshStandardMaterial({
+      map: tex, roughness: 0.45, metalness: 0.15,
+      emissiveMap: tex, emissive: new THREE.Color(0xffffff),
+      emissiveIntensity: (typeof TOD !== 'undefined' && TOD.mode === 'day') ? 0.12 : 0.4,
+      transparent: true, polygonOffset: true, polygonOffsetFactor: -2
+    });
+    mat.userData.b2Emi = { day: 0.12, night: 0.4 };
+    const w = sz.z * 0.7, h = Math.min(1.4, sz.y * 0.55);
+    for (const sx of [-1, 1]) {
+      const pl = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+      pl.name = 'art-b2-veh-' + key;
+      pl.position.set(sx * (sz.x / 2 + 0.02), sz.y * 0.48, 0.05);
+      pl.rotation.y = sx * Math.PI / 2;
+      pl.userData.noMerge = true;
+      root.add(pl);
+    }
+  }
+  B2ART.applied.vehicles = true;
+}
+
+function b2OnTod(mode) {
+  const night = mode !== 'day';
+  if (typeof scene === 'undefined') return;
+  scene.traverse((o) => {
+    if (!o.isMesh || !o.material || !o.material.userData || !o.material.userData.b2Emi) return;
+    const e = o.material.userData.b2Emi;
+    o.material.emissiveIntensity = night ? e.night : e.day;
+  });
+}
+
+{
+  const boot = async () => {
+    if (typeof loadTex !== 'function') return false;
+    await b2Load();
+    b2ApplyFacades();
+    b2ApplyVehicleSheet();
+    if (typeof HOOKS !== 'undefined') {
+      HOOKS.tod = HOOKS.tod || [];
+      if (!HOOKS.tod._b2) { HOOKS.tod.push(b2OnTod); HOOKS.tod._b2 = true; }
+    }
+    if (typeof TOD !== 'undefined') b2OnTod(TOD.mode);
+    return true;
+  };
+  const t0 = setInterval(() => {
+    boot().then((ok) => {
+      b2ApplyFacades(); b2ApplyVehicleSheet();
+      if (ok && B2ART.applied.facades) clearInterval(t0);
+    });
+  }, 500);
+  setTimeout(() => boot(), 0);
+}
+
+Object.assign(window.NT, { B2ART, b2ApplyFacades, b2ApplyVehicleSheet });
+/* =========================================================================
  * M1c · FULL_SPEC 輕 stub：聲望／支線（追債·飆車）／槍械配件舖
  *  · 聲望：東星／角頭／警方／街坊（−100…100）；事件加減 + toast
  *  · 支線：追債、飆車挑戰各一（?m=debt_side／race_side）
@@ -14755,6 +14871,38 @@ function ntShowReloadHint(title, sub) {
 }
 
 /* 每幀：NaN 鏡頭／卡 fade／transit */
+
+/* 連續白幀 → 關 composer／bloom，改直出（修 iOS 後期爆白） */
+SAFARI_SAFE.whiteN = 0;
+HOOKS.frame.push(() => {
+  if (SAFARI_SAFE.lost || window.__NT_NO_COMPOSER) return;
+  if ((SAFARI_SAFE._wp = (SAFARI_SAFE._wp || 0) + 1) % 30) return; // 每 ~0.5s 抽一次
+  try {
+    const gl = renderer.getContext();
+    if (!gl) return;
+    const w = Math.min(32, canvas.width), h = Math.min(18, canvas.height);
+    if (w < 4 || h < 4) return;
+    const buf = new Uint8Array(w * h * 4);
+    gl.readPixels(0, Math.max(0, canvas.height - h), w, h, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+    let bright = 0;
+    for (let i = 0; i < buf.length; i += 16) { // 抽樣
+      if (buf[i] > 220 && buf[i + 1] > 220 && buf[i + 2] > 220) bright++;
+    }
+    const samples = buf.length / 16;
+    if (bright / samples > 0.85) {
+      SAFARI_SAFE.whiteN++;
+      if (SAFARI_SAFE.whiteN >= 2) {
+        window.__NT_NO_COMPOSER = true;
+        if (typeof bloomPass !== 'undefined') bloomPass.enabled = false;
+        if (scene && scene.background && scene.background.isColor) scene.background.setHex(0x0b0c0e);
+        renderer.setClearColor(0x0b0c0e, 1);
+        toast('畫面過曝——已切換穩陣渲染', 2600);
+        SAFARI_SAFE.whiteN = 0;
+      }
+    } else SAFARI_SAFE.whiteN = 0;
+  } catch (e) { /* readPixels 可能被保護 */ }
+});
+
 HOOKS.frame.push(() => {
   if (SAFARI_SAFE.lost) return;
   const fade = typeof $ === 'function' ? $('fade') : null;
