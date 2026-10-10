@@ -210,7 +210,7 @@ body.aim #cross{transform:scale(.45)}
 #flash.on{opacity:.9;transition:none}
 #brief .ck{display:block;font-size:12px;margin-top:2px}#brief .ck.ok{color:#7ad17a}#brief .ck.ok::before{content:'✔ '}#brief .ck:not(.ok)::before{content:'□ ';color:#9fb3c2}
 </style>
-<!-- Three.js：以 import map 由 CDN 載入（已鎖定撰寫時的最新版本 0.186.1；要升級可改版本號或改為 three@latest） -->
+<!-- Three.js 0.186.1：本地 vendor（Pages）；建置時若無 vendor 會改寫成 jsDelivr CDN -->
 <script type="importmap">
 { "imports": {
   "three": "./vendor/three@0.186.1/build/three.module.js",
@@ -256,8 +256,7 @@ body.aim #cross{transform:scale(.45)}
   <h1>霓虹三角</h1>
   <h2>NEON TRIANGLE · M1–M10 合輯 + M1c</h2>
   <div id="loadBar"><i></i></div>
-  <div id="loadTxt" class="mono">載入引擎中…</div>
-<script>setTimeout(function(){var t=document.getElementById("loadTxt");if(t&&/引擎|0%/.test(t.textContent))t.textContent="連線／解壓模型中…";},2500);</script>
+  <div id="loadTxt" class="mono">載入模型中… 0%</div>
   <div id="credits">模型：Quaternius（CC0／CC-BY）· Clint Chilcott、PuKkBuMXDD（CC-BY 3.0）· 經 Poly Pizza ｜ 地圖數據 © OpenStreetMap contributors（ODbL）</div>
 </div>
 <div id="fade"></div>
@@ -362,10 +361,13 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
 // 註：three r18x 起 PCFSoftShadowMap 已併入 PCFShadowMap（以 shadow.radius 控制柔和度），直接用 PCFShadowMap 避免警告
 renderer.shadowMap.type = THREE.PCFShadowMap;
-const MAX_DPR = 1.5;                                  // M1c 效能：像素比上限 1.5（iPhone 原生 3）；持續卡頓時自動降到 1.0（見 game4 updatePerf）
 const URLQ = new URLSearchParams(location.search); // 除錯參數：?debug 顯示 FPS、?noadapt 停用自動降畫質、?dpr=1.5 指定像素比
+const IS_IPHONE = /iPhone|iPad|iPod/i.test(navigator.userAgent || '') || (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1);
+const LOW_MEM = IS_IPHONE || ((navigator.deviceMemory || 8) <= 4) || URLQ.has('lowmem');
+const MAX_DPR = LOW_MEM ? 1.15 : 1.5;              // iPhone／低記憶體再壓像素比（原生常 3）
 let curDPR = Math.min(window.devicePixelRatio || 1, +(URLQ.get('dpr') || MAX_DPR));
 renderer.setPixelRatio(curDPR);
+renderer.setClearColor(0x0b0c0e, 1);               // 防白屏：清屏用夜黑，唔係預設白
 
 /* =========================================================================
  * 效能（M1c 手機效能優化）：靜態網格合併 + 距離剔除
@@ -808,7 +810,7 @@ for (const [x, z] of [[ROW_X0 - 1.1, -32], [-ROW_X0 + 1.1, -68], [ROW_X0 - 1.1, 
 
 /* ---------- 雨（M1b：面向鏡頭的細長雨絲，跟隨鏡頭範圍） ---------- */
 // 每滴雨是一個 4 頂點四邊形：頭（落下的一端）亮、尾漸淡；寬度約 1.2 厘米，遠處最少約 1 像素以免閃爍。
-const RAIN = { count: 5200, size: 46, top: 26, len: 1.15, speed: 17, width: 0.012 };
+const RAIN = { count: LOW_MEM ? 2200 : 5200, size: 46, top: 26, len: 1.15, speed: 17, width: 0.012 }; // 低記憶體減雨絲
 const rain = (() => {
   const N = RAIN.count, seed = new Float32Array(N * 4 * 3), corner = new Float32Array(N * 4 * 2), idx = new Uint32Array(N * 6);
   for (let i = 0; i < N; i++) {
@@ -907,20 +909,62 @@ manager.onProgress = (url, done, total) => {
 const gltfLoader = new GLTFLoader(manager);
 /** 載入 GLB：獨立版直接把內嵌的 base64 解碼成 ArrayBuffer，交給 GLTFLoader.parse（不經網絡、不經 data URI）；
  * 一般版則以 URL 載入。 */
-function loadGLTF(name) {
+function loadGLTF(name, timeoutMs) {
   const file = String(name).split('/').pop();
+  const ms = timeoutMs != null ? timeoutMs : (EMBEDDED_ASSETS[file] ? 60000 : 8000);
   const b64 = EMBEDDED_ASSETS[file];
-  if (b64 && !/^(https?:|blob:)/i.test(name)) {
-    return new Promise((res, rej) => {
-      try {
-        const bin = atob(b64.replace(/^data:[^,]*,/, '')), buf = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
-        manager.itemStart(file);
-        gltfLoader.parse(buf.buffer, '', (g) => { manager.itemEnd(file); res(g); }, (e) => { manager.itemError(file); manager.itemEnd(file); rej(e); });
-      } catch (e) { rej(e); }
-    });
+  // Pages 獨立版冇 /assets：非內嵌又非絕對網址 → 即刻失敗（唔好卡住 LoadingManager 喺 0%）
+  if (!b64 && !/^(https?:|blob:|data:)/i.test(name) && !/^(https?:|blob:)/i.test(resolveAsset(name))) {
+    const url = resolveAsset(name);
+    // resolveAsset 仍指向 assets/… 而獨立版通常 404
+    if (url.indexOf('assets/') === 0 || url.indexOf('./assets/') === 0) {
+      return Promise.reject(new Error('GLTF not embedded (Pages): ' + file));
+    }
   }
-  return new Promise((res, rej) => gltfLoader.load(resolveAsset(name), res, undefined, rej));
+  let settled = false, tracked = false;
+  const endTrack = (err) => {
+    if (!tracked || settled) return;
+    settled = true;
+    try { if (err) manager.itemError(file); manager.itemEnd(file); } catch (e) { /* */ }
+  };
+  const core = () => {
+    if (b64 && !/^(https?:|blob:)/i.test(name)) {
+      return new Promise((res, rej) => {
+        try {
+          const raw = b64.replace(/^data:[^,]*,/, '');
+          manager.itemStart(file); tracked = true;
+          // 大檔 atob 分片，避免主線卡住令進度條永遠 0%
+          const bin = atob(raw);
+          const buf = new Uint8Array(bin.length);
+          const CHUNK = 0x8000;
+          let i = 0;
+          const fill = () => {
+            const end = Math.min(i + CHUNK, bin.length);
+            for (; i < end; i++) buf[i] = bin.charCodeAt(i);
+            if (i < bin.length) { setTimeout(fill, 0); return; }
+            gltfLoader.parse(buf.buffer, '', (g) => { endTrack(false); res(g); },
+              (e) => { endTrack(true); rej(e); });
+          };
+          fill();
+        } catch (e) { endTrack(true); rej(e); }
+      });
+    }
+    // 網絡載入：交俾 LoadingManager；另加 timeout 清理
+    return new Promise((res, rej) => {
+      gltfLoader.load(resolveAsset(name), (g) => { settled = true; res(g); }, undefined, (e) => { settled = true; rej(e); });
+    });
+  };
+  return Promise.race([
+    core(),
+    new Promise((_, rej) => setTimeout(() => {
+      endTrack(true);
+      rej(new Error('GLTF timeout: ' + file));
+    }, ms))
+  ]).catch((e) => {
+    endTrack(true);
+    console.warn('[gltf]', file, e && e.message);
+    throw e;
+  });
 }
 
 /* =========================================================================
@@ -2009,7 +2053,7 @@ function updatePlayer(dt) {
   const want = dir.lengthSq() > 0.0025;
   let running = !aiming && mv.mag > 0.78 && player.energy > 1;
   const target = want ? (aiming ? 1.6 : running ? 5.4 : 1.7 * Math.max(0.5, mv.mag / 0.78)) : 0;
-  player.speed = damp(player.speed, target, 8, dt);
+  player.speed = damp(player.speed, target, target < player.speed ? 12 : 8, dt); // 減速加快，減少停步拖尾走
   if (want) { dir.normalize(); if (!aiming) player.yaw = dampAngle(player.yaw, Math.atan2(dir.x, dir.z), 12, dt); }
   if (aiming) player.yaw = dampAngle(player.yaw, state.camYaw + 0.18, 18, dt); // 瞄準時面向鏡頭前方（身體微側）
   const moveDir = want ? dir : new THREE.Vector3(Math.sin(player.yaw), 0, Math.cos(player.yaw));
@@ -2023,9 +2067,9 @@ function updatePlayer(dt) {
   }
   // 體力
   player.energy = clamp(player.energy + (running && player.speed > 3 ? -18 : 12) * dt, 0, 100);
-  // 動畫權重
+  // 動畫權重（M1c walk 質素：Idle 快淡出、Walk 帶拉闊、腳步 timeScale 對齊 clip）
   const sp = player.speed, A = player.actions;
-  const wIdle = clamp(1 - sp / 1.2, 0, 1), wRun = clamp((sp - 2.2) / 2.2, 0, 1), wWalk = clamp(1 - wIdle - wRun, 0, 1);
+  const wIdle = clamp(1 - sp / 0.85, 0, 1), wRun = clamp((sp - 2.4) / 2.0, 0, 1), wWalk = clamp(1 - wIdle - wRun, 0, 1);
   A.idle?.setEffectiveWeight(wIdle); A.walk?.setEffectiveWeight(wWalk); A.run?.setEffectiveWeight(wRun);
   if (HUMAN.ual) {
     if (A.walk) A.walk.timeScale = clamp(sp / 1.45, 0.6, 1.5);
@@ -2033,8 +2077,9 @@ function updatePlayer(dt) {
     // 上半身手槍瞄準：權重遠大於下半身動作 → 上半身幾乎完全跟瞄準姿勢，雙腳照樣行走
     A.aim?.setEffectiveWeight(24 * THREE.MathUtils.smoothstep(state.aimT, 0, 1));
   } else {
-    if (A.walk) A.walk.timeScale = clamp(sp / 1.6, 0.6, 1.6);
-    if (A.run) A.run.timeScale = clamp(sp / 5, 0.7, 1.3);
+    // Business Man Walk ≈1.4 m/s；收窄 timeScale 減少滑步／月亮步
+    if (A.walk) A.walk.timeScale = clamp(sp / 1.4, 0.85, 1.35);
+    if (A.run) A.run.timeScale = clamp(sp / 4.8, 0.75, 1.25);
   }
   // 角色不在鏡頭視野內時暫停骨骼動畫更新（省效能）
   _frustum.setFromProjectionMatrix(_projView.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
@@ -3272,9 +3317,25 @@ function contextAction() {
 }
 function contextEscape() { if (INT.active) exitInterior(); }
 function withFade(fn, instant) {
-  if (instant) { fn(); return; }
-  INT.busy = true; const f = $('fade'); f.classList.add('on');
-  setTimeout(() => { fn(); requestAnimationFrame(() => { f.classList.remove('on'); setTimeout(() => (INT.busy = false), 150); }); }, 150); // 淡出 0.15 秒 + 淡入 0.15 秒 = 0.3 秒
+  if (instant) {
+    try { fn(); } catch (e) { console.warn('[withFade]', e); toast && toast('場景切換出錯——試下重新整理', 2800); }
+    return;
+  }
+  INT.busy = true; const f = $('fade'); if (f) f.classList.add('on');
+  const clearFade = () => {
+    if (f) f.classList.remove('on');
+    INT.busy = false;
+    state.trans = null;
+  };
+  const tFail = setTimeout(clearFade, 2500); // 防白／黑場卡住
+  setTimeout(() => {
+    try { fn(); } catch (e) { console.warn('[withFade]', e); toast && toast('入屋失敗——已退出過場', 2400); }
+    requestAnimationFrame(() => {
+      clearTimeout(tFail);
+      if (f) f.classList.remove('on');
+      setTimeout(() => { INT.busy = false; }, 150);
+    });
+  }, 150);
 }
 function showIntro(def) {
   $('introName').textContent = def.name; $('introCity').textContent = def.city + ' · 燈光：' + def.light; $('introDesc').textContent = def.desc;
@@ -3285,23 +3346,37 @@ function enterInterior(id, instant = false, doorObj = null) {
   if (INT.active || !INTERIORS[id]) return;
   const door = doorObj || DOORS.find((d) => d.id === id); INT.enterDoor = door;
   withFade(() => {
-    const def = INTERIORS[id];
-    const keep = keepIndoor(); INT.hidden = scene.children.filter((o) => o.visible && !keep.has(o));
-    for (const o of INT.hidden) o.visible = false;
-    INT.colliders = []; INT.shoot = []; INT.interactables = []; INT.anim = []; INT.cleanup = []; INT.door = null;
-    const g = new THREE.Group(); g.name = 'interior-' + id;
-    const info = def.build(g);
-    g.position.copy(INT_ORIGIN); scene.add(g); g.updateMatrixWorld(true);
-    INT.group = g; INT.active = id; INT.def = def; INT.returnDoor = door;
-    INT.savedCol = colliders.splice(0, colliders.length, ...INT.colliders);
-    INT.savedShoot = shootables.splice(0, shootables.length, ...INT.shoot);
-    INT.fog = { c: scene.fog.color.clone(), d: scene.fog.density, env: scene.environmentIntensity };
-    scene.fog.color.set(0x0b0c0e); scene.fog.density = 0.011; scene.environmentIntensity = 0.3;
-    state.trans = null; // 中斷上落車過渡，唔好把人 lerp 返去車邊（否則室內變黑畫面）
-    player.pos.set(INT_ORIGIN.x + info.spawn[0], 0, INT_ORIGIN.z + info.spawn[1]); player.yaw = info.yaw; player.speed = 0;
-    if (player.root) { player.root.position.copy(player.pos); player.root.rotation.set(0, player.yaw, 0); player.root.updateMatrixWorld(true); }
-    state.camYaw = info.yaw; state.camPitch = 0; camState.init = false; input.aim = false;
-    showIntro(def); sfx('door');
+    try {
+      const def = INTERIORS[id];
+      if (!def || typeof def.build !== 'function') { toast('呢度暫時入唔到', 2000); return; }
+      const keep = keepIndoor(); INT.hidden = scene.children.filter((o) => o.visible && !keep.has(o));
+      for (const o of INT.hidden) o.visible = false;
+      INT.colliders = []; INT.shoot = []; INT.interactables = []; INT.anim = []; INT.cleanup = []; INT.door = null;
+      const g = new THREE.Group(); g.name = 'interior-' + id;
+      const info = def.build(g) || { spawn: [0, 1.2], yaw: 0 };
+      const sx = Number.isFinite(info.spawn && info.spawn[0]) ? info.spawn[0] : 0;
+      const sz = Number.isFinite(info.spawn && info.spawn[1]) ? info.spawn[1] : 1.2;
+      const yaw = Number.isFinite(info.yaw) ? info.yaw : 0;
+      g.position.copy(INT_ORIGIN); scene.add(g); g.updateMatrixWorld(true);
+      INT.group = g; INT.active = id; INT.def = def; INT.returnDoor = door;
+      INT.savedCol = colliders.splice(0, colliders.length, ...INT.colliders);
+      INT.savedShoot = shootables.splice(0, shootables.length, ...INT.shoot);
+      INT.fog = { c: scene.fog.color.clone(), d: scene.fog.density, env: scene.environmentIntensity };
+      scene.fog.color.set(0x0b0c0e); scene.fog.density = 0.011; scene.environmentIntensity = 0.3;
+      if (renderer) renderer.setClearColor(0x0b0c0e, 1);
+      state.trans = null; // 中斷上落車過渡，唔好把人 lerp 返去車邊（否則室內變黑畫面）
+      player.pos.set(INT_ORIGIN.x + sx, 0, INT_ORIGIN.z + sz); player.yaw = yaw; player.speed = 0;
+      if (player.root) { player.root.position.copy(player.pos); player.root.rotation.set(0, player.yaw, 0); player.root.updateMatrixWorld(true); }
+      state.camYaw = yaw; state.camPitch = 0; camState.init = false; input.aim = false;
+      showIntro(def); sfx('door');
+    } catch (e) {
+      console.warn('[enterInterior]', id, e);
+      state.trans = null; INT.busy = false;
+      const f = $('fade'); if (f) f.classList.remove('on');
+      toast('入屋出錯——已取消', 2400);
+      try { if (INT.group) { scene.remove(INT.group); INT.group = null; } } catch (e2) { /* */ }
+      INT.active = null;
+    }
   }, instant);
 }
 function disposeTree(root) {
@@ -3415,13 +3490,14 @@ function prepVehicle(gltf, len, tint) {
   return g;
 }
 async function loadM3Assets() {
-  // 優先 CC0 廂型／SUV 做 EU／巡邏；失敗回落舊 police.glb／van-black.glb
+  // 優先 CC0 廂型／SUV；Pages 無 /assets/gltf 時 loadGLTF 即拒，唔擋開局
+  const opt = (n) => loadGLTF(n, 6000).catch(() => Promise.reject(new Error('skip ' + n)));
   const [pEu, pOld, vOld, taxi, mini] = await Promise.allSettled([
-    loadGLTF(ASSET_FILES.euVan || 'gltf/delivery-van-cc0.glb'),
-    loadGLTF('police.glb'),
-    loadGLTF('van-black.glb'),
-    loadGLTF(ASSET_FILES.taxi || 'gltf/taxi-cc0.glb'),
-    loadGLTF(ASSET_FILES.minibus || 'gltf/minibus-cc0.glb')
+    opt(ASSET_FILES.euVan || 'gltf/delivery-van-cc0.glb'),
+    loadGLTF('police.glb', 30000),
+    loadGLTF('van-black.glb', 30000),
+    opt(ASSET_FILES.taxi || 'gltf/taxi-cc0.glb'),
+    opt(ASSET_FILES.minibus || 'gltf/minibus-cc0.glb')
   ]);
   const p = pEu.status === 'fulfilled' ? pEu : pOld;
   const v = vOld;
@@ -3442,7 +3518,7 @@ async function loadM3Assets() {
   if (v.status === 'fulfilled') VPROTO.van = prepVehicle(v.value, 5.0, 0x0c0d0f);
   // 備選：巡邏 SUV／紅的暫代／紅色小巴暫代
   try {
-    const suv = await loadGLTF(ASSET_FILES.policeSuv || 'gltf/police-suv-cc0.glb');
+    const suv = await loadGLTF(ASSET_FILES.policeSuv || 'gltf/police-suv-cc0.glb', 6000);
     VPROTO.policeSuv = prepVehicle(suv, 4.9);
   } catch (e) { console.warn('[gltf] police-suv', e && e.message); }
   if (taxi.status === 'fulfilled') VPROTO.taxi = prepVehicle(taxi.value, 4.5, 0xc8201a);
@@ -3591,9 +3667,10 @@ function updateNPC(n, dt) {
   if (mvDir) { n.pos.addScaledVector(mvDir, mvSpeed * dt); resolveCircle(n.pos, 0.35, []); }
   n.speed = damp(n.speed, mvSpeed, 6, dt);
   const A = n.actions, sp = n.speed;
-  const wIdle = clamp(1 - sp / 1.2, 0, 1), wRun = clamp((sp - 2.2) / 1.4, 0, 1), wWalk = clamp(1 - wIdle - wRun, 0, 1);
+  // 同主角 walk 質素：Idle 快淡、Walk 帶拉闊、腳步對齊 Business Man
+  const wIdle = clamp(1 - sp / 0.85, 0, 1), wRun = clamp((sp - 2.4) / 1.6, 0, 1), wWalk = clamp(1 - wIdle - wRun, 0, 1);
   A.idle?.setEffectiveWeight(wIdle); A.walk?.setEffectiveWeight(wWalk); A.run?.setEffectiveWeight(wRun);
-  if (A.walk) A.walk.timeScale = clamp(sp / 1.45, 0.6, 1.5); if (A.run) A.run.timeScale = clamp(sp / 4.2, 0.75, 1.3);
+  if (A.walk) A.walk.timeScale = clamp(sp / 1.4, 0.85, 1.35); if (A.run) A.run.timeScale = clamp(sp / 4.5, 0.75, 1.25);
   n.aimW = damp(n.aimW || 0, aimW, 6, dt); A.aim?.setEffectiveWeight(24 * n.aimW);
   // 角色在鏡頭外或太遠時暫停骨骼動畫（省效能）
   const vis = n.pos.distanceTo(camera.position) < 70 && (_frustum.containsPoint(_npcV.copy(n.pos).setY(1)) || n.pos.distanceTo(camera.position) < 8);
@@ -9857,10 +9934,11 @@ MISSIONS.bank = {
     } else if (MS.phase === 'breach') {
       if (MS.guards && MS.guards.every((n) => !n.alive)) {
         newPhase('outro'); state.locked = true; setTimer(0);
-        addDirty(30000); updateCashHUD(0);
+        const bankPay = (typeof stormScaleDirty === 'function') ? stormScaleDirty(30000) : 30000;
+        addDirty(bankPay); updateCashHUD(0);
         say('喪彪', '三百萬同伺服器資料……走！差佬嚟喇。', 3);
         after(3.2, () => { state.locked = false; if (MS.bankMesh) { scene.remove(MS.bankMesh); MS.bankMesh = null; }
-          passMission(0, () => { hideBrief(); startMission('tower'); }, '搶到 $30,000 黑錢（已入帳）'); });
+          passMission(0, () => { hideBrief(); startMission('tower'); }, `搶到 $${bankPay.toLocaleString('en-US')} 黑錢（已入帳）`); });
       }
     }
   }
@@ -10163,11 +10241,12 @@ function fortFinishLoot() {
   if (MS.id !== 'fortress' || MS.phase === 'outro' || FLAGS.fortDone) return;
   newPhase('outro'); setTarget(null); state.locked = true;
   FLAGS.fortDone = true; INV.ledger = true; renderInv();
-  addDirty(20000); updateCashHUD(0);
+  const fortPay = (typeof stormScaleDirty === 'function') ? stormScaleDirty(20000) : 20000;
+  addDirty(fortPay); updateCashHUD(0);
   say('文濤', '林世淵完。下一站：澳門「金殿號」。', 3);
   after(2.0, () => {
     state.locked = false; clearFortress();
-    passMission(0, () => { hideBrief(); startMission('yacht'); }, '帳冊入手 · $20,000 已入帳');
+    passMission(0, () => { hideBrief(); startMission('yacht'); }, `帳冊入手 · $${fortPay.toLocaleString('en-US')} 已入帳`);
   });
 }
 
@@ -10286,7 +10365,8 @@ function yachtFinishBox() {
   if (MS.id !== 'yacht' || MS.phase === 'outro' || FLAGS.yachtDone) return;
   newPhase('outro'); setTarget(null); state.locked = true;
   FLAGS.yachtDone = true; INV.contractBox = true; renderInv();
-  addDirty(25000); updateCashHUD(0);
+  const yachtPay = (typeof stormScaleDirty === 'function') ? stormScaleDirty(25000) : 25000;
+  addDirty(yachtPay); updateCashHUD(0);
   say('阿傑', '三角兩邊大亨都倒。而家……點分呢筆錢？', 3);
   after(2.0, () => {
     state.locked = false; clearYacht();
@@ -10294,7 +10374,7 @@ function yachtFinishBox() {
       hideBrief(); MS.id = null;
       if (AREA.active && car.isBoat) setCarBoat(false);
       showEndingChoice();
-    }, '合約箱入手 · $25,000 已入帳');
+    }, `合約箱入手 · $${yachtPay.toLocaleString('en-US')} 已入帳`);
   });
 }
 
@@ -11440,13 +11520,13 @@ const RADIO = {
   cool: 0,
   newsCool: 0,
   stations: [
-    { id: 'crhk', name: '商業一台', tag: '粵語 · 香港', region: 'hk' },
-    { id: 'rthk', name: '港台第二台', tag: '粵語 · 香港', region: 'hk' },
-    { id: 'metroradio', name: '新城知訊台', tag: '粵語 · 香港', region: 'hk' },
-    { id: 'tdm', name: '澳廣視電台', tag: '粵語／葡語 · 澳門', region: 'mac' },
-    { id: 'bcc', name: '中廣新聞網', tag: '國語 · 台灣', region: 'tw' },
-    { id: 'pop', name: 'POP Radio', tag: '台語／國語 · 台灣', region: 'tw' },
-    { id: 'ufm', name: '飛碟電台', tag: '國語 · 台灣', region: 'tw' }
+    { id: 'harbour1', name: '海港一台', tag: '粵語 · 香港', region: 'hk' },
+    { id: 'pearl2', name: '維港二台', tag: '粵語 · 香港', region: 'hk' },
+    { id: 'neoninfo', name: '霓虹知訊', tag: '粵語 · 香港', region: 'hk' },
+    { id: 'lighthouse', name: '燈塔之聲', tag: '澳粵夾葡 · 澳門', region: 'mac' },
+    { id: 'islandnews', name: '島嶼新聞網', tag: '國語 · 台灣', region: 'tw' },
+    { id: 'nightmarket', name: '夜市廣播', tag: '台語／國語 · 台灣', region: 'tw' },
+    { id: 'orbitfm', name: '軌道電台', tag: '國語 · 台灣', region: 'tw' }
   ]
 };
 
@@ -11470,21 +11550,23 @@ function radioWantedNews(stars) {
   if (!RADIO.on || RADIO.newsCool > 0) return;
   RADIO.newsCool = 8;
   const s = radioCurrent();
-  const tier = (typeof LM !== 'undefined' && LM.wantedTier) ? (LM.wantedTier[stars] || stars + '★') : (stars + '★');
   const lines = {
     hk: [
-      `突發：警方通緝升級至「${tier}」，呼籲市民勿自行靠近。`,
+      `突發：警方通緝升級至「通緝級 ${stars}」，呼籲市民勿自行靠近。`,
       `交通台：有高速追逐目擊報告，駕駛人士請改道。`,
-      `新聞：油尖旺／深水埗一帶加強截查——通緝 ${stars} 星。`
+      `新聞：油尖旺／深水埗一帶加強截查——通緝級 ${stars}。`,
+      stars >= 4 ? `快訊：高層單位介入——街頭氣氛轉冷，請勿圍觀。` : `衝鋒隊加強巡邏；低通緝級市民照常出入。`
     ],
     mac: [
-      `澳廣視：司警關注娛樂場一帶異常，級別「${tier}」。`,
-      `新聞：口岸加強檢查，旅客請備齊證件。`
+      `燈塔之聲：司警關注娛樂場一帶異常，現為通緝級 ${stars}。`,
+      `新聞：口岸加強檢查，旅客請備齊證件。`,
+      stars >= 4 ? `快訊：跨境聯動戒備提升——硬闖大橋屬高危。` : `娛樂場外周請小心自發查證人士。`
     ],
     tw: [
-      `警廣：北部／南部同步戒備，級別「${tier}」。`,
-      `新聞快報：有槍劫通報，民眾勿圍觀。`,
-      `台語廣播：警方追緊——通緝 ${stars} 粒星。`
+      `島嶼新聞網：北／南部同步戒備，通緝級 ${stars}。`,
+      `新聞快報：有持械案件通報，民眾勿圍觀。`,
+      `夜市廣播：警察追緊矣——通緝級 ${stars}，路邊少停。`,
+      `軌道電台：城市警報升了一格。保持低調。`
     ]
   };
   const pool = lines[s.region] || lines.hk;
@@ -11504,7 +11586,7 @@ HOOKS.wantedCleared.push(() => {
   if (!RADIO.on || RADIO.newsCool > 0) return;
   RADIO.newsCool = 6;
   const s = radioCurrent();
-  radioToast(`${s.name}｜警方暫時失去目標……（通緝解除）`, 2800);
+  radioToast(`${s.name}｜警方暫時失去目標……（清通緝）`, 2800);
 });
 
 HOOKS.sim.push((dt) => {
@@ -11515,10 +11597,10 @@ HOOKS.sim.push((dt) => {
     RADIO.cool = 45;
     const s = radioCurrent();
     const ads = s.region === 'tw'
-      ? ['下節新聞之後，聽歌。', '天氣：南部多雲，注意西北雨。', '廣告：夜市優惠——香腸加蛋。']
+      ? ['下節新聞之後，聽歌。', '天氣：南部多雲，注意西北雨。', '廣告：夜市優惠——香腸加蛋。', '返嚟聽多一首（原創／授權曲庫）。']
       : s.region === 'mac'
-        ? ['下一節賽馬消息。', '天氣：珠江口有微雨。', '廣告：官也街蛋撻——今日新鲜。']
-        : ['下節財經。', '天文台：吹東北風，幾多雲。', '廣告：8仔茶葉蛋兩件 $9.9。'];
+        ? ['下一節賽馬消息。', '天氣：珠江口有微雨。', '廣告：官也街蛋撻——今日新鲜。', '下節音樂（原創床聲）。']
+        : ['下節財經。', '天文台（戲仿）：吹東北風，幾多雲。', '廣告：8仔茶葉蛋兩件 $9.9。', '下節音樂——城市流行床聲。'];
     radioToast(`${s.name}｜${ads[Math.floor(Math.random() * ads.length)]}`, 2400);
   }
 });
@@ -12704,9 +12786,14 @@ HOOKS.sim.push((dt) => {
     p1PatchStreetLines();
     p1WirePedFlee();
     // 確認 sino 已入 LM
-    if (typeof LM !== 'undefined' && LM.byId && !LM.byId.sino_centre && typeof LM_DEFS !== 'undefined') {
-      console.warn('[p1] sino_centre missing from LM — check LM_DEFS');
-    }
+    // LM 可能稍後 lmPlaceAll——延遲再查，避免誤報
+    setTimeout(() => {
+      if (typeof LM !== 'undefined' && LM.byId && !LM.byId.sino_centre && typeof LM_DEFS !== 'undefined') {
+        const has = LM_DEFS.some((d) => d.id === 'sino_centre');
+        if (has && !LM.byId.sino_centre) console.warn('[p1] sino_centre in LM_DEFS but not placed yet');
+        else if (!has) console.warn('[p1] sino_centre missing from LM_DEFS');
+      }
+    }, 2500);
     return true;
   };
   const t0 = setInterval(() => { boot().then((ok) => { if (ok && P1.patrol.length) clearInterval(t0); }); }, 400);
@@ -12861,8 +12948,8 @@ function darknetBuildUI() {
 
   const pan = document.createElement('div'); pan.id = 'darknetPanel';
   pan.innerHTML = `<div class="dnbox">
-    <div class="tt">暗網市集 <span>· 戲仿</span></div>
-    <div class="sub">端對端加密？講笑咋——俾錢就搞掂。黑錢優先。</div>
+    <div class="tt">暗網市集 <span>· 烏賊訊 · 戲仿</span></div>
+    <div class="sub">端對端加密？講笑咋——俾錢就搞掂。黑錢優先。訊號不穩屬正常。</div>
     <button type="button" data-svc="ride"><b>叫車</b><i>黑頭車接送 · $1,500 黑錢</i></button>
     <button type="button" data-svc="muscle"><b>打手</b><i>兩名打手護駕 · $2,500 黑錢</i></button>
     <button type="button" data-svc="guns"><b>軍火快遞</b><i>消音手槍速遞 · $4,000 黑錢</i></button>
@@ -13207,7 +13294,8 @@ const RACE = {
     { id: 'r4', name: '油尖旺', odd: 8.5 }
   ],
   cool: 0,
-  armoredSeen: false
+  armoredSeen: false,
+  rake: 0.91 // 場方抽水 9%（派彩 ×0.91）；平衡表 A
 };
 
 function raceOpen(venueId) {
@@ -13220,7 +13308,7 @@ function raceOpen(venueId) {
     el = document.createElement('div'); el.id = 'racePanel';
     el.innerHTML = `<div class="rbx">
       <div class="tt" id="raceTitle">賽馬投注</div>
-      <div class="sub">戲仿場地 · 用乾淨錢落注 · 勝出按賠率派彩</div>
+      <div class="sub">戲仿場地 · 用乾淨錢落注 · 勝出按賠率派彩（場方抽水 9%）</div>
       <div id="raceList"></div>
       <div class="row">
         <button type="button" data-a="500">注 $500</button>
@@ -13287,9 +13375,9 @@ function raceBet(amt) {
   titleCard && titleCard('開跑', (RACE.venue === 'shatin_race' ? '沙田' : '跑馬地') + ' · 一場');
   setTimeout(() => {
     if (win.id === horse.id) {
-      const pay = Math.floor(amt * horse.odd);
+      const pay = Math.floor(amt * horse.odd * (RACE.rake || 0.91));
       addCash(pay);
-      toast(`贏咗！${horse.name} 派彩 $${pay.toLocaleString()}`, 2800);
+      toast(`贏咗！${horse.name} 派彩 $${pay.toLocaleString()}（已扣場方）`, 2800);
       say('場播', `${horse.name} 衝線！恭喜各位。`, 2.5);
     } else {
       toast(`輸咗——勝出係「${win.name}」`, 2600);
@@ -13323,7 +13411,7 @@ HOOKS.sim.push((dt) => { if (RACE.cool > 0) RACE.cool -= dt; });
 Object.assign(window.NT, { RACE, raceOpen, raceBet, raceClose });
 /* =========================================================================
  * M1c · 可乘搭交通 stub（戲仿 · 唔用真商標）
- *  · 鐵道／紅巴／叮叮／天星小輪／澳門發財車／台灣速克達
+ *  · 鐵道／紅巴／叮叮／維港渡輪／澳門發財車／台灣速克達
  *  · 站間淡出傳送 + 粵語／澳粵／台語報站；唔當闖關
  * ========================================================================= */
 const TRANSIT = {
@@ -13350,7 +13438,7 @@ const TRANSIT = {
     { id: 'tram_cwb', name: '銅鑼灣（戲仿）', lat: 22.2798, lon: 114.1855 },
     { id: 'tram_north', name: '北角（戲仿）', lat: 22.2910, lon: 114.2005 }
   ],
-  // 天星小輪（戲仿）維港兩岸
+  // 維港渡輪（戲仿）兩岸
   ferry: [
     { id: 'ferry_tst', name: '尖沙咀碼頭（戲仿）', lat: 22.2938, lon: 114.1685, side: 'kowloon' },
     { id: 'ferry_cen', name: '中環碼頭（戲仿）', lat: 22.2872, lon: 114.1615, side: 'island' }
@@ -13445,7 +13533,7 @@ function transitOpenList(kind, title, sub, fromKey, items, labelFn, dataA) {
 
 function transitOpenRail(fromId) {
   const from = TRANSIT.rail.find((s) => s.id === fromId); if (!from) return;
-  transitOpenList('rail', `鐵道 · ${from.name}`, `${from.line} · 八達通戲仿 · 粵語報站`, fromId,
+  transitOpenList('rail', `鐵道 · ${from.name}`, `${from.line} · 八達卡戲仿 · 粵語報站`, fromId,
     TRANSIT.rail.filter((s) => s.id !== fromId), (s) => `去 ${s.name}`, (s) => s.id);
 }
 function transitOpenBus(stopIdx) {
@@ -13469,7 +13557,7 @@ function transitOpenTram(stopIdx) {
 function transitOpenFerry(fromId) {
   const from = TRANSIT.ferry.find((s) => s.id === fromId); if (!from) return;
   const dests = TRANSIT.ferry.filter((s) => s.id !== fromId);
-  transitOpenList('ferry', `天星小輪 · ${from.name}`, '維港渡輪戲仿 · 船員粵語', fromId,
+  transitOpenList('ferry', `維港渡輪 · ${from.name}`, '維港渡輪戲仿 · 船員粵語', fromId,
     dests, (s) => `開往 ${s.name}`, (s) => s.id);
 }
 function transitOpenMac(stopIdx) {
@@ -13530,13 +13618,19 @@ function transitFadeRide(label, arriveName, arriveX, arriveZ, arriveYaw, lines) 
     bar.style.width = (p * 100).toFixed(1) + '%';
     if (p < 1) { requestAnimationFrame(tick); return; }
     ov.classList.remove('show');
-    if (typeof putPlayerOnFoot === 'function') putPlayerOnFoot(arriveX, arriveZ, arriveYaw || 0);
-    else { player.pos.set(arriveX, 0, arriveZ); player.yaw = arriveYaw || 0; }
+    const ax = Number.isFinite(arriveX) ? arriveX : player.pos.x;
+    const az = Number.isFinite(arriveZ) ? arriveZ : player.pos.z;
+    const ay = Number.isFinite(arriveYaw) ? arriveYaw : 0;
+    state.trans = null;
+    if (typeof putPlayerOnFoot === 'function') putPlayerOnFoot(ax, az, ay);
+    else { player.pos.set(ax, 0, az); player.yaw = ay; }
     state.mode = 'foot';
     camState.init = false;
     state.locked = false;
     TRANSIT.riding = false;
     TRANSIT.cool = 2.5;
+    TRANSIT._rideSafety = 0;
+    if (typeof renderer !== 'undefined' && renderer.setClearColor) renderer.setClearColor(0x0b0c0e, 1);
     toast('已到：' + arriveName, 2000);
     if (typeof sfx === 'function') sfx('door');
   };
@@ -13550,10 +13644,10 @@ function transitRideRail(toId) {
   if (!to || !L) { toast('該站未開放', 1600); return; }
   const door = L.door.pos, yaw = L.door.outYaw || 0;
   const fromName = (TRANSIT.rail.find((s) => s.id === fromId) || {}).name || '本站';
-  const rail2 = ({ '尖沙咀': '尖沙咀到站。轉乘紅巴、天星小輪，請喺呢個出口落車。',
-    '旺角': '旺角到站。信和中心、彌敦道喺 A／B 出口一帶（戲仿）。',
+  const rail2 = ({ '尖沙咀': '尖沙咀到站。轉乘紅巴、維港渡輪，請喺呢個出口落車。',
+    '旺角': '旺角到站。信旺中心、彌敦道喺 A／B 出口一帶（戲仿）。',
     '中環': '中環到站。轉港島叮叮，請跟指示上蓋。' })[to.name] || '車門即將關閉，請勿衝門。';
-  toast('鐵道（戲仿）· 八達通已拍（戲仿）', 1600);
+  toast('鐵道（戲仿）· 八達卡已拍（戲仿）', 1600);
   transitFadeRide('鐵道', to.name, door.x + Math.sin(yaw) * 3.5, door.z + Math.cos(yaw) * 3.5, yaw, [
     ['車長', `下一站：${to.name}。請小心月台空隙。`, 2.6],
     ['廣播', rail2, 2.6]
@@ -13580,7 +13674,7 @@ function transitRideTram(toIdx) {
   const tramExtra = {
     '堅尼地城（戲仿）': '尾站附近，落車睇清楚來車。',
     '上環（戲仿）': '上環——港澳碼頭／西港城方向請步行；離島碼頭請轉中環。',
-    '中環（戲仿）': '中環——轉鐵道或天星，跟指示牌。',
+    '中環（戲仿）': '中環——轉鐵道或維港渡輪，跟指示牌。',
     '灣仔（戲仿）': '灣仔——駱克道夜總會一帶，夜晚低調啲。',
     '銅鑼灣（戲仿）': '銅鑼灣——人潮擠，小心扒手。',
     '北角（戲仿）': '北角到。終點方向請留意叮叮鈴。'
@@ -13596,7 +13690,7 @@ function transitRideFerry(toId) {
   const ferryDock = to.id === 'ferry_tst'
     ? '尖沙咀靠岸——鐘樓一帶落船。'
     : '中環靠岸——轉叮叮／鐵道跟綠色指示。';
-  transitFadeRide('天星小輪', to.name, g.x, g.z, to.side === 'island' ? Math.PI : 0, [
+  transitFadeRide('維港渡輪', to.name, g.x, g.z, to.side === 'island' ? Math.PI : 0, [
     ['船員', `各位乘客，船正開往${to.name}——握實欄杆，小心船頭浪。`, 2.8],
     ['廣播', ferryDock + ' 維港渡輪（戲仿）：請勿餵海鷗。', 2.6]
   ]);
@@ -13822,7 +13916,8 @@ const STORM = {
   fog0: null,
   hemi0: null,
   t: 0,
-  heistHard: false
+  heistHard: false,
+  heistBonus: 1.2 // 風球／黑雨劫案報酬倍率；平衡表 C
 };
 
 function stormSet(level) {
@@ -13908,14 +14003,43 @@ HOOKS.frame.push(() => {
   if (window.NT) NT.updateWanted = updateWanted;
 }
 
-// 劫案準備：風球時加難度 toast
+/** 風球／黑雨劫案報酬倍率（無風球 = 1） */
+function stormHeistMul() {
+  return STORM.heistHard ? (STORM.heistBonus || 1.2) : 1;
+}
+/** 將金額按風球倍率放大（已入帳類 addDirty 用） */
+function stormScaleDirty(n) {
+  const m = stormHeistMul();
+  return m === 1 ? (n | 0) : Math.floor(n * m);
+}
+
+// 風球時 passMission 報酬 × heistBonus（避免同 addDirty 雙重加成：此處只改 reward 參數）
+{
+  if (typeof passMission === 'function') {
+    const _pm = passMission;
+    passMission = function (reward, next, extra = '') {
+      const m = stormHeistMul();
+      if (reward && m !== 1) {
+        const scaled = Math.floor(reward * m);
+        const note = `風球／黑雨報酬 ×${m}（原 $${Number(reward).toLocaleString('en-US')}）`;
+        extra = extra ? `${extra}<br>${note}` : note;
+        return _pm(scaled, next, extra);
+      }
+      return _pm(reward, next, extra);
+    };
+    if (window.NT) NT.passMission = passMission;
+  }
+}
+
+// 劫案準備：風球時加難度 toast + 報酬提示
 {
   if (typeof showHeistPrep === 'function') {
     const _hp = showHeistPrep;
     showHeistPrep = function (id) {
       _hp(id);
       if (STORM.heistHard) {
-        toast('風球／黑雨：今次劫案難度上升——巡邏加密、視線差', 3200);
+        const pct = Math.round(((STORM.heistBonus || 1.2) - 1) * 100);
+        toast(`風球／黑雨：劫案難度↑ · 報酬 +${pct}%`, 3200);
       }
     };
     if (window.NT) NT.showHeistPrep = showHeistPrep;
@@ -14074,7 +14198,7 @@ window.addEventListener('keydown', (e) => {
 
 Object.assign(window.NT, {
   PROP, propOpen, propClose, propBuy,
-  STORM, stormSet, stormToggle,
+  STORM, stormSet, stormToggle, stormHeistMul, stormScaleDirty,
   UNIFORM, uniformAcquire, uniformActivate
 });
 /* =========================================================================
@@ -14423,6 +14547,118 @@ MISSIONS.race_side = {
 Object.assign(window.NT, {
   REP, repAdd, ATTACH, attachApply, SIDE, debtCollect
 });
+/* =========================================================================
+ * M1c · Safari／Pages 白屏防護
+ *  · WebGL context lost → toast + 重新整理提示
+ *  · 鏡頭 NaN／fade 卡住／transit locked → 強制清
+ *  · 唔改玩法
+ * ========================================================================= */
+const SAFARI_SAFE = { lost: false, fadeT: 0 };
+
+function ntSafeResetView(why) {
+  try {
+    state.trans = null;
+    state.locked = false;
+    if (typeof INT !== 'undefined') INT.busy = false;
+    const f = typeof $ === 'function' ? $('fade') : document.getElementById('fade');
+    if (f) f.classList.remove('on');
+    const ov = document.getElementById('transitLoad');
+    if (ov) ov.classList.remove('show');
+    if (typeof TRANSIT !== 'undefined') { TRANSIT.riding = false; }
+    if (typeof camState !== 'undefined') camState.init = false;
+    if (typeof player !== 'undefined' && player.pos) {
+      const ok = Number.isFinite(player.pos.x) && Number.isFinite(player.pos.z);
+      if (!ok) {
+        player.pos.set(car && car.pos ? car.pos.x : 0, 0, car && car.pos ? car.pos.z : 0);
+      }
+      if (Number.isFinite(player.yaw) === false) player.yaw = 0;
+      state.camYaw = Number.isFinite(state.camYaw) ? state.camYaw : player.yaw;
+      state.camPitch = 0;
+    }
+    if (typeof camera !== 'undefined' && camera.position) {
+      if (![camera.position.x, camera.position.y, camera.position.z].every(Number.isFinite)) {
+        const p = state.mode === 'drive' && car ? car.pos : player.pos;
+        camera.position.set(p.x + 3, 2.5, p.z + 6);
+      }
+    }
+    if (typeof renderer !== 'undefined' && renderer.setClearColor) renderer.setClearColor(0x0b0c0e, 1);
+    if (why && typeof toast === 'function') toast(why, 2800);
+  } catch (e) { console.warn('[safeReset]', e); }
+}
+
+function ntShowReloadHint(title, sub) {
+  let el = document.getElementById('webglLost');
+  if (!el) {
+    el = document.createElement('div'); el.id = 'webglLost';
+    el.innerHTML = '<div class="box"><div class="tt" id="wglTitle"></div><div class="sub" id="wglSub"></div>' +
+      '<button type="button" id="wglReload">重新整理</button></div>';
+    const st = document.createElement('style');
+    st.textContent = `#webglLost{display:none;position:fixed;inset:0;z-index:50;align-items:center;justify-content:center;background:rgba(0,0,0,.82);pointer-events:auto}
+#webglLost.show{display:flex}#webglLost .box{width:min(340px,88vw);padding:18px;background:#12151a;border:1px solid rgba(240,196,25,.5);color:#e8ecef;font:600 14px "PingFang HK","Noto Sans TC",sans-serif;text-align:center}
+#webglLost .tt{font:800 18px "PingFang HK",sans-serif;color:#f0c419;margin-bottom:8px}
+#webglLost .sub{font-size:13px;color:#9aa;margin-bottom:14px;line-height:1.45}
+#webglLost button{padding:12px 18px;border:1px solid rgba(240,196,25,.6);background:rgba(240,196,25,.15);color:#f0c419;font:800 15px "PingFang HK",sans-serif;width:100%}`;
+    document.head.appendChild(st);
+    document.body.appendChild(el);
+    el.querySelector('#wglReload').onclick = () => location.reload();
+  }
+  el.querySelector('#wglTitle').textContent = title || '畫面中斷';
+  el.querySelector('#wglSub').textContent = sub || '請撳下面重新整理再開遊戲。';
+  el.classList.add('show');
+}
+
+/* WebGL context lost */
+{
+  const canvas = typeof renderer !== 'undefined' && renderer.domElement ? renderer.domElement : document.getElementById('gl');
+  if (canvas) {
+    canvas.addEventListener('webglcontextlost', (e) => {
+      e.preventDefault();
+      SAFARI_SAFE.lost = true;
+      ntSafeResetView(null);
+      ntShowReloadHint('畫面引擎中斷', '手機記憶體可能不足（WebGL context lost）。撳「重新整理」再入。');
+      if (typeof toast === 'function') toast('畫面引擎中斷——請重新整理', 4000);
+    }, false);
+    canvas.addEventListener('webglcontextrestored', () => {
+      SAFARI_SAFE.lost = false;
+      const el = document.getElementById('webglLost'); if (el) el.classList.remove('show');
+      ntSafeResetView('畫面已恢復——若仲白屏請重新整理');
+      try { if (renderer) { renderer.setPixelRatio(curDPR || 1); renderer.setClearColor(0x0b0c0e, 1); } } catch (e) { /* */ }
+    }, false);
+  }
+}
+
+/* 每幀：NaN 鏡頭／卡 fade／transit */
+HOOKS.frame.push(() => {
+  if (SAFARI_SAFE.lost) return;
+  const fade = typeof $ === 'function' ? $('fade') : null;
+  if (fade && fade.classList.contains('on')) {
+    SAFARI_SAFE.fadeT = (SAFARI_SAFE.fadeT || 0) + 1;
+    if (SAFARI_SAFE.fadeT > 180) { // ~3s at 60fps
+      fade.classList.remove('on');
+      if (typeof INT !== 'undefined') INT.busy = false;
+      state.trans = null;
+      SAFARI_SAFE.fadeT = 0;
+    }
+  } else SAFARI_SAFE.fadeT = 0;
+
+  const badCam = typeof camera !== 'undefined' && (![camera.position.x, camera.position.y, camera.position.z].every(Number.isFinite)
+    || (typeof camState !== 'undefined' && camState.pos && ![camState.pos.x, camState.pos.y, camState.pos.z].every(Number.isFinite)));
+  if (badCam) ntSafeResetView('鏡頭異常——已重設視角');
+});
+
+HOOKS.sim.push((dt) => {
+  if (typeof TRANSIT !== 'undefined' && TRANSIT.riding) {
+    TRANSIT._rideSafety = (TRANSIT._rideSafety || 0) + dt;
+    if (TRANSIT._rideSafety > 12) {
+      TRANSIT.riding = false; state.locked = false; state.trans = null;
+      const ov = document.getElementById('transitLoad'); if (ov) ov.classList.remove('show');
+      TRANSIT._rideSafety = 0;
+      toast('乘車過場逾時——已解除鎖定', 2400);
+    }
+  } else if (typeof TRANSIT !== 'undefined') TRANSIT._rideSafety = 0;
+});
+
+Object.assign(window.NT, { SAFARI_SAFE, ntSafeResetView, ntShowReloadHint });
 
 /* =========================================================================
  * M1c 手機效能優化（iPhone Safari）
@@ -14559,7 +14795,7 @@ HOOKS.frame.push((dt) => {
   if (car.root.userData.rlN !== car.root.children.length) { car.root.userData.rlN = car.root.children.length; carReflLayers(); } // 換車／加車燈後補上
 });
 /* =========================================================================
- * 啟動
+ * 啟動（Pages／Safari：唔好卡死喺 0% loading）
  * ========================================================================= */
 if (/[?&]debug/.test(location.search)) document.body.classList.add('debug');
 onResize();
@@ -14567,27 +14803,90 @@ setModeUI();
 car.root.position.copy(car.pos);
 requestAnimationFrame(frame);
 
-const timeout = new Promise((res) => setTimeout(() => res('timeout'), 25000));
+function dismissLoading(msg) {
+  try {
+    const L = $('loading');
+    if (L) { L.style.opacity = '0'; setTimeout(() => { L.style.display = 'none'; }, 400); }
+    if (msg) toast(msg, 2800);
+  } catch (e) { /* */ }
+  state.started = true;
+  window.NT.ready = true;
+}
+
+// 進度心跳：就算 LoadingManager 未動，都顯示「準備中」避免永遠 0%
+{
+  let tick = 0;
+  const hb = setInterval(() => {
+    if (window.NT && window.NT.ready) { clearInterval(hb); return; }
+    tick++;
+    const bar = $('loadBar') && $('loadBar').firstElementChild;
+    const txt = $('loadTxt');
+    if (txt && (!bar || parseFloat(bar.style.width) < 1)) {
+      txt.textContent = '準備場景中…（' + tick + 's）';
+      if (bar) bar.style.width = Math.min(12, tick * 2) + '%';
+    }
+    if (tick >= 28) { clearInterval(hb); dismissLoading('載入逾時——已用簡化場景進入'); }
+  }, 1000);
+}
+
+const timeout = new Promise((res) => setTimeout(() => res('timeout'), 20000));
 Promise.race([
-  Promise.allSettled([loadVehicle(ASSET_FILES.car).catch((e) => { console.warn('寫實車輛載入失敗，改用 Kenney 後備（CC0）：', e); return loadVehicle('kenney-sedan-sports.glb'); }), loadCharacter(), loadRealisticBuildings().catch((e) => { console.warn('寫實貨櫃載入失敗，改用 Kenney 後備：', e); return loadRealisticBuildings(ASSET_FILES.containersFallback); }), loadM3Assets()]),
+  Promise.allSettled([
+    loadVehicle(ASSET_FILES.car).catch((e) => {
+      console.warn('寫實車輛載入失敗，改用 Kenney 後備（CC0）：', e);
+      return loadVehicle('kenney-sedan-sports.glb').catch(() => null);
+    }),
+    loadCharacter().catch((e) => { console.warn('角色載入失敗', e); return null; }),
+    loadRealisticBuildings().catch((e) => {
+      console.warn('寫實貨櫃載入失敗，改用 Kenney 後備：', e);
+      return loadRealisticBuildings(ASSET_FILES.containersFallback).catch(() => null);
+    }),
+    // 可選載具：唔阻擋開局（Pages 無 gltf/ 時好快 fail）
+    Promise.resolve().then(() => typeof loadM3Assets === 'function' ? loadM3Assets() : null).catch((e) => console.warn('M3 assets', e))
+  ]),
   timeout
 ]).then((r) => {
   if (r === 'timeout') { loadState.errors.push('timeout'); console.warn('模型載入逾時，暫用佔位物件'); }
-  else r.forEach((x) => { if (x.status === 'rejected') { loadState.errors.push(String(x.reason?.message || x.reason)); console.warn('模型載入失敗：', x.reason); } });
-  state.started = true;
+  else if (Array.isArray(r)) r.forEach((x) => { if (x && x.status === 'rejected') { loadState.errors.push(String(x.reason && x.reason.message || x.reason)); console.warn('模型載入失敗：', x.reason); } });
   state.camYaw = car.heading;
-  const L = $('loading'); L.style.opacity = '0'; setTimeout(() => (L.style.display = 'none'), 500);
-  if (loadState.errors.length) toast('部分模型載入失敗（顯示佔位）', 2500);
-  const loc = $('loc'); loc.classList.add('show'); setTimeout(() => loc.classList.remove('show'), 5000); // GTA 式地區名稱
+  dismissLoading(loadState.errors.length ? '部分模型載入失敗（顯示佔位）' : null);
+  const loc = $('loc'); if (loc) { loc.classList.add('show'); setTimeout(() => loc.classList.remove('show'), 5000); }
   updateCashHUD(0);
-  const mq = URLQ.get('m'); // ?m=<任務 id>：直接由某個任務開始（測試用）；?free：自由活動
-  if (mq && MISSIONS[mq]) startMission(mq); else if (!URLQ.has('free')) startMission('manifest');
-  window.NT.ready = true;
+  const mq = URLQ.get('m');
+  try {
+    if (mq && MISSIONS[mq]) startMission(mq); else if (!URLQ.has('free')) startMission('manifest');
+  } catch (e) { console.warn('startMission', e); }
+}).catch((e) => {
+  console.warn('boot fatal', e);
+  dismissLoading('啟動出錯——已強制進入');
 });
 
-// 對外開放（方便日後換模型／除錯）
 Object.assign(window, { loadVehicle, load_vehicle, loadRealisticCar, loadRealisticBuildings, loadCharacter });
 
 </script>
+
+<script>/*__NT_WHITE_FIX__*/
+(function(){
+  function harden(){
+    try{
+      if(!window.NT||!window.THREE) return;
+      var r=window.renderer|| (window.NT&&NT.renderer);
+      var sc=window.scene;
+      var cam=window.camera;
+      if(r&&r.setClearColor) r.setClearColor(0x0b0c0e,1);
+      if(sc){
+        if(sc.background&&sc.background.isColor) sc.background.setHex(0x0b0c0e);
+        if(sc.fog){ sc.fog.color.setHex(0x0b0c0e); if(sc.fog.density>0.02) sc.fog.density=0.008; }
+      }
+      var c=document.getElementById('gl');
+      if(c){ c.style.background='#0b0c0e'; if(c.width===0||c.height===0){ var w=innerWidth,h=innerHeight; c.width=w; c.height=h; if(r&&r.setSize) r.setSize(w,h,false);} }
+      if(cam && (!isFinite(cam.position.x)||!isFinite(cam.position.y))){ cam.position.set(0,8,12); cam.lookAt(0,0,0); }
+    }catch(e){}
+  }
+  setInterval(harden,1000);
+  addEventListener('webglcontextlost',function(e){e.preventDefault(); var t=document.getElementById('loadTxt'); if(t) t.textContent='畫面中斷，請刷新';},false);
+})();
+</script>
+
 </body>
 </html>
