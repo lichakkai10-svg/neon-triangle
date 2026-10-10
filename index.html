@@ -252,6 +252,26 @@ body.aim #cross{transform:scale(.45)}
   <div id="prompt"><b id="promptName"></b><span><kbd>E</kbd><span id="promptAct">進入</span></span></div>
   <div id="intro" class="panel"><h3 id="introName"></h3><div class="city" id="introCity"></div><p id="introDesc"></p></div>
 </div>
+
+<script>/*__NT_BOOT_PROGRESS__*/
+(function(){
+  var t=document.getElementById('loadTxt');
+  var b=document.querySelector('#loadBar i');
+  var n=0,done=false;
+  window.__ntBootDone=function(){done=true;};
+  var id=setInterval(function(){
+    if(done||!t){clearInterval(id);return;}
+    n=Math.min(92,n+(n<30?4:n<60?2:1));
+    if(b) b.style.width=n+'%';
+    t.textContent='載入／解壓中… '+n+'%（手機首次較慢，請等）';
+  },400);
+  setTimeout(function(){
+    if(done) return;
+    t && (t.textContent='載入逾時：請強制刷新或換 Wi‑Fi 再開');
+  },90000);
+})();
+</script>
+
 <div id="loading">
   <h1>霓虹三角</h1>
   <h2>NEON TRIANGLE · M1–M10 合輯 + M1c</h2>
