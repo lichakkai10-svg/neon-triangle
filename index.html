@@ -351,23 +351,26 @@ function dampAngle(a, b, k, dt) { let d = b - a; d = Math.atan2(Math.sin(d), Mat
 let _seed = 20260802; const rng = () => ((_seed = (_seed * 1664525 + 1013904223) >>> 0) / 4294967296);
 
 /* =========================================================================
- * 渲染器
+ * 渲染器（iPhone／Safari：HalfFloat+MSAA 後期會爆白 → 強制 LDR）
  * ========================================================================= */
+const URLQ = new URLSearchParams(location.search); // ?debug ?noadapt ?dpr= ?ldr ?lowmem ?nobloom
+const IS_IPHONE = /iPhone|iPad|iPod/i.test(navigator.userAgent || '') || (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1);
+const IS_SAFARI = /Safari/i.test(navigator.userAgent || '') && !/Chrome|CriOS|Edg|Chromium/i.test(navigator.userAgent || '');
+const LOW_MEM = IS_IPHONE || ((navigator.deviceMemory || 8) <= 4) || URLQ.has('lowmem');
+const USE_LDR = LOW_MEM || IS_SAFARI || URLQ.has('ldr'); // 8-bit 合成目標，避免 iOS 白屏
 const canvas = $('gl');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', stencil: false });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: !USE_LDR, powerPreference: 'high-performance', stencil: false, alpha: false, premultipliedAlpha: false });
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = USE_LDR ? 0.95 : 1.05;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.shadowMap.enabled = true;
+renderer.shadowMap.enabled = !USE_LDR; // 低記憶體關陰影（減白閃／記憶體）
 // 註：three r18x 起 PCFSoftShadowMap 已併入 PCFShadowMap（以 shadow.radius 控制柔和度），直接用 PCFShadowMap 避免警告
 renderer.shadowMap.type = THREE.PCFShadowMap;
-const URLQ = new URLSearchParams(location.search); // 除錯參數：?debug 顯示 FPS、?noadapt 停用自動降畫質、?dpr=1.5 指定像素比
-const IS_IPHONE = /iPhone|iPad|iPod/i.test(navigator.userAgent || '') || (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1);
-const LOW_MEM = IS_IPHONE || ((navigator.deviceMemory || 8) <= 4) || URLQ.has('lowmem');
 const MAX_DPR = LOW_MEM ? 1.15 : 1.5;              // iPhone／低記憶體再壓像素比（原生常 3）
 let curDPR = Math.min(window.devicePixelRatio || 1, +(URLQ.get('dpr') || MAX_DPR));
 renderer.setPixelRatio(curDPR);
 renderer.setClearColor(0x0b0c0e, 1);               // 防白屏：清屏用夜黑，唔係預設白
+renderer.autoClear = true;
 
 /* =========================================================================
  * 效能（M1c 手機效能優化）：靜態網格合併 + 距離剔除
@@ -521,8 +524,8 @@ function mergeStatic(root, opts = {}) {
 
 const scene = new THREE.Scene();
 const FOG_COLOR = new THREE.Color(0x181c21);
-scene.background = FOG_COLOR.clone();
-scene.fog = new THREE.FogExp2(FOG_COLOR, 0.0105);
+scene.background = new THREE.Color(0x0b0c0e); // 固定夜黑底（唔共用 FOG_COLOR，防被改成日頭灰白）
+scene.fog = new THREE.FogExp2(FOG_COLOR.clone(), 0.0105);
 
 const CAM_FAR = 320;                                  // M1c 效能：遠裁剪面 700 → 320（霧 0.0105 喺 200 米外已近乎全遮，畫面無分別）
 const camera = new THREE.PerspectiveCamera(50, 16 / 9, 0.1, CAM_FAR);
@@ -531,10 +534,14 @@ camera.position.set(3.5, 2.2, -20);
 
 /* ---------- 後期處理（GTA 式泛光 Bloom + 暗角 + 輕微菲林顆粒） ----------
  * 以 HalfFloat + 4x MSAA 的渲染目標保留抗鋸齒；效能不足時會自動關閉 Bloom。 */
-const composerRT = new THREE.WebGLRenderTarget(4, 4, { type: URLQ.has('ldr') ? THREE.UnsignedByteType : THREE.HalfFloatType, samples: +(URLQ.get('msaa') ?? 4) });
+// iOS Safari：HalfFloat + MSAA 會令 EffectComposer 輸出全白——低記憶體／Safari 用 UnsignedByte + 0 samples
+const COMP_TYPE = USE_LDR ? THREE.UnsignedByteType : (URLQ.has('ldr') ? THREE.UnsignedByteType : THREE.HalfFloatType);
+const COMP_MSAA = USE_LDR ? 0 : +(URLQ.get('msaa') ?? 4);
+const composerRT = new THREE.WebGLRenderTarget(4, 4, { type: COMP_TYPE, samples: COMP_MSAA, depthBuffer: true });
 const composer = new EffectComposer(renderer, composerRT);
 const renderPass = new RenderPass(scene, camera);
 const bloomPass = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.45, 0.4, 2.2); // 強度、半徑、HDR 門檻（只有燈具會發光）
+if (USE_LDR || URLQ.has('nobloom')) bloomPass.enabled = false; // 爆白主因之一：Bloom 喺 LDR／iOS 失控
 const gradePass = new ShaderPass({
   uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uHurt: { value: 0 }, uSat: { value: 1 } },
   vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
@@ -686,7 +693,7 @@ const groundMat = new THREE.MeshStandardMaterial({
  * 做法：每幀把整個 scene 沿 Y 軸鏡像（scene.scale.y = -1），以低解析度渲染到 reflRT，
  * 地面著色器再以螢幕座標取樣，按粗糙度（水氹最強）及菲涅耳混合，並用法線圖擾動做出水紋。 */
 const REFL = { enabled: true, scale: 0.25, strength: 1.0, far: 90, skip: false }; // M1c：鏡像鏡頭（唔再翻轉成個 scene）、遠裁剪 90 米（霧入面再遠嘅倒影本身已經睇唔到）
-const reflRT = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, depthBuffer: true });
+const reflRT = new THREE.WebGLRenderTarget(4, 4, { type: USE_LDR ? THREE.UnsignedByteType : THREE.HalfFloatType, depthBuffer: true });
 reflRT.texture.colorSpace = THREE.LinearSRGBColorSpace;
 const reflUniforms = { uReflMap: { value: reflRT.texture }, uReflRes: { value: new THREE.Vector2(1, 1) }, uReflOn: { value: 1 } };
 function resizeReflection() {
@@ -2485,6 +2492,9 @@ function updatePerf(dt, rawDt) {
   perf.frames++; perf.acc += rawDt;
   if (perf.hzSamples.length < 90) { perf.hzSamples.push(rawDt); if (perf.hzSamples.length === 90) { const s = perf.hzSamples.slice().sort((a, b) => a - b); perf.hz = Math.round(1 / s[45]); perf.target = Math.min(100, perf.hz * 0.85); } }
   adaptQuality(rawDt);
+  // 防 #flash 白覆蓋卡住（槍口閃光 DOM）
+  { const fl = typeof $ === 'function' ? $('flash') : null; if (fl && fl.classList.contains('on') && (!flashT || flashT <= 0)) fl.classList.remove('on'); }
+
   if (perf.acc >= 1) {
     perf.fps = perf.frames / perf.acc; perf.frames = 0; perf.acc = 0;
     $('perf').textContent = `${Math.round(perf.fps)} FPS · ${curDPR.toFixed(2)}x${perf.cap60 ? ' · 60' : ''}`;
@@ -2572,7 +2582,14 @@ function frame(now) {
   renderer.shadowMap.autoUpdate = false; if ((framesDrawn & 1) === 0 || framesDrawn < 3) renderer.shadowMap.needsUpdate = true;
   if (framesDrawn > 0 && (framesDrawn & 1) === 1 && (!REFL.skip || (framesDrawn & 3) === 1)) renderReflection();
   perf.reflCalls = renderer.info.render.calls; perf.reflTris = renderer.info.render.triangles;
-  composer.render();
+  try {
+    if (window.__NT_NO_COMPOSER) renderer.render(scene, camera);
+    else composer.render();
+  } catch (e) {
+    console.warn('[render] composer failed, fallback', e);
+    window.__NT_NO_COMPOSER = true;
+    try { renderer.setClearColor(0x0b0c0e, 1); renderer.render(scene, camera); } catch (e2) { /* */ }
+  }
   if (framesDrawn++ === 0) renderReflection();
   scene.matrixWorldAutoUpdate = true;
   const RI = renderer.info.render; perf.calls = RI.calls; perf.tris = RI.triangles;
@@ -3831,15 +3848,19 @@ function updateWanted(dt) {
   if (seen) { WANTED.lostT = 0; if (WANTED.search) { WANTED.search = false; renderWanted(); } }
   else { WANTED.lostT += dt; if (WANTED.lostT > 2.5 && !WANTED.search) { WANTED.search = true; renderWanted(); } }
   if (!WANTED.lock && WANTED.lostT > 9 + WANTED.stars * 3) { clearWanted(); toast('已甩開警察', 2000); for (const h of HOOKS.wantedCleared || []) h(); }
-  // 維持警車數目
-  const want = Math.min(3, WANTED.stars), have = VEHS.filter((v) => v.kind === 'police' && v.ai === 'chase').length;
+  // 維持警車數目（平衡 B：級4→4車、級5→5車；高通緝更快補車）
+  const want = Math.min(5, WANTED.stars), have = VEHS.filter((v) => v.kind === 'police' && v.ai === 'chase').length;
   WANTED.spawnT = (WANTED.spawnT || 0) - dt;
-  if (have < want && WANTED.spawnT <= 0 && !INT.active) { spawnPoliceNear(tp); WANTED.spawnT = 4; }
-  // 拘捕：警車停在身旁、玩家停低 → 拉咗
+  if (have < want && WANTED.spawnT <= 0 && !INT.active) {
+    spawnPoliceNear(tp);
+    WANTED.spawnT = WANTED.stars >= 4 ? 2.5 : 4;
+  }
+  // 拘捕：警車停在身旁、玩家停低 → 拉咗（級4+ 稍快）
   const slow = state.mode === 'drive' ? Math.hypot(car.vel.x, car.vel.y) < 2 : player.speed < 1.5;
   const copNear = VEHS.some((v) => v.kind === 'police' && v.ai === 'chase' && Math.abs(v.speed) < 4 && v.pos.distanceTo(tp) < 8.5);
+  const bustNeed = WANTED.stars >= 4 ? 2.0 : 2.5;
   WANTED.bustT = slow && copNear ? (WANTED.bustT || 0) + dt : 0;
-  if (WANTED.bustT > 2.5) { WANTED.bustT = 0; for (const h of HOOKS.busted || []) h(); }
+  if (WANTED.bustT > bustNeed) { WANTED.bustT = 0; for (const h of HOOKS.busted || []) h(); }
 }
 function spawnPoliceNear(tp) {
   // 在玩家 90–170 米外、最好在鏡頭背後的道路節點出現
@@ -4062,7 +4083,7 @@ function endSequence(kind) {
     for (const k of ['idle', 'walk', 'run', 'aim']) player.actions[k]?.setEffectiveWeight(0);
     a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.setEffectiveWeight(1); a.play();
   }
-  if (wasted) sfx('impact');
+  if (wasted) sfx('ui_die'); else sfx('ui_arrest');
   MS.endT = 0; MS.endKind = kind;
   const missionId = MS.id;
   after(0.45, () => showScreen(wasted ? 'wasted' : 'busted', wasted ? '掛咗' : '拉咗', wasted ? '瞓咗喺急症' : '帶署 · 鎖咗上手銬'));
@@ -8743,7 +8764,8 @@ Object.assign(window.NT, { SAVE, saveNow, saveRead, saveClear, saveCollect, save
  * M10（下）：音效 + iOS 打磨
  *  · iOS 音效解鎖：iPhone 上 pointerdown 唔算「用戶手勢」→ 加 touchend／pointerup，並播一段無聲緩衝
  *  · 轉去背景（鎖機／切 App）暫停 AudioContext，返嚟恢復（iOS 會中斷音訊）
- *  · 新音效（WebAudio 即時合成）：便利店「叮咚」門鈴、警鐘、收錢、支線／任務完成、坐低
+ *  · 新音效（WebAudio 即時合成）：便利店叮咚、警鐘、收錢、搞掂／搞砸、坐低
+ *  · Placeholder：報站叮／門警／叮叮鈴／渡輪笛／八達通嘟、掛咗／拉咗、口岸警報、雨夜床（setRainBed）
  *  · 禁止 iOS 雙指縮放手勢（Safari 會無視 user-scalable=no）；首次喺 Safari（非主畫面）開會提示「加入主畫面」
  * ========================================================================= */
 { const unlock = () => { initAudio(); const ctx = audio.ctx; if (!ctx) return; if (ctx.state === 'suspended') ctx.resume();
@@ -8761,11 +8783,27 @@ function tone(notes, vol = 0.25) {
 }
 const SFX10 = {
   chime: () => tone([[1318.5, 0, 0.6], [1046.5, 0.32, 0.9]], 0.18),                       // 便利店「叮咚」
-  alarm: () => { const n = []; for (let i = 0; i < 10; i++) n.push([i % 2 ? 880 : 1175, i * 0.16, 0.14, 'square', 0.5]); tone(n, 0.12); }, // 警鐘
+  alarm: () => { const n = []; for (let i = 0; i < 10; i++) n.push([i % 2 ? 880 : 1175, i * 0.16, 0.14, 'square', 0.5]); tone(n, 0.12); }, // 警鐘／口岸警報 placeholder
   coin: () => tone([[1567.98, 0, 0.12, 'triangle'], [2093, 0.07, 0.25, 'triangle']], 0.16), // 收錢／買嘢
-  pass: () => tone([[523.25, 0, 0.25, 'triangle'], [659.25, 0.12, 0.25, 'triangle'], [783.99, 0.24, 0.3, 'triangle'], [1046.5, 0.38, 0.7, 'triangle']], 0.2), // 完成
-  sit: () => tone([[196, 0, 0.18, 'sine', 0.8]], 0.2)
+  pass: () => tone([[523.25, 0, 0.25, 'triangle'], [659.25, 0.12, 0.25, 'triangle'], [783.99, 0.24, 0.3, 'triangle'], [1046.5, 0.38, 0.7, 'triangle']], 0.2), // 搞掂
+  sit: () => tone([[196, 0, 0.18, 'sine', 0.8]], 0.2),
+  /* —— 霓虹三角 SFX cue placeholders（跟 docs/sfx-*；可換樣本，cue id 唔好改）—— */
+  transit_chime: () => tone([[880, 0, 0.22, 'sine'], [1174.7, 0.2, 0.35, 'sine']], 0.14), // sfx_transit_chime_soft（非真港鐵四音）
+  door_warn: () => { const n = []; for (let i = 0; i < 6; i++) n.push([1800, i * 0.12, 0.08, 'square', 0.35]); tone(n, 0.1); }, // sfx_door_warn_beep
+  tram_bell: () => tone([[988, 0, 0.15, 'triangle'], [988, 0.28, 0.2, 'triangle']], 0.16), // sfx_tram_bell_single
+  ferry_horn: () => tone([[110, 0, 0.55, 'sawtooth', 0.7], [82, 0.35, 0.7, 'sine', 0.5]], 0.2), // sfx_ferry_horn_depart
+  oct_tap: () => tone([[1400, 0, 0.08, 'square', 0.4]], 0.12), // sfx_oct_tap_toast
+  ui_die: () => tone([[90, 0, 0.35, 'sine', 1], [55, 0.2, 0.55, 'triangle', 0.6], [40, 0.7, 0.4, 'sine', 0.35]], 0.28), // 掛咗 · 無英文 sting
+  ui_arrest: () => tone([[600, 0, 0.08, 'square', 0.5], [400, 0.1, 0.12, 'square', 0.4], [220, 0.35, 0.5, 'sawtooth', 0.25]], 0.18), // 拉咗 · 手銬＋遠笛味
+  fail: () => tone([[392, 0, 0.2, 'triangle'], [311, 0.15, 0.25, 'triangle'], [247, 0.35, 0.45, 'sine']], 0.18), // 搞砸
+  border_alarm: () => { const n = []; for (let i = 0; i < 12; i++) n.push([i % 2 ? 740 : 980, i * 0.14, 0.12, 'square', 0.45]); tone(n, 0.11); }, // sfx_border_alarm
+  wanted_up: () => tone([[523, 0, 0.1, 'square'], [698, 0.1, 0.18, 'square']], 0.14),
+  wanted_down: () => tone([[440, 0, 0.12, 'sine'], [330, 0.12, 0.22, 'sine']], 0.12)
 };
+/** 雨夜床聲增益（amb_rain_night_loop placeholder＝既有 audio.rain）*/
+function setRainBed(gain = 0.13) {
+  if (audio.rain && audio.rain.gn) audio.rain.gn.gain.setTargetAtTime(Math.max(0, gain), audio.ctx?.currentTime || 0, 0.2);
+}
 { const _s = sfx; sfx = function (kind, vol = 1) { if (SFX10[kind]) { if (audio.ctx && vol > 0.01) SFX10[kind](); return; } return _s(kind, vol); }; }
 // 接駁：入 8仔 = 叮咚；執錢 = 收錢 + 警鐘；買嘢 = 收錢；支線完成 = 完成音；坐卡位 = 坐低
 { const _ei = enterInterior; enterInterior = function (id, instant) { const r = _ei(id, instant); if (id === 'store8' || id === 'mburger') setTimeout(() => sfx('chime'), instant ? 0 : 200); return r; }; }
@@ -8774,6 +8812,7 @@ HOOKS.purchase.push(() => sfx('coin'));
 { const _sw = sideWantedGone; sideWantedGone = function (how) { const had = !!ROB.job && !MS.id; _sw(how); if (had) sfx('pass'); }; }
 { const _sh = startHideout; startHideout = function () { const was = !!SIDE9.sit; _sh(); if (!was && SIDE9.sit) sfx('sit'); }; }
 { const _pm = passMission; passMission = function (...a) { setTimeout(() => sfx('pass'), 150); return _pm(...a); }; }
+{ const _fm = failMission; failMission = function (...a) { setTimeout(() => sfx('fail'), 80); return _fm(...a); }; }
 
 /* ---------- iOS：禁止縮放手勢、雙擊放大；主畫面提示 ---------- */
 for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
@@ -8783,7 +8822,7 @@ for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEv
   let shown = false; try { shown = localStorage.getItem('neonTriangle.a2hs') === '1'; } catch (e) { /* */ }
   if (iOS && !standalone && !shown) { let done = false; HOOKS.sim.push(() => { if (done || !state.started || state.time < 8) return; done = true;
     toast('提示：Safari 分享 →「加入主畫面」，由主畫面開就係全螢幕', 4200); try { localStorage.setItem('neonTriangle.a2hs', '1'); } catch (e) { /* */ } }); } }
-Object.assign(window.NT, { SFX10, tone, audio });
+Object.assign(window.NT, { SFX10, tone, audio, setRainBed });
 
 /* =========================================================================
  * 香港地圖骨架（reference/MAP_SPEC_HK.txt）
@@ -10925,7 +10964,21 @@ const LM_DEFS = [
   { id: 'khh_air', region: 'tw', local: { x: -420, z: -180 }, h: 16, w: 32, d: 20, yaw: Math.PI, border: true, alert: 4, pad: 50,
     neon: '高雄機場', color: '#33e0ff', theme: 'hosp',
     name: '高雄小港機場（戲仿口岸）', city: '高雄 · 小港區', light: '航站冷白',
-    desc: '高雄機場口岸（相對七十號碼頭之西南方向簡化距離）。無證件＝高通緝。' }
+    desc: '高雄機場口岸（相對七十號碼頭之西南方向簡化距離）。無證件＝高通緝。' },
+  // —— batch-2 可進入樓（data/enterable-lm-batch-2.json）——
+  { id: 'ifc_lobby', region: 'hk', lat: 22.28555, lon: 114.15845, h: 28, w: 24, d: 18, yaw: 0, neon: '國金', color: '#88c8ff', theme: 'hosp', name: '國際金融中心大堂（戲仿）', city: '香港 · 中西區 · 中環', light: '日：冷白大堂／夜：玻璃幕牆藍光', desc: '中環碼頭旁超高樓大堂（戲仿）。證件查核、金融會議——無假護照唔好喺保安眼皮底下搞事。' },
+  { id: 'boa_tower', region: 'hk', lat: 22.27935, lon: 114.16145, h: 36, w: 20, d: 16, yaw: Math.PI / 2, neon: '中銀', color: '#c0e0ff', theme: 'hosp', name: '中銀大廈外廊（戲仿）', city: '香港 · 中西區 · 金鐘', light: '日：三角影／夜：冷白外牆', desc: '金鐘三角塔外廊（戲仿）。遊客同便衣混雜——高通緝時盡量繞路。' },
+  { id: 'aberdeen_boat', region: 'hk', lat: 22.2475, lon: 114.1555, h: 12, w: 28, d: 14, yaw: Math.PI, neon: '賭船', color: '#f0c419', theme: 'burger', name: '香港仔賭船（戲仿）', city: '香港 · 南區 · 香港仔', light: '日：海面反光／夜：船舷暖黃', desc: '香港仔避風塘賭船（戲仿）。廿一點、情報、洗黑錢——水警快艇會喺外圍巡邏。' },
+  { id: 'estate_corridor', region: 'hk', lat: 22.3218, lon: 114.1682, h: 16, w: 22, d: 12, yaw: 0, neon: '公屋', color: '#b8c4a8', theme: 'store', name: '公屋長廊／天井（戲仿）', city: '香港 · 油尖旺區', light: '日：天井硬光／夜：冷白光管＋鐵閘影', desc: '舊式公屋走廊同天井（戲仿）。天台 Parkour、熟食檔、劏房安全屋——槍戰時迴響好大。' },
+  { id: 'cct_mongkok', region: 'hk', lat: 22.3182, lon: 114.1698, h: 8, w: 10, d: 8, yaw: Math.PI / 2, neon: '冰室', color: '#2f7a5a', theme: 'cct', name: '旺記冰室（戲仿）', city: '香港 · 油尖旺區 · 旺角', light: '日：綠瓷反光／夜：長條白燈', desc: '旺角茶餐廳（戲仿）。絲襪奶茶、菠蘿油——同銅鑼灣灣景冰室唔係同一間。' },
+  { id: 'starferry_tst', region: 'hk', lat: 22.294, lon: 114.1682, h: 6, w: 16, d: 10, yaw: Math.PI, neon: '天星', color: '#1e6bb8', theme: 'hosp', name: '尖沙咀天星碼頭（戲仿）', city: '香港 · 油尖旺區', light: '日：海風白光／夜：碼頭黃燈', desc: '尖沙咀天星碼頭候船廳（戲仿）。可乘船往中環——亦係低調過海路線。' },
+  { id: 'ruinasc_vip', region: 'mac', lat: 22.1455, lon: 113.56, h: 20, w: 30, d: 22, yaw: 0, neon: '威尼斯', color: '#d4af37', theme: 'burger', name: '威尼斯人 VIP 廳（戲仿）', city: '澳門 · 路氹', light: '日：天花假天／夜：賭廳金光', desc: '路氹大型度假村 VIP 廳（戲仿）。百家樂、洗黑錢、大佬會面——司警便衣有時混喺荷官附近。' },
+  { id: 'ruinas_sj', region: 'mac', lat: 22.1975, lon: 113.5407, h: 10, w: 18, d: 12, yaw: 0, neon: '大三巴', color: '#e8d5b5', theme: 'pawn', name: '大三巴牌坊前地（戲仿）', city: '澳門 · 半島', light: '日：石階強光／夜：暖黃射燈', desc: '大三巴牌坊前觀光點（戲仿）。遊客密集——適合交收，亦容易被攝錄。' },
+  { id: 'neza_temple', region: 'mac', lat: 22.1948, lon: 113.5395, h: 8, w: 10, d: 8, yaw: Math.PI / 2, neon: '哪吒', color: '#ff4d4d', theme: 'pawn', name: '哪吒廟（戲仿）', city: '澳門 · 半島', light: '日：廟簷陰影／夜：紅燈籠', desc: '哪吒廟一帶（戲仿）。香火、許願——同大三巴只隔幾條巷。' },
+  { id: 'linsen_beitiao', region: 'tp', lat: 25.0525, lon: 121.5255, h: 14, w: 12, d: 10, yaw: Math.PI / 2, neon: '條通', color: '#ff3b6b', theme: 'burger', name: '林森北條通（戲仿）', city: '台北 · 中山區', light: '日：騎樓陰影／夜：粉紅霓虹', desc: '林森北路條通帶（戲仿）。酒店、酒吧、情報——唔好同西門町混為一談。' },
+  { id: 'huaxi_night', region: 'tp', lat: 25.0378, lon: 121.4985, h: 10, w: 14, d: 10, yaw: 0, neon: '華西街', color: '#ff8800', theme: 'cct', name: '華西街夜市（戲仿）', city: '台北 · 萬華區', light: '日：收檔鐵皮／夜：燈籠＋油煙', desc: '華西街夜市一帶（戲仿）。近龍山寺——小吃 Buff、黑市耳目。' },
+  { id: 't101_lobby', region: 'tp', lat: 25.03397, lon: 121.56447, h: 24, w: 28, d: 20, yaw: 0, neon: '101', color: '#33e0ff', theme: 'hosp', name: '台北101入口大廳（戲仿）', city: '台北 · 信義區', light: '日：玻璃中庭／夜：金色外牆燈', desc: '信義超高樓入口（戲仿）。觀光客同保全——高空劫案籌備起點，但警報好快響。' },
+  { id: 'ly_yuan', region: 'tp', lat: 25.0442, lon: 121.5198, h: 12, w: 22, d: 16, yaw: 0, neon: '立法院', color: '#f0f0e8', theme: 'hosp', name: '立法院外廣場（戲仿）', city: '台北 · 中正區', light: '日：白石廣場／夜：冷白路燈', desc: '立法院外圍（戲仿）。集會、記者——通緝高時極易上新聞。' }
 ];
 
 function lmWorldOf(def) {
@@ -13110,7 +13163,7 @@ const TOD = {
     mastMul: 1.0, sunI: 0, sirenMul: 1.0, flashMul: 1.0
   },
   day: {
-    fog: 0xa8b4c0, horizon: 0xb8c4d0, top: 0x6a9fd4,
+    fog: 0x6a7a8c, horizon: 0x7a8a9c, top: 0x4a7ab0,
     hemiSky: 0xe8eef6, hemiGround: 0x8a7a68, hemiI: 1.15,
     exposure: 1.18, bloom: 0.18, envI: 0.85, rain: false, sat: 1.05,
     mastMul: 0.22, sunI: 2.4, sirenMul: 0.35, flashMul: 0.4
@@ -13139,9 +13192,10 @@ function setTimeOfDay(mode, opts = {}) {
   // 霧／背景
   if (typeof FOG_COLOR !== 'undefined') {
     FOG_COLOR.setHex(cfg.fog);
-    scene.background.copy(FOG_COLOR);
+    // 背景用略深於霧色，避免日頭／灰霧整幅變白屏
+    scene.background.setHex(m === 'day' ? 0x3a4a5c : 0x0b0c0e);
     if (scene.fog) scene.fog.color.copy(FOG_COLOR);
-    if (scene.fog && scene.fog.isFogExp2) scene.fog.density = m === 'day' ? 0.0045 : 0.0105;
+    if (scene.fog && scene.fog.isFogExp2) scene.fog.density = m === 'day' ? 0.0032 : 0.0095;
   }
   // 天空
   if (typeof skyMat !== 'undefined' && skyMat.uniforms) {
@@ -13605,11 +13659,19 @@ function transitFadeRide(label, arriveName, arriveX, arriveZ, arriveYaw, lines) 
   document.getElementById('trLSub').textContent = '前往 ' + arriveName;
   const bar = document.getElementById('trLBar'); bar.style.width = '0%';
   ov.classList.add('show');
+  if (typeof sfx === 'function') {
+    if (label === '叮叮') sfx('tram_bell');
+    else if (label === '維港渡輪' || label.indexOf('渡輪') >= 0 || label.indexOf('天星') >= 0) sfx('ferry_horn');
+    else sfx('transit_chime');
+  }
   if (typeof titleCard === 'function') titleCard(label, arriveName, 2.0);
   let delay = 400;
   for (const [who, line, sec] of lines) {
     setTimeout(() => { if (typeof say === 'function') say(who, line, sec); }, delay);
     delay += (sec + 0.15) * 1000;
+  }
+  if (typeof sfx === 'function' && (label === '鐵道' || label.indexOf('鐵') >= 0)) {
+    setTimeout(() => sfx('door_warn'), Math.max(900, delay - 1200));
   }
   const ms = Math.max(2800, delay + 300);
   const t0 = performance.now();
@@ -13648,6 +13710,7 @@ function transitRideRail(toId) {
     '旺角': '旺角到站。信旺中心、彌敦道喺 A／B 出口一帶（戲仿）。',
     '中環': '中環到站。轉港島叮叮，請跟指示上蓋。' })[to.name] || '車門即將關閉，請勿衝門。';
   toast('鐵道（戲仿）· 八達卡已拍（戲仿）', 1600);
+  if (typeof sfx === 'function') sfx('oct_tap');
   transitFadeRide('鐵道', to.name, door.x + Math.sin(yaw) * 3.5, door.z + Math.cos(yaw) * 3.5, yaw, [
     ['車長', `下一站：${to.name}。請小心月台空隙。`, 2.6],
     ['廣播', rail2, 2.6]
@@ -13900,13 +13963,27 @@ function propBuy(i) {
 HOOKS.sim.push((dt) => {
   if (!PROP.owned.length) return;
   PROP.tick += dt;
-  if (PROP.tick < 60) return;
+  let maxIdx = -1;
+  for (const id of PROP.owned) {
+    const i = PROP.ladder.findIndex((x) => x.id === id);
+    if (i > maxIdx) maxIdx = i;
+  }
+  // 平衡 D：低階 60s；太古起 75s；半山／淺水灣 90s
+  const interval = maxIdx >= 3 ? 90 : maxIdx >= 2 ? 75 : 60;
+  if (PROP.tick < interval) return;
   PROP.tick = 0;
   let inc = 0;
   for (const id of PROP.owned) {
     const p = PROP.ladder.find((x) => x.id === id); if (p) inc += p.income;
   }
-  if (inc > 0) { addCash(inc); toast(`物業收租 +$${inc}`, 1800); }
+  // 通緝級≥3 或風球：收租減半（風險稅）
+  if ((typeof WANTED !== 'undefined' && WANTED.stars >= 3) || STORM.on) {
+    inc = Math.floor(inc * 0.5);
+  }
+  if (inc > 0) {
+    addCash(inc);
+    toast(`物業收租 +$${inc}` + (interval > 60 ? `（${interval}s）` : ''), 1800);
+  }
 });
 
 /* ========== 2) 十號風球／黑雨 ========== */
@@ -14217,7 +14294,16 @@ const REP = {
   labels: { east: '東星', jiaotou: '角頭', police: '警方', neighbor: '街坊' }
 };
 
+/** 平衡 E：聲望閾值（接報警／店態／巡邏） */
+const REP_THRESH = {
+  neighborHostile: -30, // ≤ 此值：報警更快、便利店／冰室／嘜記拒售
+  jiaotouUnlock: 40,    // ≥ 此值：高額追債提示（一次）
+  policeHeat: 50        // ≥ 此值：有通緝時巡邏補車加快
+};
+
 function repClamp(v) { return Math.max(-100, Math.min(100, v | 0)); }
+function repNeighborHostile() { return REP.neighbor <= REP_THRESH.neighborHostile; }
+function repPoliceHeat() { return REP.police >= REP_THRESH.policeHeat; }
 
 function repAdd(faction, delta, reason) {
   if (!(faction in REP.labels)) return;
@@ -14227,6 +14313,16 @@ function repAdd(faction, delta, reason) {
   const sign = delta > 0 ? '+' : '';
   const tip = reason ? `——${reason}` : '';
   toast(`聲望·${name} ${sign}${delta}（現 ${REP[faction]}）${tip}`, 2400);
+  if (faction === 'jiaotou' && before < REP_THRESH.jiaotouUnlock && REP.jiaotou >= REP_THRESH.jiaotouUnlock && !REP._jtUnlockToast) {
+    REP._jtUnlockToast = true;
+    setTimeout(() => toast('角頭：有更大額追債可以傾（戲仿）——聲望夠喇', 3000), 500);
+  }
+  if (faction === 'neighbor' && before > REP_THRESH.neighborHostile && REP.neighbor <= REP_THRESH.neighborHostile) {
+    setTimeout(() => toast('街坊對你有意見——舖頭可能唔賣、報警更快', 3000), 500);
+  }
+  if (faction === 'police' && before < REP_THRESH.policeHeat && REP.police >= REP_THRESH.policeHeat) {
+    setTimeout(() => toast('你已入警方眼——有通緝時巡邏會加密', 3000), 500);
+  }
   return REP[faction];
 }
 
@@ -14283,6 +14379,34 @@ HOOKS.sim.push(() => { if (state.started) repHudPulse(); });
   if (typeof HOOKS !== 'undefined') {
     HOOKS.robberyDone = HOOKS.robberyDone || [];
     HOOKS.robberyDone.push(() => { repAdd('neighbor', -6, '打劫街坊舖'); repAdd('police', 4, '報案熱線'); });
+  }
+}
+
+/* ========== 1b) 聲望閾值接系統（平衡 E）========== */
+{
+  // 街坊敵對：途人報警倒數上限 1.2s（原本 2.5s）
+  HOOKS.sim.push(() => {
+    if (typeof WITNESS === 'undefined' || !WITNESS.t) return;
+    if (repNeighborHostile() && WITNESS.t > 1.2) WITNESS.t = 1.2;
+  });
+  // 警方高熱：有通緝時加速補警車
+  HOOKS.sim.push((dt) => {
+    if (!repPoliceHeat() || !WANTED || WANTED.stars <= 0) return;
+    if (WANTED.spawnT > 0) WANTED.spawnT -= dt * 0.4;
+  });
+  // 街坊敵對：拒售 8仔／冰室／嘜記（大押／黑市／醫院仍可）
+  if (typeof openShop === 'function') {
+    const _os = openShop;
+    const refuse = new Set(['store8', 'cct', 'mburger']);
+    openShop = function (id) {
+      if (refuse.has(id) && repNeighborHostile()) {
+        toast('店員：「唔招待你呢類型客人——街坊聲望太差。」', 2600);
+        sfx && sfx('click');
+        return;
+      }
+      return _os(id);
+    };
+    if (window.NT) NT.openShop = openShop;
   }
 }
 
@@ -14545,7 +14669,8 @@ MISSIONS.race_side = {
 }
 
 Object.assign(window.NT, {
-  REP, repAdd, ATTACH, attachApply, SIDE, debtCollect
+  REP, REP_THRESH, repAdd, repNeighborHostile, repPoliceHeat,
+  ATTACH, attachApply, SIDE, debtCollect
 });
 /* =========================================================================
  * M1c · Safari／Pages 白屏防護
@@ -14582,6 +14707,8 @@ function ntSafeResetView(why) {
       }
     }
     if (typeof renderer !== 'undefined' && renderer.setClearColor) renderer.setClearColor(0x0b0c0e, 1);
+    if (typeof scene !== 'undefined' && scene.background && scene.background.isColor) scene.background.setHex(0x0b0c0e);
+    try { const fl = document.getElementById('flash'); if (fl) fl.classList.remove('on'); } catch (e) { /* */ }
     if (why && typeof toast === 'function') toast(why, 2800);
   } catch (e) { console.warn('[safeReset]', e); }
 }
@@ -14864,29 +14991,5 @@ Promise.race([
 Object.assign(window, { loadVehicle, load_vehicle, loadRealisticCar, loadRealisticBuildings, loadCharacter });
 
 </script>
-
-<script>/*__NT_WHITE_FIX__*/
-(function(){
-  function harden(){
-    try{
-      if(!window.NT||!window.THREE) return;
-      var r=window.renderer|| (window.NT&&NT.renderer);
-      var sc=window.scene;
-      var cam=window.camera;
-      if(r&&r.setClearColor) r.setClearColor(0x0b0c0e,1);
-      if(sc){
-        if(sc.background&&sc.background.isColor) sc.background.setHex(0x0b0c0e);
-        if(sc.fog){ sc.fog.color.setHex(0x0b0c0e); if(sc.fog.density>0.02) sc.fog.density=0.008; }
-      }
-      var c=document.getElementById('gl');
-      if(c){ c.style.background='#0b0c0e'; if(c.width===0||c.height===0){ var w=innerWidth,h=innerHeight; c.width=w; c.height=h; if(r&&r.setSize) r.setSize(w,h,false);} }
-      if(cam && (!isFinite(cam.position.x)||!isFinite(cam.position.y))){ cam.position.set(0,8,12); cam.lookAt(0,0,0); }
-    }catch(e){}
-  }
-  setInterval(harden,1000);
-  addEventListener('webglcontextlost',function(e){e.preventDefault(); var t=document.getElementById('loadTxt'); if(t) t.textContent='畫面中斷，請刷新';},false);
-})();
-</script>
-
 </body>
 </html>
