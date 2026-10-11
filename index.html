@@ -274,7 +274,7 @@ body.aim #cross{transform:scale(.45)}
     if(b && cur < n) b.style.width=n+'%';
     if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
-  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core11。","用流動數據請等陣——資產喺度解壓。","聽日目標：落難香江 · 信和安全屋。"];
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core12。","用流動數據請等陣——資產喺度解壓。","聽日目標：落難香江 · 信和安全屋。"];
   var tipEl=document.getElementById("loadTips"); var ti=0;
   if(tipEl) tipEl.textContent=tips[0];
   var tipTimer=setInterval(function(){
@@ -284,7 +284,7 @@ body.aim #cross{transform:scale(.45)}
   setTimeout(function(){
     if(done) return;
     var t=document.getElementById('loadTxt');
-    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core11';
+    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core12';
   },45000);
 })();
 </script>
@@ -831,8 +831,11 @@ function addMast(x, z, opts = {}) {
 }
 // 主泛光燈（castShadow，2048 陰影貼圖）在起點附近；其餘燈柱沿路排列
 addMast(-ROW_X0 + 1.1, 4, { light: true, shadow: true, intensity: 1900, angle: 0.85, reach: 10 });
-// 沿路每約 36 米一支（左右交替）；每支都有 SpotLight（無陰影，以保 iPhone 效能）
-for (const [x, z] of [[ROW_X0 - 1.1, -32], [-ROW_X0 + 1.1, -68], [ROW_X0 - 1.1, -104], [-ROW_X0 + 1.1, -140], [ROW_X0 - 1.1, 40], [-ROW_X0 + 1.1, 76], [ROW_X0 - 1.1, 112], [-ROW_X0 + 1.1, 148]])
+// P2 收遠段：燈柱跟短泊位＋肘形，唔再沿 ±172 直廊排開
+for (const [x, z] of [
+  [ROW_X0 - 1.1, -28], [-ROW_X0 + 1.1, -55], [ROW_X0 - 1.1, -85],
+  [-8, 28], [-28, 48], [-52, 58], [-72, 72]
+])
   addMast(x, z, { light: true, intensity: 1500, angle: 0.82 });
 
 /* ---------- 雨（M1b：面向鏡頭的細長雨絲，跟隨鏡頭範圍） ---------- */
@@ -11749,17 +11752,27 @@ function radioAssetUrl(file) {
   const rel = 'audio/radio/' + file;
   try { return (typeof resolveAsset === 'function') ? resolveAsset(rel) : ('assets/' + rel); } catch (e) { return 'assets/' + rel; }
 }
+function radioBedFileFor(region) {
+  if (region === 'mac') return 'radio_bed_mac_loop.ogg';
+  if (region === 'tw') return 'radio_bed_tw_loop.ogg';
+  return 'radio_bed_hk_loop.ogg';
+}
 function radioEnsureBed() {
-  if (RADIO._bedEl) return RADIO._bedEl;
   // Safari／手機：未開局唔好 preload，避免同 0% loading 搶頻寬
   if (!state || !state.started) return null;
+  const reg = (typeof radioCurrent === 'function' && radioCurrent()) ? radioCurrent().region : 'hk';
+  const file = radioBedFileFor(reg || 'hk');
+  if (RADIO._bedEl && RADIO._bedFile === file) return RADIO._bedEl;
   try {
-    const el = new Audio(radioAssetUrl('radio_bed_hk_loop.ogg'));
+    const wasPlaying = RADIO._bedEl && !RADIO._bedEl.paused;
+    if (RADIO._bedEl) { try { RADIO._bedEl.pause(); } catch (e) { /* */ } }
+    const el = new Audio(radioAssetUrl(file));
     el.loop = true; el.preload = 'metadata'; el.volume = RADIO.bedGain;
     el.addEventListener('canplaythrough', () => { RADIO._bedReady = true; }, { once: true });
     el.addEventListener('error', () => { RADIO._bedReady = false; });
-    RADIO._bedEl = el;
-  } catch (e) { RADIO._bedEl = null; }
+    RADIO._bedEl = el; RADIO._bedFile = file;
+    if (wasPlaying) el.play().catch(() => {});
+  } catch (e) { RADIO._bedEl = null; RADIO._bedFile = ''; }
   return RADIO._bedEl;
 }
 function radioBedShouldPlay() {
@@ -11810,6 +11823,7 @@ function radioCycle() {
   const s = radioCurrent();
   radioPlayOneShot('radio_tune_blip', 'radio_tune_blip.ogg');
   radioToast(`${s.name} · ${s.tag}`, 2200);
+  radioEnsureBed();
   radioBedUpdate();
 }
 function radioWantedNews(stars) {
@@ -16317,16 +16331,27 @@ function kwBuildP1Urban() {
   if (typeof kwBreakStraightTunnel === 'function') kwBreakStraightTunnel(root);
   kwP2ForceElbow(root);
 
-  // 蓋住舊直路遠段視覺（±YARD 感）——只蓋轉彎以外的遠直段，轉彎口留空
-  for (const [cz, clen] of [[-70, 36], [100, 40], [140, 36]]) {
+  // 蓋住舊直路遠段視覺（收標線／直廊感）——轉彎口 z≈20–40 留空
+  for (const [cz, clen] of [[-90, 50], [-55, 28], [85, 45], [125, 40], [155, 30]]) {
     const cover = new THREE.Mesh(
-      new THREE.BoxGeometry(22, 0.05, clen),
-      new THREE.MeshStandardMaterial({ color: 0x3a3e40, roughness: 0.92 }) // 略深＝堆場／非主幹
+      new THREE.BoxGeometry(24, 0.06, clen),
+      new THREE.MeshStandardMaterial({ color: 0x2e3234, roughness: 0.94 })
     );
-    cover.position.set(0, 0.016, cz);
+    cover.position.set(0, 0.018, cz);
     cover.userData.kwaichung = true; cover.name = 'kt_straight_demote';
     root.add(cover);
   }
+  // 隱藏仍喺中軸、過長嘅舊白線 mesh（泊位短標線 BERTH 保留）
+  try {
+    const hide = [];
+    scene.traverse((o) => {
+      if (!o.isMesh || !o.geometry || o.userData.kwaichung) return;
+      if (o.material !== lineMat && !(o.material && o.material.color && o.material.color.getHex && o.material.color.getHex() === 0xd9dcdf)) return;
+      const p = o.position;
+      if (Math.abs(p.x) < 8 && (p.z > 40 || p.z < -50)) hide.push(o);
+    });
+    for (const o of hide) { o.visible = false; }
+  } catch (e) { /* */ }
 
   // 小地圖：畫肘形而非 ±172 直路
   if (typeof HOOKS !== 'undefined') {
