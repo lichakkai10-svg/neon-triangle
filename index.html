@@ -274,7 +274,7 @@ body.aim #cross{transform:scale(.45)}
     if(b && cur < n) b.style.width=n+'%';
     if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
-  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core7b。","用流動數據請等陣——資產喺度解壓。","聽日目標：落難香江 · 信和安全屋。"];
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core8。","用流動數據請等陣——資產喺度解壓。","聽日目標：落難香江 · 信和安全屋。"];
   var tipEl=document.getElementById("loadTips"); var ti=0;
   if(tipEl) tipEl.textContent=tips[0];
   var tipTimer=setInterval(function(){
@@ -284,7 +284,7 @@ body.aim #cross{transform:scale(.45)}
   setTimeout(function(){
     if(done) return;
     var t=document.getElementById('loadTxt');
-    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core7b';
+    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core8';
   },45000);
 })();
 </script>
@@ -891,8 +891,8 @@ const splash = { visible: false, material: { uniforms: { uCam: { value: new THRE
     const s = new THREE.Mesh(new THREE.BoxGeometry(w + 0.02, 0.12, d + 0.02), stripe); s.position.set(cx, 0.94, cz); scene.add(s);
     shootables.push(m); addCollider(cx, cz, w / 2, d / 2, 1.0);
   };
-  // 海側（+X）全程保留
-  wall(BOUND.x + 0.4, 0, 0.8, BOUND.z * 2 + 1.6);
+  // 海側（+X）全程保留——加厚石壆防高速穿牆落海（仍唔封內陸肘形缺口）
+  wall(BOUND.x + 2.0, 0, 4.0, BOUND.z * 2 + 1.6);
   // 內陸側（−X）：南段＋北段，中間 z≈35–100 開肘形出口（通往工業區／葵涌站）
   const wGap0 = 35, wGap1 = 100;
   const wSouthLen = wGap0 - (-BOUND.z);
@@ -11042,8 +11042,8 @@ const LM_DEFS = [
   { id: 't101_lobby', region: 'tp', lat: 25.03397, lon: 121.56447, h: 24, w: 28, d: 20, yaw: 0, neon: '101', color: '#33e0ff', theme: 'hosp', name: '台北101入口大廳（戲仿）', city: '台北 · 信義區', light: '日：玻璃中庭／夜：金色外牆燈', desc: '玻璃中庭望到天。觀光客排隊、保全盯袋——高空劫案喺度起步，但警報響得比電梯仲快。' },
   { id: 'ly_yuan', region: 'tp', lat: 25.0442, lon: 121.5198, h: 12, w: 22, d: 16, yaw: 0, neon: '立法院', color: '#f0f0e8', theme: 'hosp', name: '立法院外廣場（戲仿）', city: '台北 · 中正區', light: '日：白石廣場／夜：冷白路燈', desc: '白石廣場空蕩蕩，鏡頭比人多。集會、記者會、政治噪音——通緝一高，你個樣就上晚間新聞。' },
   // —— batch-3 可進入樓（data/enterable-lm-batch-3.json）——
-  { id: 'kwai_chung_pier', region: 'hk', lat: 22.355, lon: 114.119, h: 10, w: 32, d: 18, yaw: 0.0, neon: '葵涌碼頭', color: '#4aa3ff', theme: 'pawn', noFacade: true, skipDoor: true, name: '葵涌貨櫃碼頭（戲仿）', city: '香港 · 葵青區', light: '日：貨櫃硬光／夜：碼頭工礦橙燈', desc: '葵青貨櫃碼頭（戲仿）：藍巴勒海峽分隔葵涌岸同青衣 CT9；岸吊、貨櫃船、遠景青馬／汀九。走私箱、閘口 sniff——硬闖即通緝升級。' },
-  { id: 'kwai_fong_mtr', region: 'hk', lat: 22.3568, lon: 114.1278, h: 12, w: 22, d: 14, yaw: 0, neon: '葵芳', color: '#1a4a8a', theme: 'pawn', name: '葵芳站（戲仿）', city: '香港 · 葵青區 · 葵芳', light: '日：站廳冷白／夜：藍站牌', desc: '碼頭北側最近車站（戲仿）。出閘轉貨櫃碼頭路，一邊工廈、對面公屋。無假證件闖閘一樣拉警報。' },
+  { id: 'kwai_chung_pier', region: 'hk', lat: 22.355, lon: 114.119, h: 10, w: 32, d: 18, yaw: 0.0, neon: '葵涌碼頭', color: '#4aa3ff', theme: 'pawn', noFacade: true, skipDoor: true, name: '葵涌貨櫃碼頭（戲仿）', city: '香港 · 葵青區', light: '日：貨櫃硬光／夜：碼頭工礦橙燈', desc: '肘形碼頭路兩邊係工廈同閘口。岸吊、貨櫃船、對岸青衣；遠景青馬／汀九。走私箱過閘＝通緝即跳——呢度唔再係一條直路。' },
+  { id: 'kwai_fong_mtr', region: 'hk', lat: 22.35685, lon: 114.12787, h: 12, w: 22, d: 14, yaw: 0, neon: '葵芳', color: '#1a4a8a', theme: 'pawn', name: '葵芳站（戲仿）', city: '香港 · 葵青區 · 葵芳', light: '日：站廳冷白／夜：藍站牌', desc: '碼頭北側最近車站（戲仿）。出閘轉貨櫃碼頭路，一邊工廈、對面公屋。無假證件闖閘一樣拉警報。' },
   { id: 'hunghom_tunnel', region: 'hk', lat: 22.3028, lon: 114.1825, h: 8, w: 24, d: 14, yaw: Math.PI, neon: '紅隧', color: '#e8261c', theme: 'hosp', name: '紅磡海底隧道口（戲仿）', city: '香港 · 九龍城／灣仔', light: '日：車流白光／夜：隧道黃燈＋閃燈', desc: '隧道口塞成粥，閃燈同喇叭搶聲。適合飛車甩尾，唔適合步行硬闖——路障一落就夾實你。' },
   { id: 'eastwood_hq', region: 'hk', lat: 22.2808, lon: 114.1832, h: 22, w: 16, d: 14, yaw: Math.PI / 2, neon: '東星', color: '#c9a227', theme: 'burger', name: '東星會所（戲仿總部）', city: '香港 · 灣仔區 · 銅鑼灣', light: '日：金門簾影／夜：暖金吊燈', desc: '會所門禁嚴、茶煙重。交收、談判、睇風水——抄牌鐘聲一响，記得轉後門落樓。' },
   { id: 'tai_o', region: 'hk', lat: 22.2548, lon: 113.862, h: 8, w: 18, d: 12, yaw: 0.0, neon: '大澳', color: '#7dff6a', theme: 'cct', name: '大澳棚屋水道（戲仿）', city: '香港 · 離島區 · 大澳', light: '日：鹹魚乾陽光／夜：棚屋暖黃', desc: '棚屋踩水橋，鹹風吹乾衣裳。適合匿、適合搖舢舨走貨——市區嗰套巡邏密度到唔到呢度。' },
@@ -15458,6 +15458,7 @@ Object.assign(window.NT || (window.NT = {}), { SCAPE, scapePlaceP0 });
  * ========================================================================= */
 const KWAI = {
   ready: false,
+  osmScale: 0.075,
   group: null,
   tex: {},
   mats: {}
@@ -15724,9 +15725,28 @@ function kwElbowRoadMark(parent, x, z, yaw) {
   parent.add(g);
 }
 
+
+function kwSignBoard(parent, x, y, z, yaw, w, h, color, name) {
+  const mat = new THREE.MeshStandardMaterial({ color: color || 0x1a3a6a, roughness: 0.5, metalness: 0.15 });
+  const pole = new THREE.MeshStandardMaterial({ color: 0x4a5056, roughness: 0.5, metalness: 0.6 });
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0;
+  g.userData.kwaichung = true; g.name = name || 'kt_sign';
+  const p = new THREE.Mesh(new THREE.BoxGeometry(0.1, y + h / 2, 0.1), pole); p.position.y = (y + h / 2) / 2; g.add(p);
+  const s = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.08), mat); s.position.set(0, y, 0); g.add(s);
+  // 紅圈限高感：外加紅環薄片
+  if (name === 'sign_height') {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(Math.min(w, h) * 0.38, 0.06, 8, 20),
+      new THREE.MeshStandardMaterial({ color: 0xc01010, roughness: 0.45 }));
+    ring.position.set(0, y, 0.06); ring.rotation.x = Math.PI / 2; g.add(ring);
+  }
+  parent.add(g);
+  return g;
+}
+
 function kwGatehouse(parent, x, z) {
   const conc = new THREE.MeshStandardMaterial({ color: 0x8a8e90, roughness: 0.85 });
   const yb = new THREE.MeshStandardMaterial({ color: 0xc9a000, roughness: 0.55, metalness: 0.2 });
+  const blu = new THREE.MeshStandardMaterial({ color: 0x1a3a6a, roughness: 0.5 });
   const g = new THREE.Group(); g.position.set(x, 0, z); g.userData.kwaichung = true; g.name = 'gatehouse_weighbridge';
   const booth = new THREE.Mesh(new THREE.BoxGeometry(3.2, 2.8, 2.6), conc); booth.position.y = 1.4; g.add(booth);
   const pad = new THREE.Mesh(new THREE.BoxGeometry(8, 0.12, 4), conc); pad.position.set(5, 0.06, 0); g.add(pad);
@@ -15734,7 +15754,20 @@ function kwGatehouse(parent, x, z) {
     const b = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.1, 0.2), yb);
     b.position.set(-2 + i * 1.2, 0.55, 2.2); g.add(b);
   }
+  // gov §5：閘頂戲仿牌
+  const top = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.9, 0.12), blu); top.position.set(1.5, 3.4, 1.4); g.add(top);
+  top.name = 'sign_gate_parody'; // 貨櫃碼頭閘口（戲仿）
   parent.add(g);
+  // 限高 4.5 m、分流、黃黑欄、往葵芳
+  if (typeof kwSignBoard === 'function') {
+    kwSignBoard(parent, x - 6, 2.4, z + 4, 0, 1.6, 1.6, 0xf0f0f0, 'sign_height');
+    kwSignBoard(parent, x + 8, 2.2, z + 3, 0.15, 3.2, 0.9, 0x1a3a6a, 'sign_lane'); // 貨櫃車靠右 · 訪客靠左
+    kwSignBoard(parent, x - 4, 2.0, z - 8, Math.PI, 2.8, 0.8, 0x1a3a6a, 'sign_to_kf'); // 往葵芳（戲仿）
+  }
+  if (typeof kwBarrierYB === 'function') {
+    kwBarrierYB(parent, x - 5, z + 1, Math.PI / 2, 6);
+    kwBarrierYB(parent, x + 6, z + 1, Math.PI / 2, 6);
+  }
 }
 
 function kwBarrierYB(parent, x, z, yaw, len) {
@@ -15994,6 +16027,88 @@ function kwRoundabout(parent, x, z, r) {
   return g;
 }
 
+
+/** Soft quay edge：岸緣矮欄＋厚碰撞＋軟夾，車留喺 apron；內陸 −X 肘形缺口唔封 */
+function kwQuayEdgeSoft() {
+  if (KWAI.quayEdge || typeof scene === 'undefined') return;
+  const bx = typeof BOUND !== 'undefined' ? BOUND.x : 28.5;
+  const bz = typeof BOUND !== 'undefined' ? BOUND.z : 186;
+  const root = KWAI.group || new THREE.Group();
+  if (!KWAI.group) { root.name = 'kwaichung-dock'; KWAI.group = root; scene.add(root); }
+  const g = new THREE.Group();
+  g.name = 'kt_quay_edge_soft';
+  g.userData.kwaichung = true;
+  g.userData.noMerge = true;
+
+  const yel = new THREE.MeshStandardMaterial({ color: 0xe0b000, roughness: 0.5, metalness: 0.2 });
+  const blk = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.75 });
+  const conc = new THREE.MeshStandardMaterial({ color: 0x55585b, roughness: 0.85 });
+  const steel = new THREE.MeshStandardMaterial({ color: 0x4a5056, roughness: 0.55, metalness: 0.55 });
+
+  // 視覺：apron 外側矮石壆＋黃黑條（唔做高牆）
+  const kerbX = bx - 0.05;
+  const kerb = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.55, bz * 2 + 1.2), conc);
+  kerb.position.set(kerbX, 0.28, 0);
+  kerb.castShadow = kerb.receiveShadow = true;
+  kerb.name = 'kt_quay_kerb';
+  g.add(kerb);
+  for (let z = -bz + 2; z < bz; z += 2.4) {
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.12, 1.15), ((Math.floor((z + bz) / 2.4) % 2) ? yel : blk));
+    stripe.position.set(kerbX, 0.58, z);
+    g.add(stripe);
+  }
+  // 矮欄杆（視覺）
+  for (let z = -bz + 4; z < bz; z += 6) {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.05, 0.08), steel);
+    post.position.set(kerbX - 0.15, 0.95, z);
+    g.add(post);
+  }
+  const rail = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, bz * 2 - 4), steel);
+  rail.position.set(kerbX - 0.15, 1.35, 0);
+  g.add(rail);
+
+  // 護舷（視覺，用現有 kwFender）
+  for (let z = -90; z <= 130; z += 26) {
+    if (typeof kwFender === 'function') kwFender(g, bx - 0.9, z);
+  }
+
+  // 厚碰撞：整段海側，伸入水側，防 44m/s 穿牆；分段減 AABB 異常
+  const seg = 36;
+  for (let z0 = -bz; z0 < bz; z0 += seg) {
+    const z1 = Math.min(z0 + seg, bz);
+    const cz = (z0 + z1) / 2;
+    const hd = (z1 - z0) / 2 + 0.35;
+    // center bx+2.4, hw 3.0 → minX≈bx-0.6（apron 邊），maxX≈bx+5.4（水側）
+    if (typeof addCollider === 'function') addCollider(bx + 2.4, cz, 3.0, hd, 1.5);
+  }
+  // 南北角封口，避免繞石壆尾端落海
+  if (typeof addCollider === 'function') {
+    addCollider(bx + 1.5, bz + 1.2, 4.5, 1.6, 1.5);
+    addCollider(bx + 1.5, -bz - 1.2, 4.5, 1.6, 1.5);
+  }
+
+  root.add(g);
+
+  // 軟夾：updateCar 之後再夾一次，穿牆都拉返 apron
+  const limit = bx - 1.15;
+  if (typeof HOOKS !== 'undefined') {
+    HOOKS.sim = HOOKS.sim || [];
+    HOOKS.sim.push(function kwQuaySoftClamp() {
+      if (typeof car !== 'undefined' && car && car.pos && car.pos.x > limit) {
+        car.pos.x = limit;
+        if (car.vel && car.vel.x > 0) car.vel.x = -Math.abs(car.vel.x) * 0.2;
+        if (car.root) car.root.position.x = car.pos.x;
+      }
+      if (typeof player !== 'undefined' && player && player.pos && player.pos.x > limit) {
+        player.pos.x = limit;
+      }
+    });
+  }
+
+  KWAI.quayEdge = true;
+  KWAI.zones = Object.assign(KWAI.zones || {}, { quayEdge: 'kt_quay_edge_soft' });
+}
+
 function kwBreakStraightTunnel(parent) {
   // 櫃巷／死巷塊：只放路肩 —— 嚴禁 x≈0 中軸碰撞（否則開唔到前面）
   const wall = new THREE.MeshStandardMaterial({ color: 0x2a3036, roughness: 0.75, metalness: 0.1 });
@@ -16017,71 +16132,76 @@ function kwBuildP1Urban() {
   if (KWAI.p1Built || typeof scene === 'undefined') return;
   const root = KWAI.group || new THREE.Group();
   if (!KWAI.group) { root.name = 'kwaichung-dock'; KWAI.group = root; scene.add(root); }
-  const bx = typeof BOUND !== 'undefined' ? BOUND.x : 28.5;
 
-  kwBreakStraightTunnel(root);
+  // OSM 全尺度太大； pier 場景用壓縮偏移（方向跟 modYs_offsets_from_pier_lm）
+  // −X≈東、+Z≈北（見 data/kwai-chung-osm-footprints.json）
+  const S = KWAI.osmScale != null ? KWAI.osmScale : 0.075;
+  const ox = (dx, dz) => ({ x: dx * S, z: dz * S });
+  const st = ox(-913.2, 308.91);
+  const hs = ox(-980.12, 854.94);
+  const ind = ox(-566.25, -1085.37);
+  const poly = [{"x": -463.29, "z": -2003.76, "label": "閘口／碼頭內"}, {"x": -617.72, "z": -1168.86, "label": "工廈轉彎"}, {"x": -772.15, "z": -333.96, "label": "近葵芳"}, {"x": -895.7, "z": 250.47, "label": "站前"}].map((p) => ({ x: p.x * S, z: p.z * S, label: p.label }));
 
-  // 主肘：泊位中段 → 內陸 −X（OSM 葵芳／工業帶壓縮）
-  kwAsphaltElbow(root, 0, 55, 0);
-  kwAsphaltElbow(root, -40, 62, Math.PI / 2);
-  kwElbowRoadMark(root, -8, 70, -Math.PI / 2);
-  kwElbowRoadMark(root, -45, 62, 0);
-  kwRoundabout(root, -55, 95, 10);
+  // 肘形主幹：沿壓縮 polyline 鋪瀝青段
+  for (let i = 0; i < poly.length - 1; i++) {
+    const a = poly[i], b = poly[i + 1];
+    const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2;
+    const dx = b.x - a.x, dz = b.z - a.z;
+    const len = Math.hypot(dx, dz) || 1;
+    const yaw = Math.atan2(dx, dz);
+    const asp = new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.95 });
+    const road = new THREE.Mesh(new THREE.BoxGeometry(12, 0.06, len + 2), asp);
+    road.position.set(mx, 0.02, mz); road.rotation.y = yaw;
+    road.userData.kwaichung = true; road.name = 'kt_elbow_seg_' + i;
+    root.add(road);
+    kwElbowRoadMark(root, mx, mz, yaw);
+  }
+  // 閘口接到第一段肘（碼頭內）
+  const g0 = poly[0] || { x: -20, z: -40 };
+  kwGatehouse(root, g0.x - 8, g0.z);
+  kwBarrierYB(root, g0.x, g0.z + 6, 0, 10);
 
-  const apron = new THREE.Mesh(
-    new THREE.PlaneGeometry(110, 160),
-    new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.95 })
-  );
-  apron.rotation.x = -Math.PI / 2; apron.position.set(-60, 0.012, 80);
-  apron.receiveShadow = true; apron.userData.kwaichung = true; apron.name = 'kt_inland_apron';
-  root.add(apron);
-
+  // 工廈：走廊中心＋閘口側
   const indTex = KWAI.tex.elbow || null;
-  kwIndBlock(root, -38, 28, 14, 18, 12, indTex);
-  kwIndBlock(root, -42, 42, 16, 22, 14, indTex);
-  kwIndBlock(root, -62, 28, 12, 16, 18, indTex);
-  kwIndBlock(root, -58, 82, 15, 20, 13, indTex);
-  kwIndBlock(root, -36, 100, 12, 14, 11, indTex);
-  kwIndBlock(root, -72, 48, 14, 18, 16, indTex);
-  if (indTex) kwBillboard(root, indTex, 28, 14, -48, 9, 48, Math.PI / 2, 'kt_ind_sign_parody');
+  kwIndBlock(root, ind.x, ind.z, 16, 20, 14, indTex);
+  kwIndBlock(root, ind.x + 18, ind.z - 12, 14, 18, 12, indTex);
+  kwIndBlock(root, ind.x - 16, ind.z + 10, 15, 22, 13, indTex);
+  kwIndBlock(root, (g0.x + ind.x) / 2, (g0.z + ind.z) / 2, 12, 16, 11, indTex);
+  if (indTex) {
+    kwBillboard(root, indTex, 30, 14, ind.x - 12, 9, ind.z, Math.PI / 2, 'kt_ind_sign_parody');
+  }
 
+  // 對面公屋（葵芳邨方向）
   if (KWAI.tex.housing) {
-    kwBillboard(root, KWAI.tex.housing, 70, 28, -115, 16, 130, Math.PI / 2, 'kt_opposite_housing');
-    kwBillboard(root, KWAI.tex.housing, 50, 24, -100, 14, 170, 0, 'kt_opposite_housing_n');
-  }
-  kwEstateSlab(root, -105, 125, 28, 42, 10);
-  kwEstateSlab(root, -120, 145, 32, 48, 11);
-  kwEstateSlab(root, -95, 160, 26, 40, 10);
-  kwEstateSlab(root, -130, 115, 22, 36, 9);
-
-  for (let z = -100; z <= 140; z += 22) {
-    kwFender(root, bx - 1.2, z);
-    if (typeof kwBollard === 'function') kwBollard(root, bx - 2.4, z + 6);
+    kwBillboard(root, KWAI.tex.housing, 80, 32, hs.x, 18, hs.z, 0, 'kt_opposite_housing');
+    kwBillboard(root, KWAI.tex.housing, 48, 24, hs.x + 20, 14, hs.z - 25, Math.PI / 2, 'kt_opposite_housing_w');
   }
 
-  // 葵芳站（戲仿；口語葵涌站區）
-  kwStationKwaiFong(root, -78, 145, KWAI.tex.station || null);
+  // 葵芳站（戲仿）——用 OSM 相對 pier 偏移
+  kwStationKwaiFong(root, st.x, st.z, KWAI.tex.station || null);
 
-  // 南閘次要肘（通往市區）
-  kwAsphaltElbow(root, 0, -150, 0);
-  kwElbowRoadMark(root, -6, -140, -Math.PI / 2);
-  if (!root.getObjectByName('gatehouse_weighbridge')) kwGatehouse(root, -22, -158);
+  // 蓋住原直路北／南視覺，減少「淨係一條直路」
+  const RH = typeof ROAD_HALF === 'number' ? ROAD_HALF : 7;
+  for (const [cz, clen] of [[-40, 50], [40, 50], [-120, 40], [100, 40]]) {
+    const cover = new THREE.Mesh(
+      new THREE.BoxGeometry(RH * 2 + 6, 0.05, clen),
+      new THREE.MeshStandardMaterial({ color: 0x2c2e30, roughness: 0.95 })
+    );
+    cover.position.set(0, 0.018, cz);
+    cover.userData.kwaichung = true; cover.name = 'kt_straight_cover';
+    root.add(cover);
+  }
 
   KWAI.p1Built = true;
+  KWAI.osmScale = S;
   KWAI.zones = Object.assign(KWAI.zones || {}, {
-    elbow: 'kt_elbow_trunk',
-    roundabout: 'kt_roundabout',
+    elbow: 'kt_elbow_seg_0',
     industry: 'kt_ind_block_n',
-    housing: 'kt_estate_skyline',
+    housing: 'kt_opposite_housing',
     station: 'kt_station_kwai_fong',
-    fender: 'bollard_fender',
-    aisle: 'container_blocks_aisle',
-    tingKau: 'kt_ting_kau_silhouette',
-    apron: 'kt_inland_apron'
+    osm: 'kwai-chung-osm-footprints'
   });
 }
-
-
 
 
 {
@@ -16099,6 +16219,7 @@ function kwBuildP1Urban() {
     if (!KWAI.threePart) kwBuildThreePartStub();
     try { await kwLoadP1(); } catch (e) { console.warn('[kwai-p1]', e && e.message); }
     kwBuildP1Urban();
+    kwQuayEdgeSoft();
     if (typeof HOOKS !== 'undefined') {
       HOOKS.tod = HOOKS.tod || [];
       HOOKS.tod.push(kwOnTod);
