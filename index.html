@@ -319,7 +319,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 /*__EMBEDDED_ASSETS_BEGIN__*/const EMBEDDED_ASSETS = {};/*__EMBEDDED_ASSETS_END__*/
 const ASSET_BASE = 'assets/';
 const ASSET_FILES = {
-  car: 'concept-car.glb',          // Khronos CarConcept（CC-BY 4.0，源自 CC0 模型；已精簡／減面）；後備：kenney-sedan-sports.glb（CC0）
+  car: 'concept-car.glb',          // 開局黑色跑車：Khronos CarConcept（CC-BY 4.0；已去標誌／減面）；後備 kenney-sedan-sports.glb
   character: 'man.glb',            // M1c：Quaternius「Business Man」（CC0，有五官、頭髮、深色外套；Idle/Walk/Run）—— 主角及所有 NPC 共用
   characterFallback: 'character.glb', // M1：Quaternius Animated Men Pack（CC0）
   containers: null,                // M1b：程序化箱體 + Poly Haven rusty_painted_metal（CC0）貼圖，見 loadRealisticBuildings
@@ -350,10 +350,11 @@ const BOUND = { x: 28.5, z: 186 };                    // 可活動範圍（圍�
 // 不放貨櫃的區域（M2：泊位辦公室、碼頭控制室所在位置）{ x0, x1, z0, z1 }
 const YARD_EXCLUDE = [
   { x0: 9, x1: 30, z0: 18, z1: 40 }, { x0: -30, x1: -9, z0: -66, z1: -44 },
-  // core9：肘形主幹走廊（spawn 前方左轉 −X）＋工廈／站區 —— 清直路櫃夾
-  { x0: -110, x1: -6, z0: 8, z1: 120 },
+  // P2／core10：肘形走廊全清；中軸北向封口區唔放長列
+  { x0: -110, x1: -4, z0: 8, z1: 130 },
   { x0: -110, x1: -40, z0: 110, z1: 180 },
-  { x0: -18, x1: 18, z0: 20, z1: 55 }
+  { x0: -20, x1: 20, z0: 18, z1: 70 },
+  { x0: -12, x1: 12, z0: 48, z1: 68 }
 ];
 // 各模組掛勾：sim（每步邏輯）、frame（每幀渲染前）、minimap（雷達上加繪，世界座標）
 const HOOKS = { sim: [], frame: [], minimap: [], shot: [], death: [], carImpact: [], busted: [], wantedCleared: [] };
@@ -1024,16 +1025,27 @@ function loadGLTF(name, timeoutMs) {
  * ========================================================================= */
 const containerStacks = []; // 小地圖 / 碰撞用
 function planContainerLayout() {
-  // core9：櫃列「巷＋死巷」；南段短列；北／內陸讓位俾 spawn 前方肘形左轉
+  // P2／core10：徹底唔再「兩長列夾直路」——短段櫃巷＋死巷＋唔對稱；北向直路用橫牆封死迫轉肘
   const blocks = [
-    { side: 1, z0: -YARD_Z, z1: 25, lanes: 3 },
-    { side: -1, z0: -YARD_Z, z1: 20, lanes: 3 },
-    { side: 1, z0: 100, z1: YARD_Z, lanes: 2 },
-    { side: -1, z0: -YARD_Z + 10, z1: -40, lanes: 2 }
+    // 南泊位：短段分段（唔貫穿 ±172）
+    { side: 1, z0: -160, z1: -95, lanes: 3 },
+    { side: -1, z0: -155, z1: -100, lanes: 2 },
+    { side: 1, z0: -85, z1: -35, lanes: 2 },
+    { side: -1, z0: -70, z1: -25, lanes: 3 },
+    // 轉彎以南短泊位肩（唔連到轉彎口）
+    { side: 1, z0: -20, z1: 12, lanes: 2 },
+    { side: -1, z0: -15, z1: 8, lanes: 2 },
+    // 轉彎以北：只放離軸短堆（海側），唔夾中軸直廊
+    { side: 1, z0: 70, z1: 120, lanes: 2 },
+    { side: 1, z0: 130, z1: 165, lanes: 2 },
+    // 內陸側死巷短堆（−X 外）——唔形成直廊
+    { side: -1, z0: -120, z1: -80, lanes: 1, xOff: 4 },
+    { side: -1, z0: 90, z1: 130, lanes: 1, xOff: 6 }
   ];
   for (const b of blocks) {
     for (let lane = 0; lane < b.lanes; lane++) {
-      const x = b.side * (ROW_X0 + CONT.W / 2 + lane * (CONT.W + 0.4));
+      const xOff = b.xOff || 0;
+      const x = b.side * (ROW_X0 + CONT.W / 2 + lane * (CONT.W + 0.4) + xOff);
       let z = b.z0;
       while (true) {
         const is40 = rng() < 0.45, len = is40 ? CONT.L40 : CONT.L20;
@@ -1044,12 +1056,21 @@ function planContainerLayout() {
         const levels = []; for (let i = 0; i < h; i++) levels.push({ variant: Math.floor(rng() * 3), tint: Math.floor(rng() * CONTAINER_TINTS.length), flip: rng() < 0.5 });
         containerStacks.push({ x, z: z + len / 2, len, h, levels, side: b.side, lane });
         z += len + 0.45;
-        // 死巷：每隔一段留缺口
-        if (rng() < 0.12) z += 8 + rng() * 10;
+        // 死巷缺口更密
+        if (rng() < 0.22) z += 10 + rng() * 14;
       }
     }
   }
-  for (const s of containerStacks) addCollider(s.x, s.z, CONT.W / 2, s.len / 2, s.h * CONT.H);
+  // 北向封口橫牆（迫車喺 z≈32 轉 −X 肘形；中軸唔通）
+  {
+    const wallZ = 58, wallH = 3;
+    for (const wx of [-6, 0, 6]) {
+      const len = CONT.L20;
+      const levels = []; for (let i = 0; i < wallH; i++) levels.push({ variant: 0, tint: 3, flip: false });
+      containerStacks.push({ x: wx, z: wallZ, len, h: wallH, levels, side: 0, lane: 0 });
+    }
+  }
+  for (const s of containerStacks) addCollider(s.x, s.z, CONT.W / 2 + (s.side === 0 ? 0.4 : 0), s.len / 2, s.h * CONT.H);
 }
 
 // 貨櫃色調（乘上原貼圖顏色；令貨櫃有多種顏色）
@@ -1326,14 +1347,38 @@ function makeDarkMetallicCarMaps(srcTex) {
 }
 
 /** 依材質名稱把車模材質換成「深灰金屬漆」寫實材質（適用一般以材質分件的 GLB） */
+
+/** 開局跑車：強制車身／保險槓等為深灰黑金屬漆（CarConcept 無 colormap 時） */
+function forceStarterBlackPaint(root) {
+  if (!root) return;
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    for (const m of mats) {
+      if (!m || !m.color) continue;
+      const n = (m.name || '').toLowerCase();
+      if (/glass|window|tail|head|light|tire|tyre|rubber|rim|chrome|mirror|disc|brake/.test(n)) continue;
+      // 過光／過白材質 → 炭黑金屬
+      const lum = (m.color.r * 0.3 + m.color.g * 0.59 + m.color.b * 0.11);
+      if (lum > 0.35 || /body|paint|chassis|hood|bumper|fender|door|carpaint|plastic/.test(n) || m.name === 'carPaint') {
+        m.color.setHex(0x1a1c1f);
+        if ('metalness' in m) m.metalness = Math.max(m.metalness || 0, 0.85);
+        if ('roughness' in m) m.roughness = Math.min(m.roughness == null ? 1 : m.roughness, 0.28);
+        if ('clearcoat' in m) { m.clearcoat = 0.95; m.clearcoatRoughness = 0.08; }
+        m.needsUpdate = true;
+      }
+    }
+  });
+}
+
 function carMaterialFor(m, carMaps) {
   const n = (m.name || '').toLowerCase();
   const P = (o) => new THREE.MeshPhysicalMaterial(Object.assign({ envMapIntensity: 1.3 }, o));
   if (carMaps) { // Kenney 色票貼圖車
     return P({ map: carMaps.map, metalness: 1, roughness: 1, metalnessMap: carMaps.mrTex, roughnessMap: carMaps.mrTex, clearcoat: 0.8, clearcoatRoughness: 0.08 });
   }
-  if (/body|paint|chasis|chassis|hood|carpaint|white$|^white/.test(n))
-    return P({ color: 0x2b2e33, metalness: 0.9, roughness: 0.22, clearcoat: 1.0, clearcoatRoughness: 0.06, name: 'carPaint' }); // 深灰金屬漆
+  if (/body|paint|chasis|chassis|hood|bumper|fender|door|carpaint|white$|^white|primary/.test(n))
+    return P({ color: 0x1a1c1f, metalness: 0.92, roughness: 0.2, clearcoat: 1.0, clearcoatRoughness: 0.06, name: 'carPaint' }); // 開局黑跑金屬漆
   // M1c 白點修正：CarConcept 的「Mirror」（純白鏡面）及「Disc」（白色煞車碟）原本落入預設分支 → 變成白色亮塊，
   // 在泛光燈下爆光，並在濕地倒影中再出現一次（玩家見到的地面白點）。改為深色鍍鉻／鑄鐵。
   if (/mirror/.test(n)) return P({ color: 0x5c6166, metalness: 1, roughness: 0.18, name: 'carMirror' });
@@ -1356,7 +1401,9 @@ function carMaterialFor(m, carMaps) {
  * 便會自動轉動及轉向（位於車頭一側的車輪會跟隨方向盤）。尺寸自動等比例縮放至長 4.4 米。
  * 若車輪沒有獨立節點，車輛仍可駕駛，只是車輪不會轉動。 */
 async function loadVehicle(name = ASSET_FILES.car) {
-  const gltf = await loadGLTF(name);
+  // 開局黑色跑車（concept-car）優先：Safari／慢網畀夠時間，避免過早落到 Kenney sedan
+  const _carMs = /concept-car/i.test(String(name)) ? 45000 : undefined;
+  const gltf = await loadGLTF(name, _carMs);
   const src = gltf.scene;
   // 移除匯出時殘留的燈光／鏡頭節點
   const junk = []; src.traverse((o) => { if (o.isLight || o.isCamera || /^(light|camera)$/i.test(o.name)) junk.push(o); });
@@ -1428,6 +1475,12 @@ async function loadVehicle(name = ASSET_FILES.car) {
   car.dims = { L: +fs.z.toFixed(2), H: +fb.max.y.toFixed(2), W: +fs.x.toFixed(2), wheelR: +wheelR.toFixed(2) };
   let tris = 0; model.traverse((o) => { if (o.isMesh) tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3; });
   car.dims.tris = tris;
+  forceStarterBlackPaint(model);
+  // 貼地：若輪心估高導致浮空，微調 body
+  try {
+    const fb2 = new THREE.Box3().setFromObject(model);
+    if (fb2.min.y > 0.02) model.position.y -= fb2.min.y;
+  } catch (e) { /* */ }
   loadState.car = true;
   return model;
 }
@@ -3578,7 +3631,7 @@ async function loadM3Assets() {
   const p = pEu.status === 'fulfilled' ? pEu : pOld;
   const v = vOld;
   if (p.status === 'fulfilled') {
-    VPROTO.police = prepVehicle(p.value, pEu.status === 'fulfilled' ? 5.4 : 4.7);
+    VPROTO.police = prepVehicle(p.value, pEu.status === 'fulfilled' ? 5.9 : 4.7); // EU廂型≈Sprinter 5.9m；舊 sedan 4.7m
     VPROTO.police.traverse((o) => { if (!o.isMesh) return; const m = o.material;
       if (m.name === 'White') { m.color.setRGB(0.92, 0.92, 0.9); m.roughness = 0.35; m.metalness = 0.2; }
       if (/TailLights/.test(m.name)) { m.emissive = new THREE.Color(1, 0.05, 0.03); m.emissiveIntensity = 2; }
@@ -3595,10 +3648,10 @@ async function loadM3Assets() {
   // 備選：巡邏 SUV／紅的暫代／紅色小巴暫代
   if (!safariLite) try {
     const suv = await loadGLTF(ASSET_FILES.policeSuv || 'gltf/police-suv-cc0.glb', 6000);
-    VPROTO.policeSuv = prepVehicle(suv, 4.9);
+    VPROTO.policeSuv = prepVehicle(suv, 4.9); // 巡邏 SUV ≈4.85–5.0m
   } catch (e) { console.warn('[gltf] police-suv', e && e.message); }
-  if (taxi.status === 'fulfilled') VPROTO.taxi = prepVehicle(taxi.value, 4.5, 0xc8201a);
-  if (mini.status === 'fulfilled') VPROTO.minibus = prepVehicle(mini.value, 5.8, 0xc02020);
+  if (taxi.status === 'fulfilled') VPROTO.taxi = prepVehicle(taxi.value, 4.7, 0xc8201a); // 紅的 Comfort 級 ≈4.7m
+  if (mini.status === 'fulfilled') VPROTO.minibus = prepVehicle(mini.value, 6.4, 0xc02020); // 十六座短軸≈6.2–7.0；取 6.4 兼顧巷戰
 }
 
 function fallbackCar(color) { // 模型載入失敗時的佔位車身
@@ -16155,6 +16208,28 @@ function kwLeftTurnMark(parent, x, z) {
   return g;
 }
 
+
+/** P2：北向直路硬擋（碰撞）——只留 −X 肘形出口 */
+function kwP2ForceElbow(parent) {
+  if (KWAI.p2Elbow) return;
+  const wall = new THREE.MeshStandardMaterial({ color: 0x3a4046, roughness: 0.8 });
+  // 可視矮牆＋碰撞（中軸 z≈52–64）
+  for (const [x, z, w, d, h] of [
+    [-2, 55, 14, 5, 3.2],
+    [8, 62, 6, 8, 4],
+    [-10, 48, 5, 6, 3.5]
+  ]) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wall);
+    m.position.set(x, h / 2, z); m.castShadow = true;
+    m.name = 'kt_p2_north_block'; m.userData.kwaichung = true; parent.add(m);
+    if (typeof addCollider === 'function') addCollider(x, z, w / 2, d / 2, h);
+  }
+  // 箭咀／黃線導向 −X
+  if (typeof kwLeftTurnMark === 'function') kwLeftTurnMark(parent, -4, 34);
+  else if (typeof kwElbowRoadMark === 'function') kwElbowRoadMark(parent, -8, 40, -Math.PI / 2);
+  KWAI.p2Elbow = true;
+}
+
 function kwBuildP1Urban() {
   if (KWAI.p1Built || typeof scene === 'undefined') return;
   const root = KWAI.group || new THREE.Group();
@@ -16236,6 +16311,7 @@ function kwBuildP1Urban() {
 
   // 打破「淨係一條直路」：北／南直路肩櫃塊（中軸唔放碰撞）
   if (typeof kwBreakStraightTunnel === 'function') kwBreakStraightTunnel(root);
+  kwP2ForceElbow(root);
 
   // 蓋住舊直路遠段視覺（±YARD 感）——只蓋轉彎以外的遠直段，轉彎口留空
   for (const [cz, clen] of [[-70, 36], [100, 40], [140, 36]]) {
@@ -17220,9 +17296,10 @@ const _bootMs = (typeof IS_SAFARI !== 'undefined' && IS_SAFARI) ? 12000 : 20000;
 const timeout = new Promise((res) => setTimeout(() => res('timeout'), _bootMs));
 Promise.race([
   Promise.allSettled([
-    loadVehicle(ASSET_FILES.car).catch((e) => {
-      console.warn('寫實車輛載入失敗，改用 Kenney 後備（CC0）：', e);
-      return loadVehicle('kenney-sedan-sports.glb').catch(() => null);
+    loadVehicle('concept-car.glb').catch((e) => {
+      console.warn('開局黑色跑車（concept-car）載入失敗，改用 Kenney 後備：', e);
+      return loadVehicle(ASSET_FILES.car === 'concept-car.glb' ? 'kenney-sedan-sports.glb' : ASSET_FILES.car).catch(() =>
+        loadVehicle('kenney-sedan-sports.glb').catch(() => null));
     }),
     loadCharacter().catch((e) => { console.warn('角色載入失敗', e); return null; }),
     loadRealisticBuildings().catch((e) => {
