@@ -1,0 +1,75 @@
+{
+  "project": "neon-triangle",
+  "updated": "2026-10-10T23:16:00+08:00",
+  "owner": "關卡與地圖設計師",
+  "align": [
+    "docs/kwai-chung-terminal-layout.md",
+    "docs/kwai-tsing-port-authenticity-brief.md"
+  ],
+  "module": "m1c/src/modYs_kwaichung.js",
+  "note": "P0 stub 加性：唔拆序章可玩直路碰撞；P1 再拆單一直路改肘形主幹",
+  "zones": [
+    {
+      "id": "kt_part_a_yard",
+      "name": "葵涌岸 CT1–7／8 號泊位可玩",
+      "props": [
+        "yard_road_elbow",
+        "gatehouse_weighbridge",
+        "barrier_yb_port",
+        "berth_sign_8",
+        "quay_crane_extra",
+        "high_mast_light"
+      ],
+      "props_deferred": [
+        "bollard_fender"
+      ]
+    },
+    {
+      "id": "kt_part_b_ct8_hint",
+      "name": "CT8 南向 hint",
+      "props": [
+        "quay_crane_x2",
+        "berth_ship_loom",
+        "barrier_yb_port"
+      ]
+    },
+    {
+      "id": "kt_part_c_tsingyi_skyline",
+      "name": "青衣 CT9 對岸吊機牆",
+      "props": [
+        "quay_crane_x4",
+        "berth_ship_loom"
+      ]
+    },
+    {
+      "id": "kt_rambler_water",
+      "name": "藍巴勒海峽水面"
+    },
+    {
+      "id": "kt_tsing_ma_silhouette",
+      "name": "青馬大橋遠景剪影（戲仿）"
+    },
+    {
+      "id": "kt_ting_kau_silhouette",
+      "name": "汀九橋遠景剪影（戲仿）"
+    }
+  ],
+  "acceptance_selfcheck": {
+    "not_single_straight_tunnel": "added elbow spurs + Part B/C off-axis — main playable road still temporary until P1",
+    "opposite_shore_or_bridge": true,
+    "ships_ge_1": true,
+    "cranes_ge_6": true,
+    "no_google_mesh": true
+  },
+  "review_status": "authentic_check_passed_p0",
+  "reviewed_by": "香港澳門台灣地道人",
+  "review": {
+    "kt_part_a_yard": "✅ 肘形支路／閘口／黃黑欄／8號牌／岸吊／高桅通過。JSON 有 bollard_fender 但 stub 未見——P0 補纜樁或先從清單刪。",
+    "kt_part_b_ct8_hint": "✅ 南向離軸，唔共直路——啱。",
+    "kt_part_c_tsingyi_skyline": "✅ 對岸吊機面向葵涌＋船——啱。",
+    "kt_rambler_water": "✅ 海峽分隔 A／C——啱。",
+    "kt_tsing_ma_silhouette": "✅ P0 剪影通過。",
+    "kt_ting_kau_silhouette": "✅ P0 通過；P1 汀九改斜拉多塔外形，唔好同青馬共用同一吊橋模。",
+    "p1_note": "直路主碰撞可留聽日；P1 必須肘形主幹＋櫃巷。"
+  }
+}

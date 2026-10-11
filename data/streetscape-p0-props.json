@@ -1,0 +1,281 @@
+{
+  "project": "neon-triangle",
+  "updated": "2026-10-10T22:56:00+08:00",
+  "owner": "關卡與地圖設計師",
+  "align": [
+    "docs/streetscape-authenticity-checklist.md",
+    "docs/gov-border-police-copy.md"
+  ],
+  "rules": "當地有咩先加咩；唔塞滿；唔假 cyber；唔歐美道具；唔郁 Pages／vendor",
+  "p0_zones": [
+    {
+      "id": "mk_nathan",
+      "region": "hk",
+      "name": "旺角／彌敦",
+      "anchor": {
+        "lat": 22.3193,
+        "lon": 114.1694
+      },
+      "props": [
+        {
+          "type": "asphalt_dual",
+          "note": "雙向瀝青主路（已有長街；補標線）"
+        },
+        {
+          "type": "tile_sidewalk",
+          "note": "兩邊階磚行人路（灰／淺紅）"
+        },
+        {
+          "type": "traffic_light",
+          "lat": 22.3192,
+          "lon": 114.1695,
+          "yaw": 0
+        },
+        {
+          "type": "zebra",
+          "lat": 22.319,
+          "lon": 114.1695,
+          "yaw": 0
+        },
+        {
+          "type": "rail_fence",
+          "note": "金屬行人欄，路口斷開"
+        },
+        {
+          "type": "trash_bin_muni",
+          "lat": 22.3188,
+          "lon": 114.1696
+        },
+        {
+          "type": "trash_bin_muni",
+          "lat": 22.3196,
+          "lon": 114.1693
+        },
+        {
+          "type": "manhole",
+          "lat": 22.3191,
+          "lon": 114.1694
+        },
+        {
+          "type": "manhole",
+          "lat": 22.3195,
+          "lon": 114.1694
+        }
+      ],
+      "forbid": [
+        "高速公路護欄",
+        "鵝卵石廣場當主路",
+        "美式消防栓／咪錶"
+      ],
+      "review": {
+        "status": "pass",
+        "note": "✅ P0 齊。下一輪可加巴士站亭（非阻）。階磚灰／淺紅通過。"
+      }
+    },
+    {
+      "id": "central_pier",
+      "region": "hk",
+      "name": "中環碼頭",
+      "anchor": {
+        "lat": 22.287,
+        "lon": 114.1605
+      },
+      "props": [
+        {
+          "type": "pier_concrete",
+          "note": "碼頭石屎／防滑板質感"
+        },
+        {
+          "type": "sea_rail",
+          "lat": 22.2872,
+          "lon": 114.1603,
+          "yaw": 1.57
+        },
+        {
+          "type": "bollard",
+          "lat": 22.287,
+          "lon": 114.1604
+        },
+        {
+          "type": "bollard",
+          "lat": 22.2869,
+          "lon": 114.1606
+        },
+        {
+          "type": "yellow_queue_line",
+          "lat": 22.287,
+          "lon": 114.1605
+        },
+        {
+          "type": "tram_rail_embed",
+          "lat": 22.2865,
+          "lon": 114.1505,
+          "note": "上環叮叮：路軌嵌瀝青（稀疏）"
+        },
+        {
+          "type": "ferry_gate_rail",
+          "note": "排隊欄／閘口"
+        }
+      ],
+      "forbid": [
+        "旺角密霓虹蓋滿碼頭",
+        "碼頭中央高速車龍"
+      ],
+      "review": {
+        "status": "pass",
+        "note": "✅ 叮叮軌留上環德輔、唔放碼頭面——啱。"
+      }
+    },
+    {
+      "id": "mac_outer",
+      "region": "mac",
+      "name": "澳外港／口岸引道",
+      "anchor": {
+        "lat": 22.1965,
+        "lon": 113.5588
+      },
+      "props": [
+        {
+          "type": "wide_asphalt",
+          "note": "闊瀝青／石屎車路"
+        },
+        {
+          "type": "queue_barrier",
+          "lat": 22.1965,
+          "lon": 113.5588
+        },
+        {
+          "type": "bilingual_sign_zh_pt",
+          "lat": 22.1966,
+          "lon": 113.5587,
+          "text": "客輪碼頭 Terminal Marítimo（戲仿）"
+        },
+        {
+          "type": "yellow_queue_line",
+          "lat": 22.1964,
+          "lon": 113.5588
+        },
+        {
+          "type": "trash_bin_small",
+          "lat": 22.1963,
+          "lon": 113.5589
+        }
+      ],
+      "forbid": [
+        "港式密懸掛霓虹當主視覺",
+        "彌敦招牌密度"
+      ],
+      "review": {
+        "status": "pass_with_fix",
+        "note": "✅ 中葡牌文案已改 Terminal Marítimo。"
+      }
+    },
+    {
+      "id": "ximen",
+      "region": "tp",
+      "name": "西門町徒步區",
+      "anchor": {
+        "lat": 25.0421,
+        "lon": 121.5067
+      },
+      "props": [
+        {
+          "type": "pedestrian_paving",
+          "note": "徒步區磚鋪"
+        },
+        {
+          "type": "arcade_column",
+          "note": "騎樓柱列（稀疏柱）"
+        },
+        {
+          "type": "scooter_bay",
+          "lat": 25.042,
+          "lon": 121.507
+        },
+        {
+          "type": "tactile_yellow",
+          "lat": 25.0421,
+          "lon": 121.5068
+        },
+        {
+          "type": "zebra",
+          "lat": 25.0422,
+          "lon": 121.5069
+        },
+        {
+          "type": "traffic_light",
+          "lat": 25.0422,
+          "lon": 121.507
+        },
+        {
+          "type": "trash_bin_square",
+          "lat": 25.042,
+          "lon": 121.5066
+        }
+      ],
+      "forbid": [
+        "港式雙層巴士站密度",
+        "澳門葡磚當主鋪"
+      ],
+      "review": {
+        "status": "pass_with_fix",
+        "note": "✅ 燈號／斑馬當區邊；type 文件用 arcade_column（程式 scapeArcadeHint）。region 維持 tp（台北層）。"
+      }
+    },
+    {
+      "id": "kh_port",
+      "region": "tw",
+      "name": "高雄港邊（備選 P0）",
+      "anchor_local": {
+        "x": -40,
+        "z": 100
+      },
+      "props": [
+        {
+          "type": "port_asphalt",
+          "note": "港區瀝青偏舊"
+        },
+        {
+          "type": "port_rail",
+          "local": {
+            "x": -35,
+            "z": 105
+          }
+        },
+        {
+          "type": "port_sign",
+          "local": {
+            "x": -42,
+            "z": 98
+          },
+          "text": "港區管制（戲仿）"
+        },
+        {
+          "type": "scooter_park",
+          "local": {
+            "x": -38,
+            "z": 102
+          }
+        }
+      ],
+      "forbid": [
+        "高山纜車",
+        "假賽博碼頭",
+        "旺角式行人欄全封"
+      ],
+      "review": {
+        "status": "pass",
+        "note": "✅ 備選通過；瀝青偏舊＋護欄＋速克達停靠啱港區。"
+      }
+    }
+  ],
+  "municipal_extra_from_gov": [
+    "路政黃黑相間欄杆（隧道口／危險彎）",
+    "黃格路口（路口中央）",
+    "隧道限高／行車定向牌（只走廊）",
+    "口岸引道黃線",
+    "警署外藍欄（kln_central_ps 外）"
+  ],
+  "review_status": "authentic_check_passed_2026-10-10",
+  "reviewed_by": "香港澳門台灣地道人"
+}
