@@ -2,7 +2,6 @@
 <html lang="zh-Hant-HK">
 <head>
 <meta charset="utf-8">
-<!-- nt-cache: core3 -->
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -121,7 +120,7 @@ body.aim #cross{transform:scale(.45)}
 #loading h2{margin:0;font-size:11px;letter-spacing:.3em;color:var(--dim);font-weight:500}
 #loadBar{width:220px;height:3px;background:rgba(255,255,255,.1)}
 #loadBar i{display:block;height:100%;width:0;background:#9fb3c2;transition:width .2s}
-#loadTxt{font-size:11px;color:var(--dim)}
+#loadTxt{font-size:11px;color:var(--dim)}#loadTips{font-size:10px;color:#7a8490;max-width:280px;text-align:center;min-height:1.2em;margin-top:4px}
 #credits{position:absolute;bottom:calc(var(--sab) + 10px);left:0;right:0;text-align:center;font-size:9px;color:#5d666e;padding:0 60px}
 
 /* ===== 直向提示：請將手機打橫 ===== */
@@ -258,7 +257,9 @@ body.aim #cross{transform:scale(.45)}
   <h2>NEON TRIANGLE · M1–M10 合輯 + M1c</h2>
   <div id="loadBar"><i></i></div>
   <div id="loadTxt" class="mono">載入模型中… 0%</div>
+  <div id="loadTips"></div>
   <div id="credits">模型：Quaternius（CC0／CC-BY）· Clint Chilcott、PuKkBuMXDD（CC-BY 3.0）· 經 Poly Pizza ｜ 地圖數據 © OpenStreetMap contributors（ODbL）</div>
+</div>
 <script>/*__NT_BOOT_PROGRESS__*/
 (function(){
   var n=0, done=false;
@@ -269,19 +270,25 @@ body.aim #cross{transform:scale(.45)}
     var b=document.querySelector('#loadBar i');
     if(!t) return;
     n=Math.min(88, n+(n<20?6:n<50?3:1));
-    if(b && parseFloat(b.style.width||'0') < n) b.style.width=n+'%';
-    if(!b || parseFloat(b.style.width||'0') < 2)
-      t.textContent='載入引擎中… '+n+'%（手機請稍等）';
+    var cur=b?parseFloat(b.style.width||'0'):0;
+    if(b && cur < n) b.style.width=n+'%';
+    if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core4。","用流動數據請等陣——資產喺度解壓。","聽日目標：落難香江 · 信和安全屋。"];
+  var tipEl=document.getElementById("loadTips"); var ti=0;
+  if(tipEl) tipEl.textContent=tips[0];
+  var tipTimer=setInterval(function(){
+    if(done){clearInterval(tipTimer);return;}
+    if(tipEl) tipEl.textContent=tips[ti++%tips.length];
+  },3200);
   setTimeout(function(){
     if(done) return;
     var t=document.getElementById('loadTxt');
-    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core3';
+    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core4';
   },45000);
 })();
 </script>
 
-</div>
 <div id="fade"></div>
 <div id="flash"></div>
 <div id="shop"><div class="box"><h3 id="shopName"></h3><div class="who" id="shopWho"></div><p class="say" id="shopSay"></p><div id="shopRows"></div><div class="foot"><div class="money" id="shopMoney"></div><div class="close" id="shopClose">離開</div></div></div></div>
@@ -952,17 +959,10 @@ function loadGLTF(name, timeoutMs) {
           const decodeMore = () => {
             try {
               if (off < raw.length) {
-                const end = Math.min(off + CHUNK * 4, raw.length); // base64 4-char groups
+                const end = Math.min(off + CHUNK * 4, raw.length);
                 const slice = raw.slice(off, end - ((end - off) % 4));
                 if (!slice) { off = raw.length; }
                 else { parts.push(atob(slice)); off += slice.length; }
-                const pct = Math.round((off / Math.max(raw.length, 1)) * 90);
-                try {
-                  const t = document.getElementById('loadTxt');
-                  const b = document.querySelector('#loadBar i');
-                  if (t) t.textContent = '解壓模型… ' + file + ' ' + pct + '%';
-                  if (b) b.style.width = Math.max(parseFloat(b.style.width || '0'), Math.min(90, pct)) + '%';
-                } catch (e0) {}
                 setTimeout(decodeMore, 0);
                 return;
               }
@@ -1027,7 +1027,7 @@ function planContainerLayout() {
 }
 
 // 貨櫃色調（乘上原貼圖顏色；令貨櫃有多種顏色）
-// 寫實貨櫃配色（船公司常見色：藍、紅、綠、灰、橙、白、深藍、啡、芥末黃、湖水綠）
+// 寫實貨櫃配色（中性工業色：藍、紅、綠、灰、橙、白、深藍、啡、芥末黃、湖水綠）——唔印真船公司標／字
 const CONTAINER_TINTS = [0x2f6f9f, 0x8c2b20, 0x2e5a3c, 0x7a7f84, 0xb4581f, 0xbdbdb4, 0x1f3352, 0x6a3b23, 0x9c8a2e, 0x4b7a8a].map(c => new THREE.Color(c));
 const CONTAINER_TINT_RE = /mat14|body|paint|colormap|material$/i; // 會被染色的「箱身」材質
 /** 為貨櫃材質加入程序化污漬／鏽水痕（依世界座標，InstancedMesh 亦適用） */
@@ -3536,14 +3536,14 @@ function prepVehicle(gltf, len, tint) {
 async function loadM3Assets() {
   // 優先 CC0 廂型／SUV；Pages 無 /assets/gltf 時 loadGLTF 即拒，唔擋開局
   const safariLite = (typeof IS_SAFARI !== 'undefined' && IS_SAFARI) || (typeof LOW_MEM !== 'undefined' && LOW_MEM);
-  if (safariLite) { console.info('[m3] safariLite — skip heavy CC0 gltf'); return; }
-  const opt = (n) => loadGLTF(n, 6000).catch(() => Promise.reject(new Error('skip ' + n)));
+  const opt = (n) => loadGLTF(n, safariLite ? 4000 : 6000).catch(() => Promise.reject(new Error('skip ' + n)));
+  // Safari：仍載細檔 police／van；重型 CC0（廂型／小巴／SUV）跳過
   const [pEu, pOld, vOld, taxi, mini] = await Promise.allSettled([
-    opt(ASSET_FILES.euVan || 'gltf/delivery-van-cc0.glb'),
-    loadGLTF('police.glb', 30000),
-    loadGLTF('van-black.glb', 30000),
-    opt(ASSET_FILES.taxi || 'gltf/taxi-cc0.glb'),
-    opt(ASSET_FILES.minibus || 'gltf/minibus-cc0.glb')
+    safariLite ? Promise.reject(new Error('safariLite')) : opt(ASSET_FILES.euVan || 'gltf/delivery-van-cc0.glb'),
+    loadGLTF('police.glb', safariLite ? 8000 : 30000),
+    loadGLTF('van-black.glb', safariLite ? 8000 : 30000),
+    safariLite ? Promise.reject(new Error('safariLite')) : opt(ASSET_FILES.taxi || 'gltf/taxi-cc0.glb'),
+    safariLite ? Promise.reject(new Error('safariLite')) : opt(ASSET_FILES.minibus || 'gltf/minibus-cc0.glb')
   ]);
   const p = pEu.status === 'fulfilled' ? pEu : pOld;
   const v = vOld;
@@ -3563,7 +3563,7 @@ async function loadM3Assets() {
   }
   if (v.status === 'fulfilled') VPROTO.van = prepVehicle(v.value, 5.0, 0x0c0d0f);
   // 備選：巡邏 SUV／紅的暫代／紅色小巴暫代
-  try {
+  if (!safariLite) try {
     const suv = await loadGLTF(ASSET_FILES.policeSuv || 'gltf/police-suv-cc0.glb', 6000);
     VPROTO.policeSuv = prepVehicle(suv, 4.9);
   } catch (e) { console.warn('[gltf] police-suv', e && e.message); }
@@ -4094,14 +4094,16 @@ function failMission(reason) {
   });
 }
 
-/* ---------- 掛咗（急症醒來，扣醫藥費）／拉咗（扣保釋金） ---------- */
+/* ---------- 掛咗（急症費）／拉咗（現金擔保·合理款額；禁止「法定保釋金」） ---------- */
 function respawnAtHospital(fee, label) {
-  const paid = Math.min(ECON.cash + ECON.dirty, fee); if (paid) spend(paid);
+  const paid = fee > 0 ? Math.min(ECON.cash + ECON.dirty, fee) : 0;
+  if (paid) spend(paid);
   if (INT.active) exitInterior(true);
   cleanupWorld(); resetPlayerState();
   placeCar(-3.5, -205, Math.PI);
   putPlayerOnFoot(-8.2, -200, Math.PI);
-  toast(`${label}：-$${paid.toLocaleString('en-US')}`, 3000);
+  if (fee > 0) toast(`${label}：-$${paid.toLocaleString('en-US')}`, 3000);
+  else toast(label, 3000);
 }
 function endSequence(kind) {
   if (state.locked && player.dead) return;
@@ -4122,10 +4124,10 @@ function endSequence(kind) {
       MS.phase = 'failed'; setTimer(0); setTarget(null);
       showScreen(wasted ? 'wasted' : 'busted', wasted ? '掛咗' : '拉咗', `${wasted ? '瞓咗喺急症' : '帶署'} · 任務搞砸`, {
         retry: () => { gradePass.uniforms.uSat.value = 1; startMission(missionId, true); },
-        quit: () => { MS.id = null; respawnAtHospital(wasted ? 500 : 1000, wasted ? '伊利沙伯醫院急症費' : '保釋金'); }
+        quit: () => { MS.id = null; respawnAtHospital(wasted ? (typeof govWastedFee === 'function' ? govWastedFee() : 10) : (typeof govBailFee === 'function' ? govBailFee() : 75), wasted ? (typeof govWastedLabel === 'function' ? govWastedLabel() : '公立醫院急症室收費') : (typeof govBailLabel === 'function' ? govBailLabel() : '現金擔保（合理款額）')); }
       });
     } else {
-      after(1.6, () => { hideScreen(); withFade(() => respawnAtHospital(wasted ? 500 : 1000, wasted ? '伊利沙伯醫院急症費' : '保釋金')); });
+      after(1.6, () => { hideScreen(); withFade(() => respawnAtHospital(wasted ? (typeof govWastedFee === 'function' ? govWastedFee() : 10) : (typeof govBailFee === 'function' ? govBailFee() : 75), wasted ? (typeof govWastedLabel === 'function' ? govWastedLabel() : '公立醫院急症室收費') : (typeof govBailLabel === 'function' ? govBailLabel() : '現金擔保（合理款額）'))); });
     }
   });
 }
@@ -8831,7 +8833,8 @@ const SFX10 = {
   radio_tune_blip: () => { const n=[[1200,0,0.05,'square',0.35],[1480,0.04,0.08,'sine',0.5]]; const noise=[]; for(let i=0;i<3;i++)noise.push([900+i*200,i*0.02,0.03,'sawtooth',0.2]); tone(noise.concat(n),0.12); },
   radio_news_sting: () => tone([[70,0,0.28,'sine',1],[110,0.02,0.22,'triangle',0.6],[392,0.06,0.28,'sawtooth',0.35],[494,0.1,0.25,'sawtooth',0.28]],0.22),
   radio_clear_chime: () => tone([[659,0,0.15,'sine'],[523,0.12,0.22,'sine']],0.14),
-  radio_off_click: () => tone([[200,0,0.05,'square',0.4]],0.1)
+  radio_off_click: () => tone([[200,0,0.05,'square',0.4]],0.1),
+  ui_fine: () => tone([[880,0,0.06,'square',0.35],[1320,0.05,0.08,'sine',0.4],[220,0.12,0.18,'triangle',0.25]],0.14) // 罰單：嘟＋紙感，非 GTA 懸賞
 };
 /** 雨夜床聲增益（amb_rain_night_loop placeholder＝既有 audio.rain）*/
 function setRainBed(gain = 0.13) {
@@ -11013,7 +11016,7 @@ const LM_DEFS = [
   { id: 't101_lobby', region: 'tp', lat: 25.03397, lon: 121.56447, h: 24, w: 28, d: 20, yaw: 0, neon: '101', color: '#33e0ff', theme: 'hosp', name: '台北101入口大廳（戲仿）', city: '台北 · 信義區', light: '日：玻璃中庭／夜：金色外牆燈', desc: '玻璃中庭望到天。觀光客排隊、保全盯袋——高空劫案喺度起步，但警報響得比電梯仲快。' },
   { id: 'ly_yuan', region: 'tp', lat: 25.0442, lon: 121.5198, h: 12, w: 22, d: 16, yaw: 0, neon: '立法院', color: '#f0f0e8', theme: 'hosp', name: '立法院外廣場（戲仿）', city: '台北 · 中正區', light: '日：白石廣場／夜：冷白路燈', desc: '白石廣場空蕩蕩，鏡頭比人多。集會、記者會、政治噪音——通緝一高，你個樣就上晚間新聞。' },
   // —— batch-3 可進入樓（data/enterable-lm-batch-3.json）——
-  { id: 'kwai_chung_pier', region: 'hk', lat: 22.355, lon: 114.119, h: 10, w: 32, d: 18, yaw: 0.0, neon: '葵涌碼頭', color: '#4aa3ff', theme: 'pawn', name: '葵涌貨櫃碼頭（戲仿）', city: '香港 · 葵青區', light: '日：貨櫃硬光／夜：碼頭工礦橙燈', desc: '貨櫃疊成牆，柴油味同海關犬一齊嚟。呢度係序章起點——硬闖等於通緝直接跳級。' },
+  { id: 'kwai_chung_pier', region: 'hk', lat: 22.355, lon: 114.119, h: 10, w: 32, d: 18, yaw: 0.0, neon: '葵涌碼頭', color: '#4aa3ff', theme: 'pawn', noFacade: true, skipDoor: true, name: '葵涌貨櫃碼頭（戲仿）', city: '香港 · 葵青區', light: '日：貨櫃硬光／夜：碼頭工礦橙燈', desc: '葵青貨櫃碼頭（戲仿）：藍巴勒海峽分隔葵涌岸同青衣 CT9；岸吊、貨櫃船、遠景青馬／汀九。走私箱、閘口 sniff——硬闖即通緝升級。' },
   { id: 'hunghom_tunnel', region: 'hk', lat: 22.3028, lon: 114.1825, h: 8, w: 24, d: 14, yaw: Math.PI, neon: '紅隧', color: '#e8261c', theme: 'hosp', name: '紅磡海底隧道口（戲仿）', city: '香港 · 九龍城／灣仔', light: '日：車流白光／夜：隧道黃燈＋閃燈', desc: '隧道口塞成粥，閃燈同喇叭搶聲。適合飛車甩尾，唔適合步行硬闖——路障一落就夾實你。' },
   { id: 'eastwood_hq', region: 'hk', lat: 22.2808, lon: 114.1832, h: 22, w: 16, d: 14, yaw: Math.PI / 2, neon: '東星', color: '#c9a227', theme: 'burger', name: '東星會所（戲仿總部）', city: '香港 · 灣仔區 · 銅鑼灣', light: '日：金門簾影／夜：暖金吊燈', desc: '會所門禁嚴、茶煙重。交收、談判、睇風水——抄牌鐘聲一响，記得轉後門落樓。' },
   { id: 'tai_o', region: 'hk', lat: 22.2548, lon: 113.862, h: 8, w: 18, d: 12, yaw: 0.0, neon: '大澳', color: '#7dff6a', theme: 'cct', name: '大澳棚屋水道（戲仿）', city: '香港 · 離島區 · 大澳', light: '日：鹹魚乾陽光／夜：棚屋暖黃', desc: '棚屋踩水橋，鹹風吹乾衣裳。適合匿、適合搖舢舨走貨——市區嗰套巡邏密度到唔到呢度。' },
@@ -11146,7 +11149,8 @@ function lmPlaceAll() {
     lmRegisterInterior(def);
     const doorP = lmDoorPos(def, w);
     const door = { id: def.id, pos: new THREE.Vector3(doorP.x, 0, doorP.z), outYaw: doorP.outYaw, label: def.name, lm: true };
-    DOORS.push(door);
+    // skipDoor：可玩區本身就係該地標（如葵涌碼頭原點）——唔好喺馬路中間放門／黃色柱
+    if (!def.skipDoor) DOORS.push(door);
     const facade = lmBuildFacade(def, w);
     if (def.region === 'mac') { macG.add(facade); }
     else if (def.region === 'tp') { tpG.add(facade); }
@@ -11162,10 +11166,12 @@ function lmPlaceAll() {
       else if (def.region === 'tp') { LM.tpCols = LM.tpCols || []; LM.tpCols.push(col); colliders.push(col); }
     }
     // 標記柱（門口局部 +Z；隨 facade yaw 旋轉）
-    const mk = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.9, 20, 1, true), markerMat);
-    mk.position.set(0, 0.45, (def.d || 8) / 2 + 1.15); mk.renderOrder = 6; facade.add(mk);
-    door.marker = mk;
-    LM.byId[def.id] = { def, door, facade, w };
+    if (!def.skipDoor) {
+      const mk = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.9, 20, 1, true), markerMat);
+      mk.position.set(0, 0.45, (def.d || 8) / 2 + 1.15); mk.renderOrder = 6; facade.add(mk);
+      door.marker = mk;
+    }
+    LM.byId[def.id] = { def, door: def.skipDoor ? null : door, facade, w };
     LM.list.push(LM.byId[def.id]);
   }
   // 澳門／台北／高雄群組預設：跟區域可見性
@@ -11280,6 +11286,7 @@ HOOKS.minimap.push((c) => {
     if (L.def.region === 'tp' && !(typeof TP !== 'undefined' && TP.active)) continue;
     if (L.def.region === 'tw' && !(typeof TW !== 'undefined' && TW.active)) continue;
     if (L.def.region === 'hk' && L.facade && !L.facade.visible) continue;
+    if (!L.door) continue;
     c.fillStyle = L.def.border ? '#e8261c' : (L.def.color || '#33e0ff');
     c.beginPath(); c.arc(L.door.pos.x, L.door.pos.z, L.def.border ? 3.2 : 2.4, 0, 6.3); c.fill();
   }
@@ -11288,7 +11295,7 @@ HOOKS.minimap.push((c) => {
 /* ---------- 測試傳送 NT.lmGo(id) ---------- */
 LM.go = function (id) {
   const L = LM.byId[id]; if (!L) return false;
-  const d = L.door;
+  const d = L.door || { pos: new THREE.Vector3(L.w.x, 0, L.w.z), outYaw: (L.def.yaw || 0) + Math.PI };
   if (INT.active) exitInterior(true);
   // 切區
   if (L.def.region === 'mac' && typeof enterArea === 'function' && !(AREA && AREA.active)) {
@@ -11722,24 +11729,33 @@ function radioWantedNews(stars) {
   if (!RADIO.on || RADIO.newsCool > 0) return;
   RADIO.newsCool = 8;
   const s = radioCurrent();
+  // 現實錨：口吻似交通台／新聞報導；「通緝級」只作遊戲 HUD 對照，電台少講遊戲字
+  const hkBy = {
+    1: '警方呼籲市民如遇可疑人物，請保持距離並報案，勿自行上前。',
+    2: '交通消息：市區有車輛追逐目擊，駕駛人士請改道，並留意警方指示。',
+    3: '新聞：油尖旺、深水埗一帶加強截查，衝鋒隊已加強巡邏。',
+    4: '快訊：涉及嚴重罪案調查升級，相關區域氣氛緊張，請勿圍觀。',
+    5: '突發：多區進入高度戒備，市民盡量減少逗留街頭，聽從現場指示。'
+  };
+  const macBy = {
+    1: '司警提醒旅客保管財物，娛樂場外周如常巡查。',
+    2: '新聞：口岸人流高峰，請提前備齊證件，依指示排隊。',
+    3: '燈塔之聲：娛樂場一帶發現異常，司警已加強現場戒備。',
+    4: '快訊：跨境通道戒備提升，硬闖關卡屬嚴重罪行，切勿以身試法。',
+    5: '口岸特備：多個檢查站加強查驗，無有效證件旅客將被截查。'
+  };
+  const twBy = {
+    1: '警方呼籲民眾注意自身安全，發現可疑情況請撥打報案專線。',
+    2: '路況：市區有追逐相關通報，用路人請改道並減速。',
+    3: '新聞快報：北部、南部同步加強警力，民眾勿圍觀。',
+    4: '夜市廣播：附近暫請少停留，聽從員警指揮。',
+    5: '島嶼新聞網：重大刑案相關戒備中，請配合盤查。'
+  };
+  const n = Math.max(1, Math.min(5, stars | 0));
   const lines = {
-    hk: [
-      `突發：警方通緝升級至「通緝級 ${stars}」，呼籲市民勿自行靠近。`,
-      `交通台：有高速追逐目擊報告，駕駛人士請改道。`,
-      `新聞：油尖旺／深水埗一帶加強截查——通緝級 ${stars}。`,
-      stars >= 4 ? `快訊：高層單位介入——街頭氣氛轉冷，請勿圍觀。` : `衝鋒隊加強巡邏；低通緝級市民照常出入。`
-    ],
-    mac: [
-      `燈塔之聲：司警關注娛樂場一帶異常，現為通緝級 ${stars}。`,
-      `新聞：口岸加強檢查，旅客請備齊證件。`,
-      stars >= 4 ? `快訊：跨境聯動戒備提升——硬闖大橋屬高危。` : `娛樂場外周請小心自發查證人士。`
-    ],
-    tw: [
-      `島嶼新聞網：北／南部同步戒備，通緝級 ${stars}。`,
-      `新聞快報：有持械案件通報，民眾勿圍觀。`,
-      `夜市廣播：警察追緊矣——通緝級 ${stars}，路邊少停。`,
-      `軌道電台：城市警報升了一格。保持低調。`
-    ]
+    hk: [hkBy[n], hkBy[Math.max(1, n - 1)] || hkBy[1], '天文台（戲仿）之後係交通消息；請繼續收聽。'],
+    mac: [macBy[n], macBy[Math.max(1, n - 1)] || macBy[1], '珠江口天氣不穩，過關預留時間。'],
+    tw: [twBy[n], twBy[Math.max(1, n - 1)] || twBy[1], '整點路況稍後提供，請勿邊開車邊滑手機。']
   };
   const pool = lines[s.region] || lines.hk;
   RADIO._duckT = 1.2;
@@ -11754,19 +11770,19 @@ function radioEventNews(kind) {
   const s = radioCurrent();
   const lines = {
     storm: {
-      hk: '天氣特備：高風球／暴雨生效——路面危險，巡邏加密。',
-      mac: '燈塔之聲：風球／暴雨警告——娛樂場外周請減少逗留。',
-      tw: '島嶼新聞網：惡劣天氣特報——沿海強風，少出門。'
+      hk: '天氣特備：烈風／暴雨警告生效，海邊同棚架請遠離；路面極滑，警方加強巡邏。',
+      mac: '天氣消息：珠江口風力偏強，娛樂場外周請減少逗留，過關預留時間。',
+      tw: '氣象特報：沿海強風豪雨，请減少非必要外出，注意積水。'
     },
     hzmb: {
-      hk: '邊境快訊：大橋方向出現異常車流，請勿模仿。',
-      mac: '口岸快訊：港珠澳方向戒備提升，旅客備齊證件。',
-      tw: '國際快訊：港澳跨境通道傳出異常——詳情稍後。'
+      hk: '口岸消息：港珠澳大橋方向交通一度受阻，駕駛人士請改用其他過境方式。',
+      mac: '口岸消息：大橋澳門口岸加強查驗，請備齊證件、依指示停車。',
+      tw: '國際新聞：港澳跨境通道傳出交通異常，詳情待當地當局公布。'
     },
     vault: {
-      hk: '突發：路氹城娛樂場外周封路——官方稱「演習」。',
-      mac: '燈塔之聲：娛樂場一帶臨時交通管制，請改道。',
-      tw: '新聞快報：澳門娛樂場周邊異常——旅客勿圍觀。'
+      hk: '突發：路氹城一帶臨時封路，當局稱保安事件處理中，呼籲勿圍觀。',
+      mac: '現場：娛樂場周邊實施臨時交通管制，巴士改道，詳情稍後更新。',
+      tw: '港澳快訊：澳門娛樂場周邊傳出保安事件，旅客請聽從現場指示。'
     }
   };
   const pack = lines[kind];
@@ -11810,7 +11826,7 @@ HOOKS.wantedCleared.push(() => {
   RADIO.newsCool = 6;
   const s = radioCurrent();
   if (typeof sfx === 'function') sfx('radio_clear_chime');
-  radioToast(`${s.name}｜警方暫時失去目標……（清通緝）`, 2800);
+  radioToast(`${s.name}｜警方表示現場暫時缓和，相關通緝訊息稍後更新。`, 2800);
 });
 
 HOOKS.sim.push((dt) => {
@@ -11836,11 +11852,36 @@ HOOKS.sim.push((dt) => {
   if (RADIO.on && !INT.active && !MS.id && Math.random() < dt * 0.012 && RADIO.cool <= 0) {
     RADIO.cool = 45;
     const s = radioCurrent();
+    // PSA 跟 docs/official-fines-catalog.md §5（現實面額；戲仿部門；港定額罰款／澳罰款／台罰鍰）
     const ads = s.region === 'tw'
-      ? ['下節新聞之後，聽歌。', '天氣：南部多雲，注意西北雨。', '廣告：夜市優惠——香腸加蛋。', '返嚟聽多一首（原創／授權曲庫）。']
+      ? [
+          '下節新聞之後，音樂時間。',
+          '天氣：南部多雲，午後注意局部陣雨。',
+          '廣告：夜市攤位今日香腸加蛋套餐。',
+          '路況：聯外道路車多，預留通勤時間。',
+          '環保稽查宣導：勿亂丟廢棄物，違者罰鍰最低一千二百元。',
+          '菸害防制宣導：禁菸場所吸菸，首次罰鍰二千元起。'
+        ]
       : s.region === 'mac'
-        ? ['下一節賽馬消息。', '天氣：珠江口有微雨。', '廣告：官也街蛋撻——今日新鲜。', '下節音樂（原創床聲）。']
-        : ['下節財經。', '天文台（戲仿）：吹東北風，幾多雲。', '廣告：8仔茶葉蛋兩件 $9.9。', '下節音樂——城市流行床聲。'];
+        ? [
+            '稍後：賽馬同娛樂場交通消息。',
+            '天氣：珠江口有微雨，能見度一般。',
+            '廣告：官也街蛋撻——新鮮出爐（戲仿店）。',
+            '過關提示：週末口岸繁忙，請提早出門。',
+            '市政事務處提示：公共地方違規可被罰款三百至六百元。',
+            '口岸秩序組提示：口岸範圍請遵守秩序，嚴重違規罰款較高。'
+          ]
+        : [
+            '稍後財經同樓市節錄。',
+            '天文台（戲仿）：吹東北風，幾多雲，市區乾燥。',
+            '廣告：便利店茶葉蛋兩件優惠（戲仿）。',
+            '交通：過海隧道車慢，建議改乘鐵道。',
+            '城市潔淨署提示：亂拋垃圾、隨地吐痰，定額罰款三千元。',
+            '無煙監察組提示：禁煙區吸煙，定額罰款三千元。',
+            '交通執法組提示：非法泊車定額罰款四百元；行車中使用手提電話亦可被票控。',
+            '交通執法組提醒：超速、衝紅燈、斑馬線未讓行人均屬定額罰款項目。',
+            '醫療消息：公立急症室合資格人士每次收費約四百元，非緊急請考慮普通科門診。'
+          ];
     radioToast(`${s.name}｜${ads[Math.floor(Math.random() * ads.length)]}`, 2400);
   }
 });
@@ -12138,7 +12179,7 @@ const WANTED_FX = {
     const tag = $('wantedTier');
     if (tag && n > 0) {
       const tiers = (typeof LM !== 'undefined' && LM.wantedTier) ? LM.wantedTier
-        : ['', '軍裝巡邏', '衝鋒車隊', 'PTU 機動部隊', 'O記 有組織罪案', '飛虎 特別任務連'];
+        : ['', '軍裝巡邏', '衝鋒車隊', '機動巡邏組', '重案組（戲仿）', '特勤連（戲仿）'];
       tag.textContent = (WANTED.search ? '搜尋中 · ' : '') + (tiers[n] || n + '★');
       tag.style.color = WANTED_FX.colors[n - 1] || '#f0c419';
       if (n >= 4) tag.classList.add('hot'); else tag.classList.remove('hot');
@@ -12156,14 +12197,14 @@ const WANTED_FX = {
     WANTED_FX.flashT = 0.55;
     const fl = $('wantedFlash'); if (fl) { fl.classList.add('on'); setTimeout(() => fl.classList.remove('on'), 450); }
     const tiers = (typeof LM !== 'undefined' && LM.wantedTier) ? LM.wantedTier
-      : ['', '軍裝巡邏', '衝鋒車隊', 'PTU 機動部隊', 'O記 有組織罪案', '飛虎 特別任務連'];
+      : ['', '軍裝巡邏', '衝鋒車隊', '機動巡邏組', '重案組（戲仿）', '特勤連（戲仿）'];
     const name = tiers[WANTED.stars] || '';
     if (WANTED.stars !== WANTED_FX.lastAnnounced) {
       WANTED_FX.lastAnnounced = WANTED.stars;
       toast(`通緝升級 ${WANTED.stars}★ · ${name}`, 2600);
-      if (WANTED.stars >= 5) toast('飛虎部隊出動——高速攔截單位接近中', 2800);
-      else if (WANTED.stars >= 4) toast('O記介入——客貨車增援', 2400);
-      else if (WANTED.stars >= 3) toast('PTU 機動部隊到場', 2200);
+      if (WANTED.stars >= 5) toast('特勤連出動——高速攔截單位接近中', 2800);
+      else if (WANTED.stars >= 4) toast('重案組介入——客貨車增援', 2400);
+      else if (WANTED.stars >= 3) toast('機動巡邏組到場', 2200);
     }
     renderWanted();
   };
@@ -12198,7 +12239,7 @@ HOOKS.sim.push((dt) => {
         const x = tp.x + Math.sin(ang) * dist, z = tp.z + Math.cos(ang) * dist;
         const v = spawnVehicle('van', x, z, Math.atan2(tp.x - x, tp.z - z), { ai: 'chase', maxSpeed: 28 + WANTED.stars, tag: 'ptu' });
         v.siren = true; v.kind = 'police';
-        if (v.hb) v.hb.name = WANTED.stars >= 5 ? '飛虎車' : 'PTU 衝鋒車';
+        if (v.hb) v.hb.name = WANTED.stars >= 5 ? '特勤車' : '機動衝鋒車';
       }
     }
     return r;
@@ -12633,10 +12674,10 @@ function streetForce(id) {
 
 Object.assign(window.NT, { STREET, streetOpen, streetResolve, streetForce, streetCanTrigger, STREET_DEFS });
 /* =========================================================================
- * M1c · Phase-1 交接：信和中心／EU 巡邏／旺角霓虹板／landfall／街頭台詞
+ * M1c · Phase-1 交接：信旺中心／EU 巡邏／旺角霓虹板／landfall／街頭台詞
  *  · 數據：data/mk-tst-phase1-nodes.json（lat/lon → hkGeo；忽略 JSON 內缺 K 嘅預算）
  *  · 美術：p1-mongkok-neon.jpg、p1-eu-police-van.jpg、p1-sino-safehouse.jpg
- *  · 任務 landfall：文濤（唔用阿豪）徒步去信和中心，避開差人
+ *  · 任務 landfall：文濤（唔用阿豪）徒步去信旺中心，避開差人
  *  · 街頭事件：套用 docs/phase1-opening-and-events.md 開場／成敗 toast
  *  唔改現有 LM lat/lon；唔撞重複套材（_p1 旗）
  * ========================================================================= */
@@ -12655,7 +12696,7 @@ const P1_FILES = {
   sino: 'p1-sino-safehouse.jpg'
 };
 
-/** 內嵌 phase1 巡邏／信和節點（避免 runtime fetch）*/
+/** 內嵌 phase1 巡邏／信旺節點（避免 runtime fetch）*/
 const P1_NODES = {
   sino: { id: 'sino_centre', lat: 22.31635, lon: 114.16995 },
   patrol_spawns: [
@@ -12725,7 +12766,7 @@ function p1SpawnPatrols() {
     v.unit = 'EU';
     v.p1Id = s.id;
     v.p1Name = s.name;
-    if (v.hb) v.hb.name = '衝鋒隊（EU）';
+    if (v.hb) v.hb.name = '衝鋒隊';
     // park 已有 collider；確保唔 chase 直到通緝
     v.ai = 'park';
     P1.patrol.push(v);
@@ -12770,7 +12811,7 @@ function p1MkNeonBackdrop() {
   scene.add(g); P1.neon = g;
 }
 
-/* ---------- 信和安全屋室內板 ---------- */
+/* ---------- 信旺安全屋室內板 ---------- */
 function p1WireSinoInterior() {
   const def = INTERIORS.sino_centre; if (!def || def._p1Sino) return;
   def._p1Sino = true;
@@ -12787,8 +12828,8 @@ function p1WireSinoInterior() {
 
 /* ---------- 任務 landfall（落難香江 · 文濤）---------- */
 MISSION_DB.landfall = {
-  id: 'landfall', name: '落難香江', protagonist: '李文濤 WenTao', location: '香港 · 旺角 → 信和中心',
-  objective: '避開沿途警車同巡邏差人，徒步去信和中心安全屋', fail: '文濤死亡或被捕', reward: '$2,000 黑錢', unlock: '旺角避風頭'
+  id: 'landfall', name: '落難香江', protagonist: '李文濤 WenTao', location: '香港 · 旺角 → 信旺中心',
+  objective: '避開沿途警車同巡邏差人，徒步去信旺中心安全屋', fail: '文濤死亡或被捕', reward: '$2,000 黑錢', unlock: '旺角避風頭'
 };
 
 function p1StartSinoMeeting() {
@@ -12797,10 +12838,10 @@ function p1StartSinoMeeting() {
   setTarget(null);
   state.locked = true;
   // docs/sino-meeting-dialogue.md（阿傑⇄文濤；唔用「聯絡人」）
-  say('阿傑', '文濤？……入嚟關閘。窗外嗰啲 EU，當睇唔到。', 3.0);
-  after(3.0, () => toast('安全屋：信和中心 · 二樓後檔', 1800));
+  say('阿傑', '文濤？……入嚟關閘。窗外嗰啲衝鋒隊，當睇唔到。', 3.0);
+  after(3.0, () => toast('安全屋：信旺中心 · 二樓後檔', 1800));
   after(3.2, () => say('李文濤', '西門町差點埋單。你喺旺角呢度……真係避得過熱度？', 3.0));
-  after(6.4, () => say('阿傑', '信和二樓動漫舖後檔——街坊當我賣手辦，差人唔會抄到呢度。你袋入面有咩？', 3.4));
+  after(6.4, () => say('阿傑', '信旺二樓動漫舖後檔——街坊當我賣手辦，差人唔會抄到呢度。你袋入面有咩？', 3.4));
   after(9.6, () => say('李文濤', '假護照半成品、高雄碼頭嘅帳。角頭要我過嚟搵「阿傑」——就係你？', 3.2));
   after(13.0, () => say('阿傑', '係我。聽日先傾三角嗰單；今夜你瞓地蓆，通緝清完先出彌敦道。', 3.4));
   after(16.4, () => say('李文濤', '……多謝。我唔會拖你落水。', 2.2));
@@ -12813,7 +12854,7 @@ function p1LandfallComplete() {
   P1.landfall.done = true;
   setTarget(null);
   state.locked = false;
-  passMission(1500, () => { hideBrief(); toast('安全屋已標記 · 自由活動', 2600); }, '抵達信和中心安全屋');
+  passMission(1500, () => { hideBrief(); toast('安全屋已標記 · 自由活動', 2600); }, '抵達信旺中心安全屋');
 }
 
 MISSIONS.landfall = {
@@ -12833,11 +12874,11 @@ MISSIONS.landfall = {
     titleCard('落難香江', '台灣 ➔ 香港旺角');
     after(0.6, () => say('李文濤', '操……差一點走唔甩。西門町嗰班人全瘋咗……', 3.5));
     after(4.2, () => say('蛇頭阿公', '後生仔，到咗喇。前面就係旺角避風頭。喺香港低調啲——呢度啲差人好「荷蘭」。', 4.5));
-    after(8.9, () => say('李文濤', '信和中心嗰個聯絡人……真係靠得住？', 3.2));
+    after(8.9, () => say('李文濤', '信旺中心嗰個聯絡人……真係靠得住？', 3.2));
     after(12.3, () => {
       toast('主線任務：落難香江', 2200);
-      objective('避開沿途警車同巡邏差人，徒步去<em>信和中心</em>安全屋。', 6);
-      toast('新目標：信和中心 · 二樓安全屋', 1800);
+      objective('避開沿途警車同巡邏差人，徒步去<em>信旺中心</em>安全屋。', 6);
+      toast('新目標：信旺中心 · 二樓安全屋', 1800);
     });
     after(14.5, () => say('路人 NPC', '喂！盲咗呀？撞到人唔識講對唔住啊？！', 2.8));
     // 出生：旺角南邊（近 mk_pawn／sino，唔喺車龍中間）
@@ -13291,7 +13332,7 @@ function icacCheckFreeze() {
   ECON.cash = 0;
   ICAC.frozen = true;
   updateCashHUD(-ICAC.lastCash);
-  toast('廉署凍結合法資產（ICAC 戲仿）——乾淨錢已凍；黑錢仍可用', 3600);
+  toast('廉政署（戲仿）凍結合法資產——乾淨錢已凍；黑錢仍可用', 3600);
   say('新聞', '涉嫌嚴重罪案人士之銀行帳戶已被限制提款……', 3.2);
 }
 
@@ -13781,7 +13822,7 @@ function transitOpenBus(stopIdx) {
   const stop = TRANSIT.busStops[stopIdx]; if (!stop) return;
   const next = (stopIdx + 1) % TRANSIT.busStops.length;
   const prev = (stopIdx - 1 + TRANSIT.busStops.length) % TRANSIT.busStops.length;
-  transitOpenList('bus', `紅巴 · ${stop.name}`, '久巴／紅巴（九巴戲仿） · 1A 彌敦道線', stopIdx,
+  transitOpenList('bus', `紅巴 · ${stop.name}`, '久巴／紅巴（戲仿） · 1A 彌敦道線', stopIdx,
     [TRANSIT.busStops[next], TRANSIT.busStops[prev]],
     (s, i) => `去 ${s.name}（${i === 0 ? '往北' : '往南'}）`,
     (s, i) => (i === 0 ? next : prev));
@@ -14467,7 +14508,7 @@ Object.assign(window.NT, {
 });
 /* =========================================================================
  * M1c · batch-2 門面＋CC0 車日夜材質板
- *  · batch2：ifc-lobby-day / public-housing-day / star-ferry-pier-day
+ *  · batch2：ifc-lobby-day / public-housing-day / harbour-ferry-pier-day
  *  · p1-cc0-vehicles-day-night.jpg → taxi／minibus／eu van／policeSuv
  *  · HOOKS.tod 切換 emissive（夜亮日淡）
  * ========================================================================= */
@@ -14477,7 +14518,7 @@ const B2ART = {
   files: {
     ifc: 'ifc-lobby-day.jpg',
     estate: 'public-housing-day.jpg',
-    ferry: 'star-ferry-pier-day.jpg',
+    ferry: 'harbour-ferry-pier-day.jpg',
     vehDN: 'p1-cc0-vehicles-day-night.jpg'
   },
   applied: {}
@@ -15121,6 +15162,1305 @@ HOOKS.sim.push((dt) => {
 });
 
 Object.assign(window.NT, { SAFARI_SAFE, ntSafeResetView, ntShowReloadHint });
+/* =========================================================================
+ * M1c · 街景真實 props（P0 稀疏）
+ * 對齊 docs/streetscape-authenticity-checklist.md、data/streetscape-p0-props.json
+ * 原則：當地有咩先加咩；唔塞滿；唔假 cyber；唔郁 Pages／vendor
+ * ========================================================================= */
+const SCAPE = {
+  group: null,
+  macG: null,
+  tpG: null,
+  twG: null,
+  placed: false,
+  mats: null
+};
+
+function scapeMats() {
+  if (SCAPE.mats) return SCAPE.mats;
+  const M = {
+    asphalt: new THREE.MeshStandardMaterial({ color: 0x1a1c1e, roughness: 0.92, metalness: 0.02 }),
+    tile: new THREE.MeshStandardMaterial({ color: 0x6a5a52, roughness: 0.85, metalness: 0.05 }),
+    tileGrey: new THREE.MeshStandardMaterial({ color: 0x5a5e62, roughness: 0.88, metalness: 0.04 }),
+    concrete: new THREE.MeshStandardMaterial({ color: 0x8a8e90, roughness: 0.9, metalness: 0.05 }),
+    zebra: new THREE.MeshStandardMaterial({ color: 0xe8e8e4, roughness: 0.75, metalness: 0.05 }),
+    yellow: new THREE.MeshStandardMaterial({ color: 0xe0b000, roughness: 0.7, metalness: 0.1 }),
+    rail: new THREE.MeshStandardMaterial({ color: 0x9aa3a8, roughness: 0.4, metalness: 0.75 }),
+    binGreen: new THREE.MeshStandardMaterial({ color: 0x2f6b4a, roughness: 0.65, metalness: 0.25 }),
+    binGrey: new THREE.MeshStandardMaterial({ color: 0x5a6066, roughness: 0.7, metalness: 0.2 }),
+    pole: (typeof poleMat !== 'undefined') ? poleMat : new THREE.MeshStandardMaterial({ color: 0x4a5056, roughness: 0.55, metalness: 0.7 }),
+    lightR: new THREE.MeshStandardMaterial({ color: 0x221010, emissive: new THREE.Color(0.55, 0.05, 0.05), emissiveIntensity: 0.8, roughness: 0.4 }),
+    lightA: new THREE.MeshStandardMaterial({ color: 0x221a08, emissive: new THREE.Color(0.55, 0.35, 0.05), emissiveIntensity: 0.5, roughness: 0.4 }),
+    lightG: new THREE.MeshStandardMaterial({ color: 0x0e1a10, emissive: new THREE.Color(0.05, 0.45, 0.12), emissiveIntensity: 0.6, roughness: 0.4 }),
+    sign: new THREE.MeshStandardMaterial({ color: 0x1e3a5f, roughness: 0.55, metalness: 0.2 }),
+    tactile: new THREE.MeshStandardMaterial({ color: 0xd4a017, roughness: 0.8, metalness: 0.05 }),
+    manhole: new THREE.MeshStandardMaterial({ color: 0x2a2e32, roughness: 0.55, metalness: 0.55 }),
+    blueRail: new THREE.MeshStandardMaterial({ color: 0x3a5a8a, roughness: 0.45, metalness: 0.55 })
+  };
+  SCAPE.mats = M;
+  return M;
+}
+
+function scapeBox(mat, w, h, d, x, y, z, parent, yaw) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y, z);
+  if (yaw) m.rotation.y = yaw;
+  m.castShadow = false; m.receiveShadow = true;
+  parent.add(m);
+  return m;
+}
+
+function scapeWorld(region, lat, lon, local) {
+  if (region === 'hk' && typeof hkGeo === 'function') {
+    const g = hkGeo(lat, lon); return { x: g.x, z: g.z, parent: 'hk' };
+  }
+  if (region === 'mac' && typeof macGeo === 'function' && typeof MACAU_ORIGIN !== 'undefined') {
+    const g = macGeo(lat, lon);
+    return { x: MACAU_ORIGIN.x + g.x, z: MACAU_ORIGIN.z + g.z, parent: 'mac' };
+  }
+  if (region === 'tp' && typeof tpGeo === 'function' && typeof TP_ORIGIN !== 'undefined') {
+    const g = tpGeo(lat, lon);
+    return { x: TP_ORIGIN.x + g.x, z: TP_ORIGIN.z + g.z, parent: 'tp' };
+  }
+  if (region === 'tw' && local && typeof TW_ORIGIN !== 'undefined') {
+    return { x: TW_ORIGIN.x + local.x, z: TW_ORIGIN.z + local.z, parent: 'tw' };
+  }
+  return null;
+}
+
+function scapeParent(key) {
+  if (key === 'mac') return SCAPE.macG;
+  if (key === 'tp') return SCAPE.tpG;
+  if (key === 'tw') return SCAPE.twG;
+  return SCAPE.group;
+}
+
+function scapeTrafficLight(parent, x, z, yaw) {
+  const M = scapeMats();
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0; parent.add(g);
+  scapeBox(M.pole, 0.12, 5.2, 0.12, 0, 2.6, 0, g);
+  scapeBox(M.pole, 0.1, 0.1, 1.4, 0, 5.1, 0.5, g);
+  const head = new THREE.Group(); head.position.set(0, 5.0, 1.15); g.add(head);
+  scapeBox(M.pole, 0.28, 0.85, 0.22, 0, 0, 0, head);
+  scapeBox(M.lightR, 0.2, 0.18, 0.08, 0, 0.28, 0.12, head);
+  scapeBox(M.lightA, 0.2, 0.18, 0.08, 0, 0.05, 0.12, head);
+  scapeBox(M.lightG, 0.2, 0.18, 0.08, 0, -0.18, 0.12, head);
+}
+
+function scapeZebra(parent, x, z, yaw) {
+  const M = scapeMats();
+  const g = new THREE.Group(); g.position.set(x, 0.03, z); g.rotation.y = yaw || 0; parent.add(g);
+  for (let i = -3; i <= 3; i++) scapeBox(M.zebra, 0.55, 0.04, 3.6, i * 0.95, 0, 0, g);
+}
+
+function scapeBin(parent, x, z, style) {
+  const M = scapeMats();
+  const mat = style === 'small' || style === 'square' ? M.binGrey : M.binGreen;
+  const w = style === 'small' ? 0.45 : (style === 'square' ? 0.55 : 0.5);
+  const h = style === 'small' ? 0.85 : 1.05;
+  scapeBox(mat, w, h, w, x, h / 2, z, parent);
+  scapeBox(M.pole, w * 1.05, 0.06, w * 1.05, x, h + 0.03, z, parent);
+}
+
+function scapeManhole(parent, x, z) {
+  const M = scapeMats();
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.06, 16), M.manhole);
+  m.position.set(x, 0.04, z); m.receiveShadow = true; parent.add(m);
+}
+
+function scapeRail(parent, x, z, yaw, len, matKey) {
+  const M = scapeMats();
+  const mat = matKey === 'blue' ? M.blueRail : M.rail;
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0; parent.add(g);
+  const L = len || 8;
+  scapeBox(mat, 0.05, 0.05, L, 0, 1.0, 0, g);
+  scapeBox(mat, 0.05, 0.05, L, 0, 0.45, 0, g);
+  for (let k = 0; k <= Math.floor(L / 2); k++) scapeBox(mat, 0.06, 1.05, 0.06, 0, 0.52, -L / 2 + k * 2, g);
+}
+
+function scapeYellowLine(parent, x, z, yaw, len) {
+  const M = scapeMats();
+  scapeBox(M.yellow, 0.18, 0.03, len || 6, x, 0.025, z, parent, yaw || 0);
+}
+
+function scapeBollard(parent, x, z) {
+  const M = scapeMats();
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.75, 10), M.concrete);
+  m.position.set(x, 0.38, z); parent.add(m);
+  scapeBox(M.yellow, 0.26, 0.05, 0.26, x, 0.78, z, parent);
+}
+
+function scapeSign(parent, x, z, yaw) {
+  const M = scapeMats();
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0; parent.add(g);
+  scapeBox(M.pole, 0.08, 2.8, 0.08, 0, 1.4, 0, g);
+  scapeBox(M.sign, 1.4, 0.7, 0.06, 0, 2.6, 0, g);
+}
+
+function scapeScooterBay(parent, x, z, yaw) {
+  const M = scapeMats();
+  const g = new THREE.Group(); g.position.set(x, 0.02, z); g.rotation.y = yaw || 0; parent.add(g);
+  scapeBox(M.zebra, 3.2, 0.03, 1.6, 0, 0, 0, g);
+  for (let i = -1; i <= 1; i++) scapeBox(M.yellow, 0.08, 0.04, 1.5, i * 1.0, 0.02, 0, g);
+}
+
+function scapeTactile(parent, x, z, yaw) {
+  const M = scapeMats();
+  scapeBox(M.tactile, 1.2, 0.04, 0.35, x, 0.03, z, parent, yaw || 0);
+}
+
+function scapeArcadeHint(parent, x, z, yaw) {
+  const M = scapeMats();
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0; parent.add(g);
+  for (let i = 0; i < 3; i++) {
+    scapeBox(M.concrete, 0.35, 3.2, 0.35, i * 3.2, 1.6, 0, g);
+    scapeBox(M.concrete, 3.0, 0.25, 0.35, i * 3.2 + 1.5, 3.2, 0, g);
+  }
+}
+
+function scapeTramRail(parent, x, z, yaw) {
+  const M = scapeMats();
+  const g = new THREE.Group(); g.position.set(x, 0.02, z); g.rotation.y = yaw || 0; parent.add(g);
+  scapeBox(M.asphalt, 4.5, 0.05, 10, 0, 0, 0, g);
+  scapeBox(M.rail, 0.08, 0.06, 10, -0.55, 0.04, 0, g);
+  scapeBox(M.rail, 0.08, 0.06, 10, 0.55, 0.04, 0, g);
+}
+
+function scapeAt(region, lat, lon, local, fn) {
+  const w = scapeWorld(region, lat, lon, local);
+  if (!w) return;
+  fn(scapeParent(w.parent), w.x, w.z);
+}
+
+function scapePlaceP0() {
+  if (SCAPE.placed) return;
+  if (typeof THREE === 'undefined' || typeof scene === 'undefined') return;
+  if (typeof hkGeo !== 'function') return;
+
+  const root = new THREE.Group(); root.name = 'streetscape-p0'; scene.add(root); SCAPE.group = root;
+  SCAPE.macG = new THREE.Group(); SCAPE.macG.name = 'scape-mac'; root.add(SCAPE.macG); SCAPE.macG.visible = false;
+  SCAPE.tpG = new THREE.Group(); SCAPE.tpG.name = 'scape-tp'; root.add(SCAPE.tpG); SCAPE.tpG.visible = false;
+  SCAPE.twG = new THREE.Group(); SCAPE.twG.name = 'scape-tw'; root.add(SCAPE.twG); SCAPE.twG.visible = false;
+
+  // —— 旺角／彌敦（最低必備）——
+  scapeAt('hk', 22.3192, 114.1695, null, (p, x, z) => scapeTrafficLight(p, x, z, 0));
+  scapeAt('hk', 22.3190, 114.1695, null, (p, x, z) => scapeZebra(p, x, z, 0));
+  scapeAt('hk', 22.3188, 114.1696, null, (p, x, z) => scapeBin(p, x, z, 'muni'));
+  scapeAt('hk', 22.3196, 114.1693, null, (p, x, z) => scapeBin(p, x, z, 'muni'));
+  scapeAt('hk', 22.3191, 114.1694, null, (p, x, z) => scapeManhole(p, x, z));
+  scapeAt('hk', 22.3195, 114.1694, null, (p, x, z) => scapeManhole(p, x, z));
+  scapeAt('hk', 22.3189, 114.1697, null, (p, x, z) => scapeRail(p, x, z, Math.PI / 2, 8));
+  scapeAt('hk', 22.3194, 114.1692, null, (p, x, z) => scapeRail(p, x, z, Math.PI / 2, 8));
+
+  // —— 中環碼頭 ——
+  scapeAt('hk', 22.2872, 114.1603, null, (p, x, z) => scapeRail(p, x, z, 1.57, 10));
+  scapeAt('hk', 22.2870, 114.1604, null, (p, x, z) => scapeBollard(p, x, z));
+  scapeAt('hk', 22.2869, 114.1606, null, (p, x, z) => scapeBollard(p, x, z));
+  scapeAt('hk', 22.2870, 114.1605, null, (p, x, z) => scapeYellowLine(p, x, z, 0, 7));
+  scapeAt('hk', 22.2868, 114.1605, null, (p, x, z) => scapeRail(p, x, z, 0, 5)); // 閘欄
+  scapeAt('hk', 22.2865, 114.1505, null, (p, x, z) => scapeTramRail(p, x, z, 0.2));
+
+  // —— 警署外藍欄（市政）——
+  scapeAt('hk', 22.3018, 114.1725, null, (p, x, z) => scapeRail(p, x + 4, z, 0, 6, 'blue'));
+
+  // —— 澳外港 ——
+  scapeAt('mac', 22.1965, 113.5588, null, (p, x, z) => scapeRail(p, x, z, 0, 9));
+  scapeAt('mac', 22.1966, 113.5587, null, (p, x, z) => scapeSign(p, x, z, 0.3));
+  scapeAt('mac', 22.1964, 113.5588, null, (p, x, z) => scapeYellowLine(p, x, z, 1.2, 8));
+  scapeAt('mac', 22.1963, 113.5589, null, (p, x, z) => scapeBin(p, x, z, 'small'));
+
+  // —— 西門町 ——
+  scapeAt('tp', 25.0420, 121.5070, null, (p, x, z) => scapeScooterBay(p, x, z, 0));
+  scapeAt('tp', 25.0421, 121.5068, null, (p, x, z) => scapeTactile(p, x, z, 0));
+  scapeAt('tp', 25.0422, 121.5069, null, (p, x, z) => scapeZebra(p, x, z, 0.4));
+  scapeAt('tp', 25.0422, 121.5070, null, (p, x, z) => scapeTrafficLight(p, x, z, 0.4));
+  scapeAt('tp', 25.0420, 121.5066, null, (p, x, z) => scapeBin(p, x, z, 'square'));
+  scapeAt('tp', 25.04205, 121.5065, null, (p, x, z) => scapeArcadeHint(p, x, z, 0));
+
+  // —— 高雄港邊（備選）——
+  scapeAt('tw', null, null, { x: -35, z: 105 }, (p, x, z) => scapeRail(p, x, z, 0.5, 10));
+  scapeAt('tw', null, null, { x: -42, z: 98 }, (p, x, z) => scapeSign(p, x, z, -0.4));
+  scapeAt('tw', null, null, { x: -38, z: 102 }, (p, x, z) => scapeScooterBay(p, x, z, 0.2));
+
+  SCAPE.placed = true;
+
+  // 跟區域可見性（澳門／台北／高雄）
+  if (typeof enterArea === 'function') {
+    const _ea = enterArea;
+    enterArea = function (instant) {
+      _ea(instant);
+      if (SCAPE.macG) SCAPE.macG.visible = true;
+    };
+  }
+  if (typeof enterTaipei === 'function') {
+    const _ep = enterTaipei;
+    enterTaipei = function (spot) {
+      _ep(spot);
+      if (SCAPE.tpG) SCAPE.tpG.visible = true;
+    };
+  }
+  if (typeof enterTaiwan === 'function') {
+    const _et = enterTaiwan;
+    enterTaiwan = function () {
+      _et();
+      if (SCAPE.twG) SCAPE.twG.visible = true;
+    };
+  }
+}
+
+{
+  const boot = () => {
+    if (!window.NT || !NT.ready) return false;
+    if (typeof hkGeo !== 'function' || typeof scene === 'undefined') return false;
+    try { scapePlaceP0(); } catch (e) { console.warn('[streetscape]', e); }
+    return SCAPE.placed;
+  };
+  const t0 = setInterval(() => { if (boot()) clearInterval(t0); }, 250);
+  setTimeout(boot, 0);
+}
+
+Object.assign(window.NT || (window.NT = {}), { SCAPE, scapePlaceP0 });
+/* =========================================================================
+ * M1c · 葵涌貨櫃碼頭真實化（寫實比例）
+ *  · kwai-chung-pier-overview-day.jpg → LM kwai_chung_pier 門面／遠景板
+ *  · kwai-chung-pier-props.jpg → 吊機／船舷／纜樁／油漬石屎（atlas）
+ *  · 貨櫃唔印真船公司標；青馬／汀九遠景用戲仿名
+ *  · 非關鍵路徑：缺檔跳過
+ * ========================================================================= */
+const KWAI = {
+  ready: false,
+  group: null,
+  tex: {},
+  mats: {}
+};
+
+function kwAtlas(mat, col, row, cols, rows) {
+  if (!mat || !mat.map) return mat;
+  const map = mat.map.clone();
+  map.repeat.set(1 / cols, 1 / rows);
+  map.offset.set(col / cols, 1 - (row + 1) / rows);
+  map.needsUpdate = true;
+  mat.map = map;
+  if (mat.emissiveMap) {
+    const em = mat.emissiveMap.clone();
+    em.repeat.copy(map.repeat); em.offset.copy(map.offset); em.needsUpdate = true;
+    mat.emissiveMap = em;
+  }
+  return mat;
+}
+
+function kwMat(tex, col, row, cols, rows, opt) {
+  opt = opt || {};
+  const mat = new THREE.MeshStandardMaterial({
+    map: tex,
+    roughness: opt.roughness != null ? opt.roughness : 0.7,
+    metalness: opt.metalness != null ? opt.metalness : 0.08,
+    transparent: !!opt.transparent,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    emissive: new THREE.Color(0xffffff),
+    emissiveMap: tex,
+    emissiveIntensity: (typeof TOD !== 'undefined' && TOD.mode === 'day') ? 0.06 : 0.28
+  });
+  mat.userData.kwEmi = { day: 0.06, night: 0.28 };
+  kwAtlas(mat, col, row, cols, rows);
+  return (typeof shared === 'function') ? shared(mat) : mat;
+}
+
+function kwPlane(parent, mat, w, h, x, y, z, rotY, rotX) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+  m.position.set(x, y, z);
+  if (rotY) m.rotation.y = rotY;
+  if (rotX) m.rotation.x = rotX;
+  m.receiveShadow = true;
+  m.userData.noMerge = true;
+  m.userData.kwaichung = true;
+  parent.add(m);
+  return m;
+}
+
+function kwBox(parent, mat, w, h, d, x, y, z) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y, z);
+  m.castShadow = m.receiveShadow = true;
+  m.userData.noMerge = true;
+  m.userData.kwaichung = true;
+  parent.add(m);
+  return m;
+}
+
+/** 纜樁（約 Ø0.35 × 0.7m） */
+function kwBollard(parent, x, z) {
+  const mat = KWAI.mats.bollard || new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.55, metalness: 0.4 });
+  kwBox(parent, mat, 0.38, 0.72, 0.38, x, 0.36, z);
+}
+
+/** 船舷剪影（遠泊，唔印真船名） */
+function kwHull(parent, x, z, len) {
+  const mat = KWAI.mats.hull || new THREE.MeshStandardMaterial({ color: 0x1a3040, roughness: 0.65 });
+  const g = new THREE.Group();
+  g.position.set(x, 0, z);
+  g.userData.kwaichung = true;
+  kwBox(g, mat, 8, 6, len || 42, 0, 2.2, 0);
+  kwBox(g, mat, 6, 4, 10, 0, 7.5, -len * 0.15);
+  if (KWAI.mats.hullFace) {
+    kwPlane(g, KWAI.mats.hullFace, len * 0.9, 5.5, 4.1, 2.8, 0, Math.PI / 2);
+  }
+  parent.add(g);
+  return g;
+}
+
+/** 吊機門架貼圖補強（加喺現有剪影旁） */
+function kwCraneDecal(parent, x, z) {
+  if (!KWAI.mats.crane) return;
+  kwPlane(parent, KWAI.mats.crane, 28, 36, x, 22, z, -Math.PI / 2);
+}
+
+/** 油漬石屎地貼 */
+function kwOilPatch(parent, x, z, s) {
+  if (!KWAI.mats.oil) return;
+  const p = kwPlane(parent, KWAI.mats.oil, s || 4.5, s || 3.2, x, 0.04, z, 0, -Math.PI / 2);
+  return p;
+}
+
+/** 戲仿青馬／汀九遠景板（唔用官方橋名標） */
+function kwBridgeSkyline(parent) {
+  if (!KWAI.tex.overview) return;
+  const mat = new THREE.MeshStandardMaterial({
+    map: KWAI.tex.overview,
+    roughness: 0.85,
+    metalness: 0.02,
+    emissive: new THREE.Color(0xffffff),
+    emissiveMap: KWAI.tex.overview,
+    emissiveIntensity: (typeof TOD !== 'undefined' && TOD.mode === 'day') ? 0.1 : 0.2,
+    fog: true
+  });
+  mat.userData.kwEmi = { day: 0.1, night: 0.2 };
+  const bx = (typeof BOUND !== 'undefined' ? BOUND.x : 28) + 90;
+  const m = kwPlane(parent, mat, 220, 55, bx, 22, 40, -Math.PI / 2);
+  m.name = 'kw-parody-bridge-skyline'; // 遠景戲仿跨海橋帶
+  return m;
+}
+
+function kwApplyLandmarkFacade() {
+  if (!KWAI.tex.overview || typeof LM === 'undefined' || !LM.byId) return;
+  const L = LM.byId.kwai_chung_pier;
+  if (!L || !L.facade || L.facade.getObjectByName('art-kw-pier')) return;
+  const def = L.def, W = (def.w || 32) * 0.94, H = Math.min(18, (def.h || 10) * 1.4);
+  const mat = new THREE.MeshStandardMaterial({
+    map: KWAI.tex.overview,
+    roughness: 0.65,
+    metalness: 0.05,
+    emissiveMap: KWAI.tex.overview,
+    emissive: new THREE.Color(0xffffff),
+    emissiveIntensity: (typeof TOD !== 'undefined' && TOD.mode === 'day') ? 0.08 : 0.32,
+    polygonOffset: true,
+    polygonOffsetFactor: -1
+  });
+  mat.userData.kwEmi = { day: 0.08, night: 0.32 };
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(W, H), mat);
+  m.name = 'art-kw-pier';
+  m.userData.noMerge = true;
+  m.userData.kwaichung = true;
+  m.position.set(0, H / 2 + 0.4, (def.d || 18) / 2 + 0.1);
+  L.facade.add(m);
+}
+
+async function kwLoad() {
+  if (KWAI.ready || typeof loadTex !== 'function') return KWAI.ready;
+  try { KWAI.tex.overview = await loadTex('kwai-chung-pier-overview-day.jpg', true, false); } catch (e) { console.warn('[kwai]', e && e.message); }
+  try { KWAI.tex.props = await loadTex('kwai-chung-pier-props.jpg', true, false); } catch (e) { console.warn('[kwai]', e && e.message); }
+  if (!KWAI.tex.overview && !KWAI.tex.props) return false;
+  const P = KWAI.tex.props;
+  if (P) {
+    // atlas 約 4×2：吊機｜船舷｜纜樁｜貨櫃PBR / 油漬｜石屎｜尺度標｜預留
+    KWAI.mats.crane = kwMat(P, 0, 0, 4, 2, { roughness: 0.55, metalness: 0.35 });
+    KWAI.mats.hullFace = kwMat(P, 1, 0, 4, 2, { roughness: 0.6 });
+    KWAI.mats.bollard = kwMat(P, 2, 0, 4, 2, { roughness: 0.45, metalness: 0.5 });
+    KWAI.mats.contPbr = kwMat(P, 3, 0, 4, 2, { roughness: 0.75 });
+    KWAI.mats.oil = kwMat(P, 0, 1, 4, 2, { roughness: 0.35, transparent: true });
+    KWAI.mats.concrete = kwMat(P, 1, 1, 4, 2, { roughness: 0.9 });
+  }
+  KWAI.mats.hull = (typeof shared === 'function')
+    ? shared(new THREE.MeshStandardMaterial({ color: 0x1a3040, roughness: 0.65, metalness: 0.15 }))
+    : new THREE.MeshStandardMaterial({ color: 0x1a3040, roughness: 0.65, metalness: 0.15 });
+  KWAI.ready = true;
+  return true;
+}
+
+function kwBuildDock() {
+  if (!KWAI.ready || typeof scene === 'undefined') return;
+  if (KWAI.group) return;
+  const g = new THREE.Group();
+  g.name = 'kwaichung-dock';
+  KWAI.group = g;
+  const bx = typeof BOUND !== 'undefined' ? BOUND.x : 28.5;
+  const bz = typeof BOUND !== 'undefined' ? BOUND.z : 186;
+
+  // 碼頭前沿纜樁
+  for (let z = -80; z <= 120; z += 28) {
+    kwBollard(g, bx - 2.2, z);
+    kwBollard(g, bx - 2.2, z + 8);
+  }
+  // 油漬／石屎補丁（泊位路面）
+  for (const [x, z, s] of [[4, 20, 5], [-6, -30, 4], [8, 60, 6], [-3, 100, 4.5], [2, -60, 5]]) {
+    kwOilPatch(g, x, z, s);
+    if (KWAI.mats.concrete) {
+      const p = kwPlane(g, KWAI.mats.concrete, s * 1.4, s * 1.1, x + 3, 0.02, z - 4, 0, -Math.PI / 2);
+    }
+  }
+  // 遠泊船舷（海側）
+  kwHull(g, bx + 48, -40, 48);
+  kwHull(g, bx + 52, 70, 36);
+  // 吊機貼圖補強
+  for (const cz of [-70, -5, 60, 125]) kwCraneDecal(g, bx + 22, cz);
+  // 戲仿跨海橋遠景（青馬／汀九帶）
+  kwBridgeSkyline(g);
+
+  scene.add(g);
+  kwBuildThreePartStub();
+}
+
+function kwStripContainerLogos() {
+  // 保險：掃貨櫃材質名／userData，唔顯示真船公司字樣（程序化門已自繪，只記 log）
+  if (typeof scene === 'undefined') return;
+  scene.traverse((o) => {
+    if (!o.isMesh || !o.material) return;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    for (const m of mats) {
+      if (!m || !m.name) continue;
+      if (/maersk|cosco|evergreen|oocl|hmm|one\b|yang.?ming/i.test(m.name)) {
+        m.name = 'cont-parody';
+        if (m.map) { /* keep texture, no brand overlay */ }
+      }
+    }
+  });
+}
+
+function kwOnTod(mode) {
+  const night = mode !== 'day';
+  const visit = (root) => {
+    if (!root) return;
+    root.traverse((o) => {
+      if (!o.isMesh || !o.material || !o.material.userData || !o.material.userData.kwEmi) return;
+      const e = o.material.userData.kwEmi;
+      o.material.emissiveIntensity = night ? e.night : e.day;
+    });
+  };
+  visit(KWAI.group);
+  if (typeof LM !== 'undefined' && LM.byId && LM.byId.kwai_chung_pier && LM.byId.kwai_chung_pier.facade) {
+    visit(LM.byId.kwai_chung_pier.facade);
+  }
+}
+
+/** P0 三區骨架 stub（跟 docs/kwai-chung-terminal-layout.md）
+ *  Part A = 現有可玩泊位；B = CT8 南向 hint；C = 對岸青衣吊機牆
+ *  加海峽對岸、船、≥6 岸吊、青馬／汀九剪影、肘形支路標線、閘口
+ *  唔拆現有直路碰撞——聽日可玩；完整拆直路 P1
+ */
+function kwProcCrane(parent, x, z, scale, yaw) {
+  const steel = new THREE.MeshStandardMaterial({ color: 0x2c3136, roughness: 0.6, metalness: 0.6 });
+  const redMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 0.25, 0.15), fog: false });
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0; g.scale.setScalar(scale || 1);
+  g.userData.kwaichung = true; g.userData.noMerge = true; g.name = 'kt-quay-crane';
+  const box = (w, h, d, px, py, pz) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), steel);
+    m.position.set(px, py, pz); g.add(m); return m;
+  };
+  for (const lx of [-8, 8]) for (const lz of [-7, 7]) box(1.4, 42, 1.4, lx, 21, lz);
+  for (const lz of [-7, 7]) box(18, 1.6, 1.4, 0, 42, lz);
+  for (const lx of [-8, 8]) box(1.4, 1.4, 15.4, lx, 30, 0);
+  box(80, 2.4, 3.2, 22, 46, 0);
+  box(6, 4.5, 8, -4, 49, 0);
+  box(1.0, 16, 1.0, -2, 55, 0);
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 6), redMat);
+  lamp.position.set(-2, 63.2, 0); g.add(lamp);
+  if (typeof blinkers !== 'undefined') blinkers.push(lamp);
+  parent.add(g);
+  return g;
+}
+
+function kwElbowRoadMark(parent, x, z, yaw) {
+  const white = new THREE.MeshStandardMaterial({ color: 0xd8d8d0, roughness: 0.8 });
+  const g = new THREE.Group(); g.position.set(x, 0.02, z); g.rotation.y = yaw || 0;
+  g.userData.kwaichung = true; g.name = 'yard_road_elbow';
+  const strip = (w, l, px, pz) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.04, l), white);
+    m.position.set(px, 0, pz); g.add(m);
+  };
+  strip(0.18, 28, -3.2, 0); strip(0.18, 28, 3.2, 0);
+  strip(0.12, 14, -0.12, 7); strip(0.12, 14, 0.12, 7);
+  // 直角轉彎段
+  strip(18, 0.18, 8, 14); strip(18, 0.18, 8, 20);
+  parent.add(g);
+}
+
+function kwGatehouse(parent, x, z) {
+  const conc = new THREE.MeshStandardMaterial({ color: 0x8a8e90, roughness: 0.85 });
+  const yb = new THREE.MeshStandardMaterial({ color: 0xc9a000, roughness: 0.55, metalness: 0.2 });
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.userData.kwaichung = true; g.name = 'gatehouse_weighbridge';
+  const booth = new THREE.Mesh(new THREE.BoxGeometry(3.2, 2.8, 2.6), conc); booth.position.y = 1.4; g.add(booth);
+  const pad = new THREE.Mesh(new THREE.BoxGeometry(8, 0.12, 4), conc); pad.position.set(5, 0.06, 0); g.add(pad);
+  for (let i = 0; i < 4; i++) {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.1, 0.2), yb);
+    b.position.set(-2 + i * 1.2, 0.55, 2.2); g.add(b);
+  }
+  parent.add(g);
+}
+
+function kwBarrierYB(parent, x, z, yaw, len) {
+  const yel = new THREE.MeshStandardMaterial({ color: 0xe0b000, roughness: 0.5, metalness: 0.25 });
+  const blk = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.7 });
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0;
+  g.userData.kwaichung = true; g.name = 'barrier_yb_port';
+  const L = len || 10;
+  for (let i = 0; i < Math.floor(L / 1.2); i++) {
+    const mat = i % 2 ? yel : blk;
+    const m = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.9, 0.18), mat);
+    m.position.set(0, 0.45, -L / 2 + i * 1.2); g.add(m);
+  }
+  parent.add(g);
+}
+
+function kwBridgeSilhouette(parent, x, z, span, name) {
+  const steel = new THREE.MeshStandardMaterial({ color: 0x3a4046, roughness: 0.75, metalness: 0.35, fog: true });
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.userData.kwaichung = true; g.name = name;
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(span, 1.2, 4), steel); deck.position.y = 28; g.add(deck);
+  // 簡化吊橋塔
+  for (const sx of [-span * 0.22, span * 0.22]) {
+    const t = new THREE.Mesh(new THREE.BoxGeometry(3, 48, 3), steel); t.position.set(sx, 24, 0); g.add(t);
+  }
+  // 主纜近似
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 12; i++) {
+      const t = i / 11, x0 = -span * 0.45 + t * span * 0.9;
+      const y0 = 28 + Math.sin(t * Math.PI) * 18;
+      const c = new THREE.Mesh(new THREE.BoxGeometry(span * 0.08, 0.35, 0.35), steel);
+      c.position.set(x0, y0, side * 1.2); g.add(c);
+    }
+  }
+  parent.add(g);
+}
+
+function kwBerthSign(parent, x, z) {
+  const pole = new THREE.MeshStandardMaterial({ color: 0x4a5056, roughness: 0.5, metalness: 0.6 });
+  const face = new THREE.MeshStandardMaterial({ color: 0x1a3a6a, roughness: 0.55 });
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.userData.kwaichung = true; g.name = 'berth_sign_8';
+  const p = new THREE.Mesh(new THREE.BoxGeometry(0.12, 3.2, 0.12), pole); p.position.y = 1.6; g.add(p);
+  const s = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.2, 0.08), face); s.position.set(0, 3.0, 0); g.add(s);
+  parent.add(g);
+}
+
+function kwOppositeWater(parent, bx) {
+  // 海峽水面：加闊＋對岸側（Part A 同 Part C 之間）
+  const waterMat = new THREE.MeshStandardMaterial({ color: 0x07090b, roughness: 0.08, metalness: 0.2, envMapIntensity: 1.4 });
+  const w = new THREE.Mesh(new THREE.PlaneGeometry(280, 520), waterMat);
+  w.rotation.x = -Math.PI / 2;
+  w.position.set(bx + 140, -1.55, 20);
+  w.userData.hideInReflection = true; w.userData.kwaichung = true; w.name = 'kt_rambler_water';
+  parent.add(w);
+}
+
+function kwBuildThreePartStub() {
+  if (typeof scene === 'undefined') return;
+  if (KWAI.threePart) return;
+  const root = KWAI.group || new THREE.Group();
+  if (!KWAI.group) { root.name = 'kwaichung-dock'; KWAI.group = root; scene.add(root); }
+  const bx = typeof BOUND !== 'undefined' ? BOUND.x : 28.5;
+
+  // —— Part A 補強：肘形支路、閘口、黃黑欄、8 號泊位牌、額外岸吊 ——
+  kwElbowRoadMark(root, -2, 95, 0);           // 北向直角支路
+  kwElbowRoadMark(root, 2, -110, Math.PI);    // 南向斜接感
+  kwGatehouse(root, -18, -150);               // 閘口＋地磅（堆場入口方向）
+  kwBarrierYB(root, bx - 6, 40, Math.PI / 2, 12);
+  kwBarrierYB(root, -16, -148, 0, 8);
+  kwBerthSign(root, bx - 8, 8);
+  // 追加岸吊（現 game2 已有 4；再加 2 沿彎岸）→ 總視覺 ≥6
+  kwProcCrane(root, bx + 18, -130, 0.92, 0.08);
+  kwProcCrane(root, bx + 20, 160, 0.95, -0.06);
+
+  // —— Part B CT8 hint（南／東南）——
+  const partB = new THREE.Group(); partB.name = 'kt_part_b_ct8_hint'; partB.position.set(bx + 30, 0, -210);
+  partB.userData.kwaichung = true;
+  kwProcCrane(partB, 0, 0, 0.75, 0.35);
+  kwProcCrane(partB, 25, 40, 0.7, 0.4);
+  kwHull(partB, 55, 10, 32);
+  kwBarrierYB(partB, -10, 20, 0.5, 8);
+  root.add(partB);
+
+  // —— Part C 青衣對岸吊機牆 + 海峽 ——
+  kwOppositeWater(root, bx);
+  const partC = new THREE.Group(); partC.name = 'kt_part_c_tsingyi_skyline';
+  partC.position.set(bx + 210, 0, 30); partC.userData.kwaichung = true;
+  for (const cz of [-90, -30, 40, 100]) kwProcCrane(partC, 0, cz, 0.85, Math.PI); // 面向葵涌岸
+  kwHull(partC, -40, -50, 40);
+  root.add(partC);
+
+  // —— 青馬／汀九遠景剪影（程序化；有 overview 貼圖時保留舊板）——
+  kwBridgeSilhouette(root, bx + 260, 180, 160, 'kt_tsing_ma_silhouette');
+  kwBridgeSilhouette(root, bx + 200, 280, 120, 'kt_ting_kau_silhouette');
+
+  // 高桅工礦燈稀疏
+  const mastMat = new THREE.MeshStandardMaterial({ color: 0x4a5056, roughness: 0.5, metalness: 0.7 });
+  const headMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(3.2, 2.6, 1.5) });
+  for (const [mx, mz] of [[-12, 50], [10, -80], [-8, 130]]) {
+    const mast = new THREE.Group(); mast.position.set(mx, 0, mz); mast.name = 'high_mast_light';
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.28, 22, 8), mastMat);
+    pole.position.y = 11; mast.add(pole);
+    const head = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.35, 2.2), headMat);
+    head.position.y = 22.2; mast.add(head);
+    root.add(mast);
+  }
+
+  KWAI.threePart = true;
+  KWAI.zones = {
+    partA: 'kt_part_a_yard',
+    partB: 'kt_part_b_ct8_hint',
+    partC: 'kt_part_c_tsingyi_skyline',
+    water: 'kt_rambler_water',
+    bridges: ['kt_tsing_ma_silhouette', 'kt_ting_kau_silhouette']
+  };
+}
+
+
+{
+  const boot = async () => {
+    if (typeof loadTex !== 'function' || typeof scene === 'undefined') return false;
+    const ok = await kwLoad();
+    if (ok) {
+      kwBuildDock();
+      kwApplyLandmarkFacade();
+      kwStripContainerLogos();
+    } else {
+      // 無貼圖仍落三區程序 stub（聽日可玩優先）
+      kwBuildThreePartStub();
+    }
+    if (!KWAI.threePart) kwBuildThreePartStub();
+    if (typeof HOOKS !== 'undefined') {
+      HOOKS.tod = HOOKS.tod || [];
+      HOOKS.tod.push(kwOnTod);
+    }
+    return ok;
+  };
+  const t0 = setInterval(() => {
+    boot().then((ok) => {
+      if (ok) { clearInterval(t0); return; }
+      if (typeof NT !== 'undefined' && NT.ready) {
+        // LM 可能較遲；再試門面一次
+        kwApplyLandmarkFacade();
+        clearInterval(t0);
+      }
+    });
+  }, 350);
+}
+/* =========================================================================
+ * M1c · 罰款／醫管局收費（data/gov-fees-verified.json · id 正規化）
+ *  · toast = 現實面額（oral_toast／fine-lines）；扣款 = game_amount_div40
+ *  · MOP≈1:1÷40；TWD×0.25÷40；澳常見亂拋 MOP 600（mo_litter）
+ * ========================================================================= */
+const GOV_FEES = {
+  // 現實面額（toast）；入帳 game_*（÷40；MOP≈1:1；TWD×0.25÷40）
+  // 來源：data/gov-fees-verified.json（id 已正規化 hk_/mo_/tw_/fee_）
+  REAL: {
+    hk: { litter: 3000, spit: 3000, smoking: 3000, parking: 400, red_light: 900, shop_obstruct: 6000 },
+    mo: { litter: 600, litter_light: 300, smoking: 1500, parking: 300, parking_bridge: 900, phone: 600, red_light: 1000 },
+    tw: { litter: 1200, smoking: 2000, red_light: 1800, parking: 600 }
+  },
+  FINE_LITTER: 75,
+  FINE_LITTER_HK: 75,
+  FINE_LITTER_MO: 15,
+  FINE_LITTER_TW: 8,
+  FINE_SMOKING_HK: 75,
+  FINE_SMOKING_MO: 38,
+  FINE_SMOKING_TW: 13,
+  FINE_PARKING_HK: 10,
+  FINE_PARKING_MO: 8,
+  FINE_PARKING_BRIDGE_MO: 22,
+  FINE_PHONE_MO: 15,
+  FINE_RED_LIGHT_HK: 22,
+  FINE_RED_LIGHT_MO: 25,
+  FINE_RED_LIGHT_TW: 11,
+  FINE_SPEED_HK_BANDS: [12, 17, 22, 38],
+  FINE_SPIT: 75,
+  FINE_OBSTRUCT: 150,
+  REAL_FINE_LITTER: 3000,
+  REAL_HA_ELIGIBLE_GOPC: 150,
+  REAL_HA_ELIGIBLE_SOPD: 250,
+  REAL_HA_ELIGIBLE_AE: 400,
+  REAL_HA_NONELIGIBLE_GOPC: 500,
+  REAL_HA_NONELIGIBLE_SOPD: 850,
+  REAL_HA_NONELIGIBLE_AE: 2100,
+  HA_ELIGIBLE_GOPC: 4,
+  HA_ELIGIBLE_SOPD: 6,
+  HA_ELIGIBLE_AE: 10,
+  HA_NONELIGIBLE_GOPC: 13,
+  HA_NONELIGIBLE_SOPD: 21,
+  HA_NONELIGIBLE_AE: 53,
+  HA_DRESSING: 1,
+  HA_DRUG: 1,
+  BAIL_BY_WANTED: [0, 75, 250, 625, 1500, 0],
+  FINE_PARK: 10,
+  FINE_SMOKE: 75,
+  FINE_MO_300: 8,
+  FINE_MO_600: 15,
+  FINE_MO_CHECKPOINT: 150,
+  FINE_TW_LITTER: 8,
+  FINE_TW_SMOKE: 13
+};
+
+const FINE_CATALOG = {
+  hk_litter: { game: 75, real: 3000, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '城市潔淨署（戲仿）', label: "將扔棄物或廢物棄置在公眾地方" },
+  hk_spit: { game: 75, real: 3000, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '城市潔淨署（戲仿）', label: "公眾地方隨地吐痰" },
+  hk_dog_fouling: { game: 75, real: 3000, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '城市潔淨署（戲仿）', label: "犬隻糞便弄污街道" },
+  hk_country_park_litter: { game: 75, real: 3000, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '交通執法組（戲仿）', label: "郊野公園／特別地區棄置廢物" },
+  hk_marine_litter: { game: 75, real: 3000, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '城市潔淨署（戲仿）', label: "海上棄置廢物" },
+  hk_waste_deposit: { game: 150, real: 6000, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '城市潔淨署（戲仿）', label: "非法擺放大宗／建築廢料等" },
+  hk_shop_obstruction: { game: 150, real: 6000, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '城市潔淨署（戲仿）', label: "非法店鋪阻街／公眾地方阻礙" },
+  hk_poster: { game: 75, real: 3000, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '城市潔淨署（戲仿）', label: "未經准許張貼街招及海報" },
+  hk_smoking: { game: 75, real: 3000, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '無煙監察組（戲仿）', label: "法定禁煙區／公共交通工具吸煙" },
+  hk_parking: { game: 10, real: 400, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '交通執法組（戲仿）', label: "違例泊車" },
+  hk_speed_le15: { game: 12, real: 480, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '交通執法組（戲仿）', label: "超速 ≤15 km/h" },
+  hk_speed_gt15_le30: { game: 17, real: 675, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '交通執法組（戲仿）', label: "超速 >15 且 ≤30 km/h" },
+  hk_speed_gt30_le45: { game: 22, real: 900, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '交通執法組（戲仿）', label: "超速 >30 且 ≤45 km/h" },
+  hk_speed_gt45: { game: 38, real: 1500, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '交通執法組（戲仿）', label: "超速 >45 km/h" },
+  hk_red_light: { game: 22, real: 900, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '交通執法組（戲仿）', label: "不遵守交通燈號" },
+  hk_zebra_yield: { game: 17, real: 675, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '交通執法組（戲仿）', label: "斑馬線未讓行人" },
+  hk_phone_driving: { game: 17, real: 675, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '交通執法組（戲仿）', label: "行車時使用流動電話等電訊設備" },
+  hk_traffic_sign: { game: 17, real: 675, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '交通執法組（戲仿）', label: "不遵守交通標誌／道路標記" },
+  hk_restricted_passenger: { game: 21, real: 840, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '交通執法組（戲仿）', label: "限制區上落客" },
+  hk_pedestrian_signal: { game: 50, real: 2000, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '交通執法組（戲仿）', label: "行人於燈控過路處不遵守燈號" },
+  mo_litter: { game: 15, real: 600, currency: 'MOP', region: 'mo', kind: '罰款', unit: '市政事務處（戲仿）', label: "公共地方棄置固體廢料／亂拋垃圾／煙蒂／吐" },
+  mo_litter_serious_band: { game: 38, real: 700, currency: 'MOP', region: 'mo', kind: '罰款', unit: '市政事務處（戲仿）', label: "公共地方嚴重／非常嚴重潔淨違法" },
+  mo_smoking: { game: 38, real: 1500, currency: 'MOP', region: 'mo', kind: '罰款', unit: '控煙委員會（戲仿）', label: "禁止吸煙地點吸煙" },
+  mo_parking: { game: 8, real: 300, currency: 'MOP', region: 'mo', kind: '罰款', unit: '交通事務局（戲仿）', label: "一般違法泊車" },
+  mo_parking_bridge_tunnel: { game: 22, real: 900, currency: 'MOP', region: 'mo', kind: '罰款', unit: '交通事務局（戲仿）', label: "橋樑／行車天橋／隧道違法泊車" },
+  mo_phone_driving: { game: 15, real: 600, currency: 'MOP', region: 'mo', kind: '罰款', unit: '交通事務局（戲仿）', label: "駕駛時使用流動電話" },
+  mo_speed_minor: { game: 15, real: 600, currency: 'MOP', region: 'mo', kind: '罰款', unit: '交通事務局（戲仿）', label: "輕微超速" },
+  mo_speed_serious: { game: 50, real: 2000, currency: 'MOP', region: 'mo', kind: '罰款', unit: '交通事務局（戲仿）', label: "嚴重超速" },
+  mo_red_light: { game: 25, real: 1000, currency: 'MOP', region: 'mo', kind: '罰款', unit: '交通事務局（戲仿）', label: "不遵守紅燈／交匯處強制停車" },
+  mo_pedestrian_crossing: { game: 8, real: 300, currency: 'MOP', region: 'mo', kind: '罰款', unit: '交通事務局（戲仿）', label: "行人橫過車行道違規" },
+  tw_litter: { game: 8, real: 1200, currency: 'TWD', region: 'tw', kind: '罰鍰', unit: '環保稽查（戲仿）', label: "亂丟一般廢棄物／菸蒂等" },
+  tw_smoking: { game: 12, real: 2000, currency: 'TWD', region: 'tw', kind: '罰鍰', unit: '菸害稽查（戲仿）', label: "禁菸場所吸菸" },
+  tw_speed_general: { game: 8, real: 1200, currency: 'TWD', region: 'tw', kind: '罰鍰', unit: '交通警察（戲仿）', label: "一般超速" },
+  tw_speed_dangerous: { game: 38, real: 6000, currency: 'TWD', region: 'tw', kind: '罰鍰', unit: '交通警察（戲仿）', label: "危險駕駛級超速" },
+  tw_red_light: { game: 11, real: 1800, currency: 'TWD', region: 'tw', kind: '罰鍰', unit: '交通警察（戲仿）', label: "闖紅燈" },
+  tw_parking: { game: 4, real: 600, currency: 'TWD', region: 'tw', kind: '罰鍰', unit: '交通警察（戲仿）', label: "違規停車" },
+  tw_parking_double: { game: 11, real: 1800, currency: 'TWD', region: 'tw', kind: '罰鍰', unit: '交通警察（戲仿）', label: "併排停車" },
+  fee_hk_ae_eligible: { game: 10, real: 400, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '公立醫院（戲仿）', label: "急症室應診" },
+  fee_hk_fmc_eligible: { game: 4, real: 150, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '公立醫院（戲仿）', label: "家庭醫學診所應診" },
+  fee_hk_sopd_eligible: { game: 6, real: 250, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '公立醫院（戲仿）', label: "專科門診應診" },
+  fee_hk_ae_noneligible: { game: 52, real: 2100, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '公立醫院（戲仿）', label: "急症室應診" },
+  fee_hk_fmc_noneligible: { game: 12, real: 500, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '公立醫院（戲仿）', label: "家庭醫學診所" },
+  fee_hk_sopd_noneligible: { game: 21, real: 850, currency: 'HKD', region: 'hk', kind: '定額罰款', unit: '公立醫院（戲仿）', label: "專科門診" },
+  fee_mo_health_centre: { game: 0, real: 0, currency: 'MOP', region: 'mo', kind: '罰款', unit: '衛生局設施（戲仿）', label: "衛生中心初級醫療" },
+  fee_mo_chcsj_specialist: { game: 1, real: 42, currency: 'MOP', region: 'mo', kind: '罰款', unit: '衛生局設施（戲仿）', label: "仁伯爵綜合醫院專科診金" },
+  fee_tw_clinic_reg: { game: 1, real: 50, currency: 'TWD', region: 'tw', kind: '罰鍰', unit: '醫療院所（戲仿）', label: "診所／醫院掛號費" },
+  mo_litter_light: { game: 8, real: 300, currency: 'MOP', region: 'mo', kind: '罰款', unit: '市政事務處（戲仿）', label: "公共地方較輕潔淨違法" }
+};
+
+const FINE_TOAST = {
+  hk_litter: { ok: "亂拋垃圾 · 定額罰款 $3,000" },
+  hk_spit: { ok: "吐痰 · 定額罰款 $3,000" },
+  hk_dog_fouling: { ok: "狗糞唔執 · 定額罰款 $3,000" },
+  hk_country_park_litter: { ok: "郊野拋垃圾 · 定額罰款 $3,000" },
+  hk_marine_litter: { ok: "海上拋垃圾 · 定額罰款 $3,000" },
+  hk_waste_deposit: { ok: "非法擺放大宗／建築廢料等 · 定額罰款 $6,000" },
+  hk_shop_obstruction: { ok: "非法店鋪阻街／公眾地方阻礙 · 定額罰款 $6,000" },
+  hk_poster: { ok: "未經准許張貼街招及海報 · 定額罰款 $3,000" },
+  hk_smoking: { ok: "法定禁煙區／公共交通工具吸煙（或輪候… · 定額罰款 $3,000" },
+  hk_parking: { ok: "違例泊車 · 定額罰款 $400" },
+  hk_speed_le15: { ok: "超速 ≤15 km/h · 定額罰款 $480" },
+  hk_speed_gt15_le30: { ok: "超速 >15 且 ≤30 km/h · 定額罰款 $675" },
+  hk_speed_gt30_le45: { ok: "超速 >30 且 ≤45 km/h · 定額罰款 $900" },
+  hk_speed_gt45: { ok: "超速 >45 km/h · 定額罰款 $1,500" },
+  hk_red_light: { ok: "不遵守交通燈號（駕駛） · 定額罰款 $900" },
+  hk_zebra_yield: { ok: "斑馬線未讓行人 · 定額罰款 $675" },
+  hk_phone_driving: { ok: "行車時使用流動電話等電訊設備 · 定額罰款 $675" },
+  hk_traffic_sign: { ok: "不遵守交通標誌／道路標記 · 定額罰款 $675" },
+  hk_restricted_passenger: { ok: "限制區上落客 · 定額罰款 $840" },
+  hk_pedestrian_signal: { ok: "行人於燈控過路處不遵守燈號（亂過馬路） · 定額罰款 $2,000" },
+  mo_litter: { ok: "亂拋垃圾 · 罰款 MOP $600" },
+  mo_litter_serious_band: { ok: "公共地方嚴重／非常嚴重潔淨違法（自然人） · 罰款 MOP $700" },
+  mo_smoking: { ok: "禁止吸煙地點吸煙 · 罰款 MOP $1,500" },
+  mo_parking: { ok: "一般違法泊車 · 罰款 MOP $300" },
+  mo_parking_bridge_tunnel: { ok: "橋樑／行車天橋／隧道違法泊車 · 罰款 MOP $900" },
+  mo_phone_driving: { ok: "駕駛時使用流動電話（非免提） · 罰款 MOP $600" },
+  mo_speed_minor: { ok: "輕微超速（輕摩／重摩／輕型汽車超速 … · 罰款 MOP $600" },
+  mo_speed_serious: { ok: "嚴重超速（輕型 ≥30 km/h 等） · 罰款 MOP $2,000" },
+  mo_red_light: { ok: "不遵守紅燈／交匯處強制停車（輕微違反） · 罰款 MOP $1,000" },
+  mo_pedestrian_crossing: { ok: "行人橫過車行道違規 · 罰款 MOP $300" },
+  tw_litter: { ok: "亂丟一般廢棄物／菸蒂等（廢棄物清理法） · 罰鍰 新臺幣 $1,200 元" },
+  tw_smoking: { ok: "禁菸場所吸菸 · 罰鍰 新臺幣 $2,000 元" },
+  tw_speed_general: { ok: "一般超速（未達危險駕駛門檻） · 罰鍰 新臺幣 $1,200 元" },
+  tw_speed_dangerous: { ok: "危險駕駛級超速（逾最高時速 40 k… · 罰鍰 新臺幣 $6,000 元" },
+  tw_red_light: { ok: "闖紅燈 · 罰鍰 新臺幣 $1,800 元" },
+  tw_parking: { ok: "違規停車 · 罰鍰 新臺幣 $600 元" },
+  tw_parking_double: { ok: "併排停車 · 罰鍰 新臺幣 $1,800 元" },
+  fee_hk_ae_eligible: { ok: "急症室應診 · $400" },
+  fee_hk_fmc_eligible: { ok: "家庭醫學診所應診 · $150" },
+  fee_hk_sopd_eligible: { ok: "專科門診應診 · $250" },
+  fee_hk_ae_noneligible: { ok: "急症室應診（非符合資格） · $2,100" },
+  fee_hk_fmc_noneligible: { ok: "家庭醫學診所（非符合資格） · $500" },
+  fee_hk_sopd_noneligible: { ok: "專科門診（非符合資格） · $850" },
+  fee_mo_health_centre: { ok: "衛生中心初級醫療（居民） · MOP $0" },
+  fee_mo_chcsj_specialist: { ok: "仁伯爵綜合醫院專科診金（居民量級） · MOP $42" },
+  fee_tw_clinic_reg: { ok: "診所／醫院掛號費（非健保給付） · 新臺幣 $50 元" },
+  mo_litter_light: { ok: "公共地方較輕潔淨違法 · 罰款 MOP $300" }
+};
+
+const FINE_ID_ALIAS = {
+  "hk_dog": "hk_dog_fouling",
+  "hk_park_litter": "hk_country_park_litter",
+  "hk_sea_litter": "hk_marine_litter",
+  "hk_illegal_waste": "hk_waste_deposit",
+  "hk_shopfront": "hk_shop_obstruction",
+  "hk_smoke": "hk_smoking",
+  "hk_park": "hk_parking",
+  "hk_spd_15": "hk_speed_le15",
+  "hk_spd_15p": "hk_speed_gt15_le30",
+  "hk_spd_30": "hk_speed_gt30_le45",
+  "hk_spd_45": "hk_speed_gt45",
+  "hk_signal": "hk_red_light",
+  "hk_zebra": "hk_zebra_yield",
+  "hk_phone": "hk_phone_driving",
+  "hk_sign": "hk_traffic_sign",
+  "hk_restricted": "hk_restricted_passenger",
+  "hk_jaywalk": "hk_pedestrian_signal",
+  "mo_litter_severe": "mo_litter_serious_band",
+  "mo_smoke": "mo_smoking",
+  "mo_park": "mo_parking",
+  "mo_park_bridge": "mo_parking_bridge_tunnel",
+  "mo_phone": "mo_phone_driving",
+  "mo_spd_minor": "mo_speed_minor",
+  "mo_spd_severe": "mo_speed_serious",
+  "mo_signal": "mo_red_light",
+  "mo_jaywalk": "mo_pedestrian_crossing",
+  "tw_smoke": "tw_smoking",
+  "tw_spd": "tw_speed_general",
+  "tw_spd_danger": "tw_speed_dangerous",
+  "tw_signal": "tw_red_light",
+  "tw_park": "tw_parking",
+  "tw_double_park": "tw_parking_double"
+};
+
+function govRegion() {
+  if (typeof AREA !== 'undefined' && AREA.active) return 'mo';
+  if (typeof TW !== 'undefined' && TW.active) return 'tw';
+  if (typeof TP !== 'undefined' && TP.active) return 'tw';
+  return 'hk';
+}
+
+function issueFine(id, why) {
+  if (typeof FINE_ID_ALIAS !== 'undefined' && FINE_ID_ALIAS[id]) id = FINE_ID_ALIAS[id];
+  const def = FINE_CATALOG[id];
+  if (!def) { console.warn('[fine] unknown id', id); return 0; }
+  const amt = def.game | 0;
+  const paid = Math.min((typeof ECON !== 'undefined' ? ECON.cash + ECON.dirty : 0), amt);
+  if (paid && typeof spend === 'function') spend(paid, false);
+  if (typeof toast === 'function') {
+    const cur = def.currency === 'TWD' ? '新臺幣' : (def.currency === 'MOP' ? 'MOP' : 'HK$');
+    const head = `${def.unit} · ${def.label}`;
+    const face = def.real != null
+      ? `${def.kind} ${cur} ${Number(def.real).toLocaleString('en-US')}（遊戲 $${amt}）`
+      : `${def.kind} $${amt}`;
+    if (paid >= amt && amt > 0) toast(`${head}：${face} · 已扣 $${paid}`, 3200);
+    else if (amt === 0) toast(`${head}：豁免／免費`, 2400);
+    else if (paid > 0) toast(`${head}：${face}——現金唔夠（已扣 $${paid}）`, 3600);
+    else toast(`${head}：${face}——現金唔夠`, 3200);
+  }
+  if (typeof sfx === 'function') sfx('click');
+  if (why && typeof console !== 'undefined') console.info('[fine]', id, why, 'game', amt);
+  return paid;
+}
+
+const LITTER = { pending: false, t: 0, fined: 0, bins: false };
+
+function govEligible() {
+  if (typeof INV !== 'undefined' && INV.nonEligible) return false;
+  return true; // 三主角預設合資格
+}
+function govCssaWaive() {
+  return typeof INV !== 'undefined' && !!INV.cssa;
+}
+
+function govAeFee() {
+  if (govCssaWaive()) return 0;
+  return govEligible() ? GOV_FEES.HA_ELIGIBLE_AE : GOV_FEES.HA_NONELIGIBLE_AE;
+}
+function govGopcFee() {
+  if (govCssaWaive()) return 0;
+  return govEligible() ? GOV_FEES.HA_ELIGIBLE_GOPC : GOV_FEES.HA_NONELIGIBLE_GOPC;
+}
+function govSopdFee() {
+  if (govCssaWaive()) return 0;
+  return govEligible() ? GOV_FEES.HA_ELIGIBLE_SOPD : GOV_FEES.HA_NONELIGIBLE_SOPD;
+}
+function govBailFee() {
+  const s = Math.min(5, Math.max(0, (typeof WANTED !== 'undefined' ? WANTED.stars : 0) | 0));
+  return GOV_FEES.BAIL_BY_WANTED[s] || 0;
+}
+function govBailLabel() {
+  const s = (typeof WANTED !== 'undefined' ? WANTED.stars : 0) | 0;
+  if (s >= 5) return '不准現金保釋——羈留待上堂（戲仿）';
+  if (s >= 4) return '法庭現金擔保（戲仿）';
+  return '現金擔保（合理款額）';
+}
+
+function fineLitter(why) {
+  LITTER.pending = false; LITTER.t = 0;
+  LITTER.fined++;
+  const r = typeof govRegion === 'function' ? govRegion() : 'hk';
+  const id = r === 'mo' ? 'mo_litter' : (r === 'tw' ? 'tw_litter' : 'hk_litter');
+  return issueFine(id, why || 'litter');
+}
+
+function litterGain(from) {
+  LITTER.pending = true;
+  LITTER.t = 90;
+  if (typeof toast === 'function') toast('你拎住外賣垃圾——搵垃圾桶掉（唔好亂拋）', 2600);
+}
+
+function litterDispose() {
+  if (!LITTER.pending) {
+    if (typeof toast === 'function') toast('垃圾桶 · 請將垃圾放入桶內', 1600);
+    return;
+  }
+  LITTER.pending = false; LITTER.t = 0;
+  if (typeof toast === 'function') toast('已放入垃圾桶——多謝保持市容', 2200);
+  if (typeof sfx === 'function') sfx('door');
+}
+
+function litterDump() {
+  if (!LITTER.pending) return;
+  fineLitter('dump');
+}
+
+/** 掛咗重生：急症費跟核實表 */
+function govWastedFee() { return govAeFee(); }
+function govWastedLabel() {
+  const fee = govAeFee();
+  if (fee === 0) return '公立醫院急症室（醫療費用豁免）';
+  return govEligible()
+    ? `公立醫院急症室收費（合資格 $${fee}）`
+    : `公立醫院急症室收費（非合資格 $${fee}）`;
+}
+
+function govPatchHospShop() {
+  if (typeof SHOPS === 'undefined' || !SHOPS.hosp) return;
+  SHOPS.hosp.say = () => {
+    if (typeof INV !== 'undefined' && INV.cssa) return '綜援證明有效 · 今次可申請減免——先睇傷勢。';
+    if (player.hp < 50) return '你流緊血！即刻坐低。攞籌、櫃枱收費。';
+    return '有咩唔舒服？合資格門診／急症跟公立醫院價目（戲仿）。';
+  };
+  SHOPS.hosp.items = () => {
+    const gopc = govGopcFee(), sopd = govSopdFee(), ae = govAeFee();
+    return [
+      { name: '家庭醫學門診', desc: `生命 +40 · 合資格 $${GOV_FEES.HA_ELIGIBLE_GOPC}／非合資格 $${GOV_FEES.HA_NONELIGIBLE_GOPC}`, price: gopc, can: player.hp < 100, why: '你冇受傷', act() { player.hp = Math.min(100, player.hp + 40); toast(`掛號收費 $${gopc}`, 1800); } },
+      { name: '專科門診', desc: `生命 +70 · 合資格 $${GOV_FEES.HA_ELIGIBLE_SOPD}／非合資格 $${GOV_FEES.HA_NONELIGIBLE_SOPD}`, price: sopd, can: player.hp < 100, why: '你冇受傷', act() { player.hp = Math.min(100, player.hp + 70); toast(`專科收費 $${sopd}`, 1800); } },
+      { name: '急症治療', desc: `生命回滿 · 合資格 $${GOV_FEES.HA_ELIGIBLE_AE}／非合資格 $${GOV_FEES.HA_NONELIGIBLE_AE}`, price: ae, can: player.hp < 100, why: '你冇受傷', act() { player.hp = 100; toast(`急症收費 $${ae}`, 1800); } },
+      { name: '包紮／敷料', desc: `生命 +25 · 遊戲 $${GOV_FEES.HA_DRESSING}`, price: govCssaWaive() ? 0 : GOV_FEES.HA_DRESSING, can: player.hp < 100, why: '你冇受傷', act() { player.hp = Math.min(100, player.hp + 25); } },
+      { name: '止痛藥', desc: '「定驚」120 秒：中槍傷害減三成', price: govCssaWaive() ? 0 : GOV_FEES.HA_DRUG, can: true, act() { if (typeof addBuff === 'function') addBuff('calm', 120); } }
+    ];
+  };
+}
+
+function govPlaceBins() {
+  if (LITTER.bins || typeof interactable !== 'function') return;
+  const spots = [
+    [-7.5 - 1.2, -220], [7.5 + 1.2, -245], [-7.5 - 1.2, -275], [7.5 + 1.2, -300],
+    [-8, -210], [8, -262]
+  ];
+  const RH = typeof ROAD_HALF === 'number' ? ROAD_HALF : 7;
+  const list = [
+    [-RH - 1.2, -220], [RH + 1.2, -245], [-RH - 1.2, -275], [RH + 1.2, -300],
+    [-RH - 1.2, -208], [RH + 1.2, -264]
+  ];
+  for (const [x, z] of list) {
+    try { interactable('垃圾桶', x, z, '掉垃圾', () => litterDispose()); } catch (e) { /* */ }
+  }
+  // 碼頭區
+  if (typeof BOUND !== 'undefined') {
+    try { interactable('碼頭垃圾桶', 6, 12, '掉垃圾', () => litterDispose()); } catch (e) { /* */ }
+    try { interactable('碼頭垃圾桶', -5, -40, '掉垃圾', () => litterDispose()); } catch (e) { /* */ }
+  }
+  LITTER.bins = true;
+}
+
+function govHookLifeEat() {
+  if (typeof lifeEat !== 'function' || lifeEat._gov) return;
+  const _ = lifeEat;
+  lifeEat = function (opts) {
+    const r = _.apply(this, arguments);
+    litterGain('eat');
+    return r;
+  };
+  lifeEat._gov = true;
+}
+
+function govHookDeathFees() {
+  if (typeof endSequence !== 'function' || endSequence._gov) return;
+  // 直接 patch 呼叫點困難；包 respawnAtHospital 預設
+  if (typeof respawnAtHospital === 'function' && !respawnAtHospital._govWrap) {
+    const _rh = respawnAtHospital;
+    // endSequence 仍傳 500——改用 HOOKS 無法；覆寫 endSequence 內數字靠字串替換喺源檔
+  }
+}
+
+{
+  // 等 SHOPS／lifeEat 就緒
+  const boot = () => {
+    if (typeof SHOPS === 'undefined' || !SHOPS.hosp) return false;
+    govPatchHospShop();
+    govHookLifeEat();
+    govPlaceBins();
+    if (typeof INTERIORS !== 'undefined' && INTERIORS.hospital) {
+      INTERIORS.hospital.desc = '急症室冷白到刺眼：分流站、膠簾病床、護士站。死咗會喺度醒返（扣急症費：合資格 $' +
+        GOV_FEES.HA_ELIGIBLE_AE + '／非合資格 $' + GOV_FEES.HA_NONELIGIBLE_AE +
+        '）；被捕就押去東面羈留病房——或須交現金擔保（合理款額）先出得返街。';
+    }
+    return true;
+  };
+  const t0 = setInterval(() => { if (boot()) clearInterval(t0); }, 200);
+
+  if (typeof HOOKS !== 'undefined') {
+    HOOKS.sim = HOOKS.sim || [];
+    HOOKS.sim.push((dt) => {
+      if (!LITTER.pending) return;
+      LITTER.t -= dt;
+      if (LITTER.t <= 0) fineLitter('timeout');
+    });
+  }
+  // 快捷：G = 亂拋（有垃圾先）
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'KeyG' && LITTER.pending && !e.repeat) {
+      if (typeof SHOP !== 'undefined' && SHOP.open) return;
+      if (typeof INT !== 'undefined' && INT.active) return;
+      litterDump();
+    }
+  });
+}
+
+Object.assign(window, {
+  GOV_FEES, FINE_CATALOG, FINE_TOAST, LITTER, fineLitter, issueFine, govRegion, litterDispose, litterDump, litterGain,
+  govAeFee, govGopcFee, govSopdFee, govEligible, govCssaWaive,
+  govWastedFee, govWastedLabel, govBailFee, govBailLabel
+});
+if (typeof window.NT === 'object') Object.assign(window.NT, { GOV_FEES, FINE_CATALOG, LITTER, issueFine, govBailFee, govBailLabel });
+/* =========================================================================
+ * M1c · 罰款地圖觸發（source: data/fines-official.json · 唔用 verified 撞車 id）
+ *  · 掛街景 props：黃格／雙白線／欄杆泊車／超速／西門紅燈／垃圾桶亂拋
+ *  · toast 優先 oral_toast；扣款走 issueFine
+ * ========================================================================= */
+const FINE_ORAL = {
+  hk_litter: "定額罰款——亂拋垃圾 $75",
+  hk_spit: "定額罰款——吐痰 $75",
+  hk_dog_fouling: "定額罰款——狗糞唔執 $75",
+  hk_poster: "定額罰款——亂貼街招 $75",
+  hk_obstruction: "定額罰款——阻街 $150",
+  hk_shop_obstruction: "定額罰款——舖頭阻街 $150",
+  hk_waste_deposit: "定額罰款——亂掟建築廢料 $150",
+  hk_marine_litter: "定額罰款——海上拋垃圾 $75",
+  hk_country_litter: "定額罰款——郊野拋垃圾 $75",
+  hk_country_spit: "定額罰款——郊野吐痰 $75",
+  hk_smoking: "定額罰款——禁煙區食煙 $75",
+  hk_parking: "定額罰款——違例泊車 $10",
+  hk_speed_le15: "定額罰款——超速（輕微） $12",
+  hk_speed_gt15: "定額罰款——超速 $17",
+  hk_speed_gt30: "定額罰款——超速（嚴重） $23",
+  hk_speed_gt45: "定額罰款——超速（好嚴重） $38",
+  hk_licence_expired: "定額罰款——車牌／牌費過期 $8",
+  hk_licence_not_carry: "定額罰款——冇帶駕駛執照 $8",
+  hk_licence_not_produce: "定額罰款——唔出示駕駛執照 $8",
+  hk_unlicensed_vehicle: "定額罰款——冇牌車上路 $17",
+  hk_yellow_box: "定額罰款——黃格塞住 $15",
+  hk_yellow_crossing: "定額罰款——黃線／斑馬相關 $12",
+  hk_double_white: "定額罰款——雙白線違例 $17",
+  hk_prohibited_zone: "定額罰款——禁區駛入 $11",
+  hk_restricted_passenger: "定額罰款——限制區載客 $21",
+  hk_restricted_goods: "定額罰款——限制區載貨 $17",
+  mo_litter: "罰款——亂拋垃圾 $15",
+  mo_spit: "罰款——吐痰／擤鼻涕 $15",
+  mo_abandon_object: "罰款——擺嘢阻街 $15",
+  mo_pet_fouling: "罰款——寵物糞唔執 $15",
+  mo_wrong_bin: "罰款——垃圾桶放錯料 $15",
+  mo_litter_light: "罰款——亂拋垃圾（輕） $8",
+  tw_litter: "罰鍰——亂丟垃圾 $7",
+  tw_betel: "罰鍰——吐檳榔汁 $7",
+  tw_spit: "罰鍰——隨地吐痰 $7",
+  tw_gum_fruit: "罰鍰——亂丟煙蒂果皮 $7",
+  tw_open_defecation: "罰鍰——隨地便溺 $7",
+  tw_pollute_surface: "罰鍰——污染路面 $7",
+  tw_red_light: "罰鍰——闖紅燈 $11",
+  tw_red_light_right: "罰鍰——紅燈右轉 $4",
+  tw_parking_highway: "罰鍰——快速道路違規停車 $18",
+  fee_hk_ae: "公立急症收費 $10",
+  fee_hk_fmc: "家庭醫學門診收費 $4",
+  fee_hk_sopc: "專科門診收費 $6",
+  fee_mo_health_centre: "衛生中心診金 $0",
+  fee_mo_specialist: "仁伯爵專科診金 $1",
+  fee_tw_er_mc: "醫學中心急診掛號 $5",
+  fee_tw_opd_mc: "醫學中心門診掛號 $3"
+};
+
+const FINE_TRIG = {
+  cool: {},
+  boxes: [],
+  placed: false
+};
+
+function fineOralToast(id, fallback) {
+  return FINE_ORAL[id] || fallback || id;
+}
+
+/** 覆蓋 issueFine toast：優先 oral_toast（遊戲 $） */
+(function patchIssueFineOral() {
+  if (typeof issueFine !== 'function' || issueFine._oral) return;
+  const _ = issueFine;
+  issueFine = function (id, why) {
+    const def = (typeof FINE_CATALOG !== 'undefined') ? FINE_CATALOG[id] : null;
+    if (!def) return _.apply(this, arguments);
+    const amt = def.game | 0;
+    const paid = Math.min((typeof ECON !== 'undefined' ? ECON.cash + ECON.dirty : 0), amt);
+    if (paid && typeof spend === 'function') spend(paid, false);
+    const oral = fineOralToast(id);
+    if (typeof toast === 'function') {
+      if (paid >= amt && amt > 0) toast(oral + ' · 已扣 $' + paid, 3200);
+      else if (amt === 0) toast(oral + ' · 豁免／免費', 2400);
+      else if (paid > 0) toast(oral + '——現金唔夠（已扣 $' + paid + '）', 3600);
+      else toast(oral + '——現金唔夠', 3200);
+    }
+    if (typeof sfx === 'function') sfx('ui_fine');
+    if (why && typeof console !== 'undefined') console.info('[fine]', id, why, 'game', amt);
+    return paid;
+  };
+  issueFine._oral = true;
+  if (typeof window !== 'undefined') window.issueFine = issueFine;
+  if (typeof NT === 'object') NT.issueFine = issueFine;
+})();
+
+function fineCoolOk(key, sec) {
+  const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
+  if ((FINE_TRIG.cool[key] || 0) > now) return false;
+  FINE_TRIG.cool[key] = now + (sec || 12);
+  return true;
+}
+
+function fineResolveId(spec) {
+  if (spec.fine_id) return spec.fine_id;
+  const r = typeof govRegion === 'function' ? govRegion() : 'hk';
+  const m = spec.fine_id_by_region || {};
+  return m[r] || m.hk || null;
+}
+
+function fineSpeedBandId(overKmh) {
+  if (overKmh > 45) return 'hk_speed_gt45';
+  if (overKmh > 30) return 'hk_speed_gt30';
+  if (overKmh > 15) return 'hk_speed_gt15';
+  return 'hk_speed_le15';
+}
+
+function finePlaceBox(x, z, w, d, fineId, event) {
+  FINE_TRIG.boxes.push({ x, z, hw: w / 2, hd: d / 2, fineId, event });
+}
+
+function finePlaceMapTriggers() {
+  if (FINE_TRIG.placed) return;
+  // 本地長街座標（漆咸／彌敦）——黃格／雙白／泊車
+  const RH = typeof ROAD_HALF === 'number' ? ROAD_HALF : 7;
+  finePlaceBox(0, -262, 10, 8, 'hk_yellow_box', 'box');          // 斑馬附近黃格感
+  finePlaceBox(0, -330, 10, 8, 'hk_yellow_box', 'box');
+  finePlaceBox(0, -400, 10, 6, 'hk_double_white', 'dwhite');
+  finePlaceBox(-RH - 1.5, -280, 3, 12, 'hk_parking', 'park');
+  finePlaceBox(RH + 1.5, -300, 3, 12, 'hk_parking', 'park');
+  finePlaceBox(0, -250, 16, 40, 'speed', 'speed');                // 彌敦超速帶
+  // 真實座標（若 hkGeo 齊）
+  if (typeof hkGeo === 'function') {
+    const mk = hkGeo(22.3192, 114.1695);
+    finePlaceBox(mk.x, mk.z, 12, 10, 'hk_yellow_box', 'box');
+    finePlaceBox(mk.x, mk.z + 8, 14, 20, 'speed', 'speed');
+    const pier = hkGeo(22.2870, 114.1605);
+    finePlaceBox(pier.x, pier.z, 10, 8, 'hk_parking', 'park');
+  }
+  if (typeof tpGeo === 'function' && typeof TP_ORIGIN !== 'undefined') {
+    const g = tpGeo(25.0422, 121.5070);
+    finePlaceBox(TP_ORIGIN.x + g.x, TP_ORIGIN.z + g.z, 8, 8, 'tw_red_light', 'red');
+  }
+  FINE_TRIG.placed = true;
+}
+
+function finePlayerXZ() {
+  if (typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined' && car.pos)
+    return { x: car.pos.x, z: car.pos.z, drive: true, speed: car.speed || car.spd || 0 };
+  if (typeof player !== 'undefined' && player.pos)
+    return { x: player.pos.x, z: player.pos.z, drive: false, speed: 0 };
+  return null;
+}
+
+function fineCarspeedKmh(raw) {
+  // 遊戲單位粗略 → km/h（跟現有車速感）
+  const v = Math.abs(raw || 0);
+  if (v > 80) return v; // 已係 km/h 感
+  return v * 3.6 * 2.2;
+}
+
+function fineSim(dt) {
+  if (!FINE_TRIG.placed) return;
+  const p = finePlayerXZ();
+  if (!p) return;
+  for (const b of FINE_TRIG.boxes) {
+    if (Math.abs(p.x - b.x) > b.hw || Math.abs(p.z - b.z) > b.hd) continue;
+    const key = b.event + ':' + (b.fineId || '') + ':' + (b.x | 0);
+    if (b.event === 'speed') {
+      if (!p.drive) continue;
+      const kmh = fineCarspeedKmh(p.speed);
+      const limit = 50;
+      if (kmh <= limit + 5) continue;
+      if (!fineCoolOk(key, 18)) continue;
+      const id = fineSpeedBandId(kmh - limit);
+      if (typeof issueFine === 'function') issueFine(id, 'map-speed');
+      continue;
+    }
+    if (b.event === 'park') {
+      if (!p.drive) continue;
+      if (Math.abs(p.speed) > 0.8) continue; // 停定先罰
+      if (!fineCoolOk(key, 25)) continue;
+      if (typeof issueFine === 'function') issueFine(b.fineId, 'map-park');
+      continue;
+    }
+    if (b.event === 'box' || b.event === 'dwhite') {
+      if (!p.drive) continue;
+      if (!fineCoolOk(key, 20)) continue;
+      if (typeof issueFine === 'function') issueFine(b.fineId, 'map-' + b.event);
+      continue;
+    }
+    if (b.event === 'red') {
+      if (!p.drive) continue;
+      if (!fineCoolOk(key, 22)) continue;
+      if (typeof issueFine === 'function') issueFine(b.fineId, 'map-red');
+      continue;
+    }
+  }
+}
+
+{
+  const boot = () => {
+    if (typeof issueFine !== 'function') return false;
+    // re-patch if catalog loaded first
+    if (!issueFine._oral) {
+      /* patch runs at parse; re-call if needed */
+    }
+    finePlaceMapTriggers();
+    return FINE_TRIG.placed;
+  };
+  const t0 = setInterval(() => { if (boot()) clearInterval(t0); }, 250);
+  if (typeof HOOKS !== 'undefined') {
+    HOOKS.sim = HOOKS.sim || [];
+    HOOKS.sim.push((dt) => fineSim(dt));
+  }
+}
+
+Object.assign(window, { FINE_ORAL, FINE_TRIG, finePlaceMapTriggers, fineOralToast });
+if (typeof NT === 'object') Object.assign(NT, { FINE_ORAL, FINE_TRIG, issueFine });
 /**
  * P0 報站／主角 VO（跟 docs/voice-p0-tts-manifest.csv）
  * 可授權 TTS 佔位 .ogg；缺檔／失敗 silent。唔做 lip-sync。
@@ -15205,7 +16545,7 @@ function voCueForLine(who, line) {
   if (/西門町嗰班人全瘋/.test(t)) return 'vo_wentao_land_01';
   if (/信旺中心嗰個聯絡人/.test(t)) return 'vo_wentao_land_03';
   if (/我唔會拖你落水/.test(t)) return 'vo_wentao_sino_thanks';
-  if (/入嚟關閘/.test(t) && /EU/.test(t)) return 'vo_kit_sino_in';
+  if (/入嚟關閘/.test(t) && /衝鋒隊/.test(t)) return 'vo_kit_sino_in';
   if (/今夜你瞓地蓆/.test(t)) return 'vo_kit_sino_safe';
   if (/雷達黃點係我哋之後要用嘅舖/.test(t)) return 'vo_kit_free';
   return null;
