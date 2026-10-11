@@ -274,7 +274,7 @@ body.aim #cross{transform:scale(.45)}
     if(b && cur < n) b.style.width=n+'%';
     if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
-  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core7。","用流動數據請等陣——資產喺度解壓。","聽日目標：落難香江 · 信和安全屋。"];
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core7b。","用流動數據請等陣——資產喺度解壓。","聽日目標：落難香江 · 信和安全屋。"];
   var tipEl=document.getElementById("loadTips"); var ti=0;
   if(tipEl) tipEl.textContent=tips[0];
   var tipTimer=setInterval(function(){
@@ -284,7 +284,7 @@ body.aim #cross{transform:scale(.45)}
   setTimeout(function(){
     if(done) return;
     var t=document.getElementById('loadTxt');
-    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core7';
+    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core7b';
   },45000);
 })();
 </script>
@@ -11043,7 +11043,7 @@ const LM_DEFS = [
   { id: 'ly_yuan', region: 'tp', lat: 25.0442, lon: 121.5198, h: 12, w: 22, d: 16, yaw: 0, neon: '立法院', color: '#f0f0e8', theme: 'hosp', name: '立法院外廣場（戲仿）', city: '台北 · 中正區', light: '日：白石廣場／夜：冷白路燈', desc: '白石廣場空蕩蕩，鏡頭比人多。集會、記者會、政治噪音——通緝一高，你個樣就上晚間新聞。' },
   // —— batch-3 可進入樓（data/enterable-lm-batch-3.json）——
   { id: 'kwai_chung_pier', region: 'hk', lat: 22.355, lon: 114.119, h: 10, w: 32, d: 18, yaw: 0.0, neon: '葵涌碼頭', color: '#4aa3ff', theme: 'pawn', noFacade: true, skipDoor: true, name: '葵涌貨櫃碼頭（戲仿）', city: '香港 · 葵青區', light: '日：貨櫃硬光／夜：碼頭工礦橙燈', desc: '葵青貨櫃碼頭（戲仿）：藍巴勒海峽分隔葵涌岸同青衣 CT9；岸吊、貨櫃船、遠景青馬／汀九。走私箱、閘口 sniff——硬闖即通緝升級。' },
-  { id: 'kwai_fong_mtr', region: 'hk', lat: 22.3568, lon: 114.1278, h: 12, w: 22, d: 14, yaw: 0, neon: '葵芳', color: '#1a4a8a', theme: 'pawn', name: '葵芳站（戲仿）', city: '香港 · 葵青區 · 葵芳', light: '日：站廳冷白／夜：藍站牌', desc: '碼頭北側最近車站（戲仿）。唔好叫「葵涌站」——出閘轉貨櫃碼頭路，公屋同工廈夾兩邊。' },
+  { id: 'kwai_fong_mtr', region: 'hk', lat: 22.3568, lon: 114.1278, h: 12, w: 22, d: 14, yaw: 0, neon: '葵芳', color: '#1a4a8a', theme: 'pawn', name: '葵芳站（戲仿）', city: '香港 · 葵青區 · 葵芳', light: '日：站廳冷白／夜：藍站牌', desc: '碼頭北側最近車站（戲仿）。出閘轉貨櫃碼頭路，一邊工廈、對面公屋。無假證件闖閘一樣拉警報。' },
   { id: 'hunghom_tunnel', region: 'hk', lat: 22.3028, lon: 114.1825, h: 8, w: 24, d: 14, yaw: Math.PI, neon: '紅隧', color: '#e8261c', theme: 'hosp', name: '紅磡海底隧道口（戲仿）', city: '香港 · 九龍城／灣仔', light: '日：車流白光／夜：隧道黃燈＋閃燈', desc: '隧道口塞成粥，閃燈同喇叭搶聲。適合飛車甩尾，唔適合步行硬闖——路障一落就夾實你。' },
   { id: 'eastwood_hq', region: 'hk', lat: 22.2808, lon: 114.1832, h: 22, w: 16, d: 14, yaw: Math.PI / 2, neon: '東星', color: '#c9a227', theme: 'burger', name: '東星會所（戲仿總部）', city: '香港 · 灣仔區 · 銅鑼灣', light: '日：金門簾影／夜：暖金吊燈', desc: '會所門禁嚴、茶煙重。交收、談判、睇風水——抄牌鐘聲一响，記得轉後門落樓。' },
   { id: 'tai_o', region: 'hk', lat: 22.2548, lon: 113.862, h: 8, w: 18, d: 12, yaw: 0.0, neon: '大澳', color: '#7dff6a', theme: 'cct', name: '大澳棚屋水道（戲仿）', city: '香港 · 離島區 · 大澳', light: '日：鹹魚乾陽光／夜：棚屋暖黃', desc: '棚屋踩水橋，鹹風吹乾衣裳。適合匿、適合搖舢舨走貨——市區嗰套巡邏密度到唔到呢度。' },
@@ -13965,7 +13965,7 @@ function transitRideRail(toId) {
   const rail2 = ({ '尖沙咀': '尖沙咀到站。轉乘紅巴、維港渡輪，請喺呢個出口落車。',
     '旺角': '旺角到站。信旺中心、彌敦道喺 A／B 出口一帶（戲仿）。',
     '中環': '中環到站。轉港島叮叮，請跟指示上蓋。',
-    '葵芳（戲仿）': '葵芳到站。往葵青貨櫃碼頭請跟指示出閘——唔好當「葵涌站」。（戲仿）' })[to.name] || '車門即將關閉，請勿衝門。';
+    '葵芳（戲仿）': '葵芳到站。往貨櫃碼頭請跟綠色指示出閘。（戲仿）' })[to.name] || '車門即將關閉，請勿衝門。';
   toast('鐵道（戲仿）· 八達卡已拍（戲仿）', 1600);
   if (typeof sfx === 'function') sfx('oct_tap');
   transitFadeRide('鐵道', to.name, door.x + Math.sin(yaw) * 3.5, door.z + Math.cos(yaw) * 3.5, yaw, [
