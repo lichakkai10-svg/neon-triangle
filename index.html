@@ -274,7 +274,7 @@ body.aim #cross{transform:scale(.45)}
     if(b && cur < n) b.style.width=n+'%';
     if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
-  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core15。","用流動數據請等陣——資產喺度解壓。","聽日目標：落難香江 · 信和安全屋。"];
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core16。","用流動數據請等陣——資產喺度解壓。","聽日目標：落難香江 · 信和安全屋。"];
   var tipEl=document.getElementById("loadTips"); var ti=0;
   if(tipEl) tipEl.textContent=tips[0];
   var tipTimer=setInterval(function(){
@@ -284,7 +284,7 @@ body.aim #cross{transform:scale(.45)}
   setTimeout(function(){
     if(done) return;
     var t=document.getElementById('loadTxt');
-    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core15';
+    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core16';
   },45000);
 })();
 </script>
@@ -11203,6 +11203,32 @@ function lmBuildFacade(def, wpos) {
       }
       const apron = new THREE.Mesh(new THREE.BoxGeometry(W * 1.2, 0.2, 4), deckMat);
       apron.position.set(0, 0.1, D / 2 + 2); G.add(apron);
+    } else if (def.id === 'ifc_lobby' || def.id === 'boa_tower') {
+      const glass = new THREE.MeshStandardMaterial({ color: 0x6ab0d8, roughness: 0.2, metalness: 0.65,
+        emissive: new THREE.Color(0.2, 0.35, 0.5), emissiveIntensity: 0.15, transparent: true, opacity: 0.85 });
+      const mull = new THREE.MeshStandardMaterial({ color: 0xc8d0d8, roughness: 0.4, metalness: 0.7 });
+      for (let row = 0; row < Math.floor(H / 3.4); row++) {
+        for (let col = 0; col < Math.floor(W / 2.8); col++) {
+          const wi = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.6), glass);
+          wi.position.set(-W / 2 + 1.6 + col * 2.8, 2.2 + row * 3.4, D / 2 + 0.05);
+          wi.name = 'lm-proc-glass'; G.add(wi);
+        }
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(W * 0.96, 0.12, 0.08), mull);
+        bar.position.set(0, 3.5 + row * 3.4, D / 2 + 0.08); G.add(bar);
+      }
+    } else if (def.id === 'lockhart') {
+      const neonWin = new THREE.MeshStandardMaterial({ color: 0x1a1020, roughness: 0.4,
+        emissive: new THREE.Color(0.9, 0.2, 0.55), emissiveIntensity: 0.35 });
+      const strip = new THREE.MeshStandardMaterial({ color: 0xff66aa, emissive: new THREE.Color(1, 0.3, 0.6), emissiveIntensity: 0.5 });
+      for (let row = 0; row < Math.min(6, Math.floor(H / 3.2)); row++) {
+        for (let col = 0; col < Math.floor(W / 3.0); col++) {
+          const wi = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 1.8), neonWin);
+          wi.position.set(-W / 2 + 1.8 + col * 3.0, 2.2 + row * 3.2, D / 2 + 0.06);
+          wi.name = 'lm-proc-neon'; G.add(wi);
+        }
+      }
+      const band = new THREE.Mesh(new THREE.BoxGeometry(W * 0.9, 0.35, 0.2), strip);
+      band.position.set(0, Math.min(H - 2, 8), D / 2 + 0.2); G.add(band);
     }
   }
   if (def.pad) {
@@ -12060,166 +12086,63 @@ Object.assign(window.NT, {
   BJ, bjPlay, lifeEat, LIFE_BUFF_SEC, ROB_STORES, BUFF_DEF
 });
 /* =========================================================================
- * M1c · Art P0 貼圖整合（唔改 lat/lon／geo／相機）
- *  · p0-chungking-facade.jpg → 重慶大廈外立面照片板（疊喺 Nathan 路門面）
- *  · p0-chungking-alley.jpg  → 重慶室內走廊盡頭參考牆
- *  · p0-kwongwah-ae.jpg      → 醫院急症室內景參考牆（廣華／九龍共用室內）
- *  · p0-peony-cct.jpg        → 牡丹樓（嘜記）內景參考牆
- *  · p0-lockhart-night.jpg   → 駱克道夜總會地標門面（真實座標不變）
- *  載入：loadTex + EMBEDDED_ASSETS；缺檔就跳過，唔整爛舊邏輯
+ * M1c · Art P0 —— 禁 documentary 相板（docs/kwai-no-photo-boards.md）
+ *  舊 p0-chungking／kwongwah／peony／lockhart JPG 唔再 loadTex／貼 Plane。
+ *  室內仍用既有 INTERIORS 擠出＋色塊／props；門／lat-lon 不變。
  * ========================================================================= */
 const ART_P0 = {
-  ready: false,
+  ready: true,
   tex: {},
-  files: {
-    ckFacade: 'p0-chungking-facade.jpg',
-    ckAlley: 'p0-chungking-alley.jpg',
-    hosp: 'p0-kwongwah-ae.jpg',
-    peony: 'p0-peony-cct.jpg',
-    lockhart: 'p0-lockhart-night.jpg'
-  },
-  applied: { ckExt: false, ckInt: false, hosp: false, peony: false, lockhart: false }
+  files: {},
+  applied: { ckExt: true, ckInt: true, hosp: true, peony: true, lockhart: true, stripped: false }
 };
 
-function artMat(tex, opts = {}) {
-  const m = new THREE.MeshStandardMaterial({
-    map: tex, roughness: opts.roughness ?? 0.7, metalness: 0.05,
-    emissive: new THREE.Color(opts.emissive || 0x000000),
-    emissiveIntensity: opts.emi || 0,
-    transparent: !!opts.transparent, depthWrite: !opts.transparent,
-    polygonOffset: true, polygonOffsetFactor: -1
+function artStripPhotoBoards() {
+  if (typeof scene === 'undefined') return;
+  const kill = [];
+  scene.traverse((o) => {
+    if (!o.isMesh) return;
+    const n = o.name || '';
+    const ud = o.userData || {};
+    // 擴大：art-b2-* 名／userData.artB2／舊 P0／P1 相板一律清
+    if (ud.artP0 || ud.artP1 || ud.artB2) kill.push(o);
+    else if (/^art-p0-|^p1-mongkok-neon$|^p1-sino-wall$|^art-b2-/i.test(n)) kill.push(o);
   });
-  if (opts.emiMap) { m.emissiveMap = tex; m.emissive = new THREE.Color(0xffffff); m.emissiveIntensity = opts.emi || 0.35; }
-  return m;
-}
-
-function artPlane(parent, tex, w, h, x, y, z, rotY, opts) {
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), artMat(tex, opts || {}));
-  m.position.set(x, y, z); m.rotation.y = rotY; m.receiveShadow = true; m.castShadow = false;
-  m.name = opts && opts.name || 'art-p0'; m.userData.noMerge = true; m.userData.artP0 = true;
-  parent.add(m); return m;
-}
-
-async function artLoadAll() {
-  if (ART_P0.ready || typeof loadTex !== 'function') return ART_P0.ready;
-  const entries = Object.entries(ART_P0.files);
-  await Promise.all(entries.map(async ([k, file]) => {
-    try {
-      ART_P0.tex[k] = await loadTex(file, true, false);
-    } catch (e) {
-      console.warn('[art-p0] load fail', file, e && e.message);
+  for (const o of kill) {
+    if (o.parent) o.parent.remove(o);
+    if (o.geometry) o.geometry.dispose();
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    for (const m of mats) {
+      if (!m) continue;
+      if (m.map) m.map.dispose();
+      if (m.emissiveMap) m.emissiveMap.dispose();
+      m.dispose();
     }
-  }));
-  ART_P0.ready = Object.keys(ART_P0.tex).length > 0;
-  return ART_P0.ready;
+  }
+  ART_P0.applied.stripped = true;
 }
 
-/* ---------- 重慶大廈外立面（疊喺 tstGroup；跟油尖旺平移）---------- */
-function artApplyChungkingExterior() {
-  if (ART_P0.applied.ckExt || !ART_P0.tex.ckFacade || typeof TST === 'undefined' || typeof tstGroup === 'undefined') return;
-  if (tstGroup.getObjectByName('art-p0-ck-facade')) { ART_P0.applied.ckExt = true; return; }
-  const cm = TST.cm, front = cm.x1, zmid = (cm.z0 + cm.z1) / 2, LEN = Math.min(36, cm.z1 - cm.z0 - 4);
-  // 塔樓中段照片板（唔改碰撞／門口）
-  artPlane(tstGroup, ART_P0.tex.ckFacade, LEN, 28, front + 0.22, 4.2 + 14, zmid, Math.PI / 2, {
-    name: 'art-p0-ck-facade', emiMap: true, emi: 0.28, roughness: 0.8
-  });
-  ART_P0.applied.ckExt = true;
-}
-
-/* ---------- 重慶室內走廊盡頭 ---------- */
-function artWireChungkingInterior() {
-  const def = INTERIORS.chungking; if (!def || def._artP0) return;
-  def._artP0 = true;
-  const _b = def.build;
-  def.build = function (g) {
-    const info = _b.call(this, g);
-    if (ART_P0.tex.ckAlley) {
-      // 走廊北盡頭（升降機大堂一帶）參考牆
-      wallDecal(g, ART_P0.tex.ckAlley, 7.2, 2.8, 0, 1.45, 6.85, Math.PI, false);
-      const m = g.children[g.children.length - 1]; if (m) { m.name = 'art-p0-ck-alley'; m.userData.artP0 = true; }
-    }
-    ART_P0.applied.ckInt = true;
-    return info;
-  };
-}
-
-/* ---------- 醫院急症室參考牆 ---------- */
-function artWireHospital() {
-  const def = INTERIORS.hospital; if (!def || def._artP0) return;
-  def._artP0 = true;
-  const _b = def.build;
-  def.build = function (g) {
-    const info = _b.call(this, g);
-    if (ART_P0.tex.hosp) {
-      // 北牆大畫（觀察病床對面走廊）
-      wallDecal(g, ART_P0.tex.hosp, 6.5, 2.6, 0.2, 1.55, 4.92, Math.PI, false);
-      const m = g.children[g.children.length - 1]; if (m) { m.name = 'art-p0-hosp'; m.userData.artP0 = true; }
-    }
-    ART_P0.applied.hosp = true;
-    return info;
-  };
-}
-
-/* ---------- 牡丹樓（嘜記）內景 ---------- */
-function artWirePeony() {
-  const def = INTERIORS.mburger; if (!def || def._artP0) return;
-  def._artP0 = true;
-  const _b = def.build;
-  def.build = function (g) {
-    const info = _b.call(this, g);
-    if (ART_P0.tex.peony) {
-      // 東牆參考（餐牌區旁）
-      const x1 = (typeof MB_ROOM !== 'undefined' ? MB_ROOM.x1 : 6) - 0.04;
-      wallDecal(g, ART_P0.tex.peony, 4.8, 2.8, x1, 1.55, 0.4, -Math.PI / 2, false);
-      const m = g.children[g.children.length - 1]; if (m) { m.name = 'art-p0-peony'; m.userData.artP0 = true; }
-    }
-    ART_P0.applied.peony = true;
-    return info;
-  };
-}
-
-/* ---------- 駱克道夜總會地標門面（座標不變）---------- */
-function artApplyLockhart() {
-  if (ART_P0.applied.lockhart || !ART_P0.tex.lockhart) return;
-  const L = typeof LM !== 'undefined' && LM.byId && LM.byId.lockhart;
-  if (!L || !L.facade) return;
-  if (L.facade.getObjectByName('art-p0-lockhart')) { ART_P0.applied.lockhart = true; return; }
-  const def = L.def, W = (def.w || 16) * 0.92, H = Math.min(22, (def.h || 28) * 0.75);
-  artPlane(L.facade, ART_P0.tex.lockhart, W, H, 0, H / 2 + 0.3, (def.d || 12) / 2 + 0.08, 0, {
-    name: 'art-p0-lockhart', emiMap: true, emi: 0.45, roughness: 0.65
-  });
-  ART_P0.applied.lockhart = true;
-}
-
-function artApplyAll() {
-  artApplyChungkingExterior();
-  artWireChungkingInterior();
-  artWireHospital();
-  artWirePeony();
-  artApplyLockhart();
-}
+function artLoadAll() { ART_P0.ready = true; return Promise.resolve(true); }
+function artApplyChungkingExterior() { /* no photo */ }
+function artWireChungkingInterior() { /* no photo wall */ }
+function artWireHospital() { /* no photo wall */ }
+function artWirePeony() { /* no photo wall */ }
+function artApplyLockhart() { /* no photo */ }
+function artApplyAll() { artStripPhotoBoards(); }
 
 {
   const boot = async () => {
-    if (typeof THREE === 'undefined' || typeof loadTex !== 'function') return false;
-    await artLoadAll();
+    if (typeof THREE === 'undefined') return false;
     artApplyAll();
-    // 地標可能稍後先 place
-    const t = setInterval(() => {
-      artApplyLockhart();
-      if (ART_P0.applied.lockhart || (typeof LM !== 'undefined' && LM.byId && LM.byId.lockhart)) {
-        artApplyLockhart();
-        if (ART_P0.applied.lockhart) clearInterval(t);
-      }
-    }, 400);
-    setTimeout(() => clearInterval(t), 20000);
+    const t = setInterval(() => { artStripPhotoBoards(); }, 800);
+    setTimeout(() => clearInterval(t), 12000);
     return true;
   };
   const t0 = setInterval(() => { boot().then((ok) => { if (ok) clearInterval(t0); }); }, 250);
   setTimeout(() => boot(), 0);
 }
 
-Object.assign(window.NT, { ART_P0, artApplyAll, artLoadAll });
+Object.assign(window.NT = window.NT || {}, { ART_P0, artStripPhotoBoards, artApplyAll });
 /* =========================================================================
  * M1c · 幫派地盤／座駕被動收入 stub（FULL_SPEC · 戲仿名；唔接真實組織）
  *  · 地盤：深水埗／油尖旺／灣仔／下環／高雄港 —— 佔領後每 60s 收黑錢
@@ -12823,9 +12746,8 @@ const P1 = {
 };
 
 const P1_FILES = {
-  neon: 'p1-mongkok-neon.jpg',
-  eu: 'p1-eu-police-van.jpg',
-  sino: 'p1-sino-safehouse.jpg'
+  // neon／sino documentary 街景／室內相板停用——只留 EU 車側板（非門面全景）
+  eu: 'p1-eu-police-van.jpg'
 };
 
 /** 內嵌 phase1 巡邏／信旺節點（避免 runtime fetch）*/
@@ -12922,40 +12844,39 @@ HOOKS.sim.push(() => {
 
 /* ---------- 旺角霓虹街景板（近 mk 地標；唔改 lat）---------- */
 function p1MkNeonBackdrop() {
-  if (p1MkNeonBackdrop._done || !P1.tex.neon || typeof LM === 'undefined' || !LM.byId) return;
+  // 禁旺角 documentary 霓虹相板——改程序化霓虹條（真 3D）
+  if (p1MkNeonBackdrop._done || typeof LM === 'undefined' || !LM.byId || typeof scene === 'undefined') return;
   const anchors = ['mk_mahjong', 'mk_pawn', 'sino_centre', 'mk_mtr'].map((id) => LM.byId[id]).filter(Boolean);
   if (!anchors.length) return;
   p1MkNeonBackdrop._done = true;
   let x = 0, z = 0;
   for (const a of anchors) { x += a.w.x; z += a.w.z; }
   x /= anchors.length; z /= anchors.length;
-  const g = new THREE.Group(); g.name = 'p1-mk-neon'; g.position.set(x - 18, 0, z);
-  const mat = new THREE.MeshStandardMaterial({
-    map: P1.tex.neon, roughness: 0.55,
-    emissive: new THREE.Color(0xffffff), emissiveMap: P1.tex.neon, emissiveIntensity: 0.55
-  });
-  const plane = new THREE.Mesh(new THREE.PlaneGeometry(48, 22), mat);
-  plane.position.set(0, 11, 0); plane.rotation.y = Math.PI / 2;
-  plane.name = 'p1-mongkok-neon'; plane.userData.noMerge = true; plane.userData.artP1 = true;
-  g.add(plane);
-  // 第二塊面對另一方向
-  const plane2 = plane.clone(); plane2.position.set(36, 11, 8); plane2.rotation.y = -Math.PI / 2; g.add(plane2);
+  const g = new THREE.Group(); g.name = 'p1-mk-neon-proc'; g.position.set(x - 18, 0, z);
+  const cols = [0xff2d6a, 0x2de0ff, 0xffd12d, 0xb24dff, 0x2dff8a];
+  for (let i = 0; i < 14; i++) {
+    const mat = new THREE.MeshStandardMaterial({
+      color: cols[i % cols.length], roughness: 0.35, metalness: 0.2,
+      emissive: new THREE.Color(cols[i % cols.length]), emissiveIntensity: 0.85
+    });
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.25, 2.2 + (i % 4) * 0.6, 4.5), mat);
+    bar.position.set((i % 7) * 3.2 - 9, 6 + (i % 3) * 2.5, (i < 7 ? -2 : 6));
+    bar.userData.noMerge = true; g.add(bar);
+    const slab = new THREE.Mesh(
+      new THREE.BoxGeometry(5.5, 8 + (i % 5), 3.2),
+      new THREE.MeshStandardMaterial({ color: 0x2a2e34, roughness: 0.9 })
+    );
+    slab.position.set((i % 7) * 3.2 - 9, 4 + (i % 5) * 0.4, (i < 7 ? -4 : 8));
+    slab.userData.noMerge = true; g.add(slab);
+  }
   scene.add(g); P1.neon = g;
 }
 
 /* ---------- 信旺安全屋室內板 ---------- */
 function p1WireSinoInterior() {
+  // 禁信旺 documentary 室內相板——保留 INTERIORS 擠出／色塊
   const def = INTERIORS.sino_centre; if (!def || def._p1Sino) return;
   def._p1Sino = true;
-  const _b = def.build;
-  def.build = function (g) {
-    const info = _b.call(this, g);
-    if (P1.tex.sino && typeof wallDecal === 'function') {
-      wallDecal(g, P1.tex.sino, 6.5, 2.8, 0, 1.5, 3.85, Math.PI, false);
-      const m = g.children[g.children.length - 1]; if (m) { m.name = 'p1-sino-wall'; m.userData.artP1 = true; }
-    }
-    return info;
-  };
 }
 
 /* ---------- 任務 landfall（落難香江 · 文濤）---------- */
@@ -16115,16 +16036,30 @@ function kwAsphaltElbow(parent, x, z, yaw) {
 
 function kwStationKwaiFong(parent, x, z, tex) {
   const conc = new THREE.MeshStandardMaterial({ color: 0x8a9096, roughness: 0.8 });
+  const glass = new THREE.MeshStandardMaterial({ color: 0x1a2838, roughness: 0.22, metalness: 0.45, emissive: new THREE.Color(0.08, 0.12, 0.18), emissiveIntensity: 0.35 });
+  const steel = new THREE.MeshStandardMaterial({ color: 0x3a4046, roughness: 0.55, metalness: 0.4 });
   const g = new THREE.Group(); g.position.set(x, 0, z); g.userData.kwaichung = true; g.name = 'kt_station_kwai_fong';
   const hall = new THREE.Mesh(new THREE.BoxGeometry(22, 7, 14), conc); hall.position.y = 3.5; g.add(hall);
-  const canopy = new THREE.Mesh(new THREE.BoxGeometry(26, 0.35, 6), new THREE.MeshStandardMaterial({ color: 0x3a4046, roughness: 0.6, metalness: 0.3 }));
+  // 正面玻璃帶＋入口凹位（真 3D，無相）
+  for (let i = 0; i < 5; i++) {
+    const wi = new THREE.Mesh(new THREE.BoxGeometry(3.2, 2.6, 0.12), glass);
+    wi.position.set(-8 + i * 4, 3.2, 7.1); g.add(wi);
+  }
+  const recess = new THREE.Mesh(new THREE.BoxGeometry(4.2, 3.4, 1.2), steel);
+  recess.position.set(0, 1.7, 7.6); g.add(recess);
+  for (const sx of [-10, -5, 5, 10]) {
+    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 5.2, 8), steel);
+    col.position.set(sx, 2.6, 8.2); g.add(col);
+  }
+  const canopy = new THREE.Mesh(new THREE.BoxGeometry(26, 0.35, 6), steel);
   canopy.position.set(0, 5.2, 8); g.add(canopy);
-  // 禁站廳 documentary 相板——只用 3D 盒＋色牌
-  // if (tex) kwBillboard(...)
   // 戲仿站名牌（葵芳 · 唔寫葵涌站）
   const signMat = new THREE.MeshStandardMaterial({ color: 0x1a4a8a, roughness: 0.45 });
   const sign = new THREE.Mesh(new THREE.BoxGeometry(8, 1.4, 0.12), signMat);
   sign.position.set(0, 8.2, 7.1); g.add(sign);
+  // 綠線色帶 stub
+  const green = new THREE.Mesh(new THREE.BoxGeometry(22.2, 0.35, 0.15), new THREE.MeshStandardMaterial({ color: 0x1a8a4a, roughness: 0.5 }));
+  green.position.set(0, 6.6, 7.08); g.add(green);
   parent.add(g);
   if (typeof addCollider === 'function') addCollider(x, z, 11, 7, 7);
   return g;
@@ -16514,6 +16449,212 @@ function kwBuildDensityD1() {
   });
 }
 
+/** D3：低層燈箱／冷氣簇／鐵網棚架（docs/kwai-street-density-brief.md）——手機可控 */
+function kwBuildDensityD3() {
+  if (KWAI.densityD3 || typeof scene === 'undefined') return;
+  const root = KWAI.group || new THREE.Group();
+  if (!KWAI.group) { root.name = 'kwaichung-dock'; KWAI.group = root; scene.add(root); }
+  const lite = (typeof IS_SAFARI !== 'undefined' && IS_SAFARI)
+    || (typeof IS_IPHONE !== 'undefined' && IS_IPHONE)
+    || (typeof LOW_MEM !== 'undefined' && LOW_MEM);
+  const boxMat = new THREE.MeshStandardMaterial({ color: 0x9aa0a6, roughness: 0.55, metalness: 0.3 });
+  const fenceMat = new THREE.MeshStandardMaterial({ color: 0x4a5056, roughness: 0.65, metalness: 0.35 });
+  const lightMat = new THREE.MeshStandardMaterial({
+    color: 0xd8c890, roughness: 0.4, emissive: new THREE.Color(0.55, 0.45, 0.22), emissiveIntensity: lite ? 0.25 : 0.45
+  });
+  const scaffoldMat = new THREE.MeshStandardMaterial({ color: 0xb85a18, roughness: 0.7, metalness: 0.15 });
+  // 工廈邊冷氣簇（疏落）
+  const acN = lite ? 8 : 14;
+  for (let i = 0; i < acN; i++) {
+    const x = -50 + (i % 4) * 6 + ((i % 3) - 1) * 1.2;
+    const z = 48 + Math.floor(i / 4) * 14 + (i % 2) * 3;
+    const y = 3.2 + (i % 5) * 2.8;
+    const ac = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.7, 0.55), boxMat);
+    ac.position.set(x, y, z); ac.name = 'kt_d3_ac'; ac.userData.kwaichung = true; root.add(ac);
+  }
+  // 低層燈箱（唔變旺角）
+  const lbN = lite ? 4 : 7;
+  const lbCols = [0xd8c890, 0x8ab0c8, 0xc8a070];
+  for (let i = 0; i < lbN; i++) {
+    const col = lbCols[i % lbCols.length];
+    const m = lightMat.clone();
+    m.emissive = new THREE.Color(col);
+    const w = 2.4 + (i % 3) * 0.6;
+    const lb = new THREE.Mesh(new THREE.BoxGeometry(w, 0.85, 0.18), m);
+    lb.position.set(-46 + (i % 3) * 8, 3.8 + (i % 2) * 1.2, 50 + Math.floor(i / 3) * 18);
+    lb.name = 'kt_d3_lightbox'; lb.userData.kwaichung = true; root.add(lb);
+  }
+  // 鐵網圍欄沿輔路
+  for (let i = 0; i < (lite ? 5 : 8); i++) {
+    const z = 52 + i * 8;
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 2.2, 5), fenceMat);
+    post.position.set(-54, 1.1, z); post.name = 'kt_d3_fence'; post.userData.kwaichung = true; root.add(post);
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.6, 7.2), fenceMat);
+    panel.position.set(-54, 1.0, z + 3.5); panel.name = 'kt_d3_fence'; panel.userData.kwaichung = true; root.add(panel);
+  }
+  // 一兩處棚架
+  for (const [x, z] of [[-28, 70], [-48, 96]].slice(0, lite ? 1 : 2)) {
+    for (let i = 0; i < 3; i++) {
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 9, 5), scaffoldMat);
+      pole.position.set(x + i * 1.4, 4.5, z); pole.name = 'kt_d3_scaffold'; pole.userData.kwaichung = true; root.add(pole);
+    }
+    const plank = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.12, 1.2), scaffoldMat);
+    plank.position.set(x + 1.4, 6.5, z); plank.name = 'kt_d3_scaffold'; plank.userData.kwaichung = true; root.add(plank);
+  }
+  // 公屋平台加矮欄＋小舖色塊（戲仿商場邊）
+  if (!lite) {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(48, 0.9, 0.12), fenceMat);
+    rail.position.set(-105, 4.4, 126); rail.name = 'kt_d3_podium_rail'; rail.userData.kwaichung = true; root.add(rail);
+    for (let i = 0; i < 4; i++) {
+      const shop = new THREE.Mesh(
+        new THREE.BoxGeometry(5.5, 3.2, 4),
+        new THREE.MeshStandardMaterial({ color: [0x6a7068, 0x7a6860, 0x5a6870, 0x706858][i], roughness: 0.85 })
+      );
+      shop.position.set(-118 + i * 8, 1.6, 115); shop.name = 'kt_d3_podium_shop'; shop.userData.kwaichung = true; root.add(shop);
+    }
+  }
+  KWAI.densityD3 = true;
+  KWAI.zones = Object.assign(KWAI.zones || {}, { density_d3: 'kt_d3_lightbox' });
+}
+
+/** 閘口／工廈大堂／葵芳站 — 便宜可入（重用 buildRoom） */
+function kwRegisterEnterables() {
+  if (KWAI.enterables || typeof INTERIORS === 'undefined' || typeof DOORS === 'undefined') return;
+  if (typeof buildRoom !== 'function') return;
+
+  INTERIORS.gatehouse = {
+    name: '碼頭閘口控制室', city: '香港 · 葵涌貨櫃碼頭', light: '光管冷白',
+    desc: '閘口值班亭。限高牌、過磅單、對講機——訪客靠左、貨櫃車靠右。',
+    build(g) {
+      const wallMat = new THREE.MeshStandardMaterial({ color: 0xc4c6c0, roughness: 0.85 });
+      const fl = new THREE.MeshStandardMaterial({ color: 0x3a3e42, roughness: 0.7 });
+      buildRoom(g, {
+        x0: -2.4, x1: 2.4, z0: -2.0, z1: 2.0, h: 2.6, wallMat,
+        floorMat: fl, ceilMat: new THREE.MeshStandardMaterial({ color: 0xd0d2cc, roughness: 0.9 }),
+        open: [{ side: 's', at: 0, w: 1.0, y0: 0, y1: 2.1, kind: 'door' },
+               { side: 'n', at: 0, w: 2.2, y0: 0.9, y1: 2.2, kind: 'window' }]
+      });
+      if (typeof place === 'function') {
+        place(g, 'desk', 0.6, 0.8, Math.PI); place(g, 'chair', 0.6, 0.1, 0.2, { col: false });
+        place(g, 'monitor', 0.4, 0.95, Math.PI, { y: 0.76, col: false });
+      }
+      g.add(new THREE.HemisphereLight(0xdfeee0, 0x3a3328, 0.55));
+      const pl = new THREE.PointLight(0xe6f5e2, 4.5, 7, 1.6); pl.position.set(0, 2.2, 0); g.add(pl);
+      if (typeof interactable === 'function') {
+        interactable('對講機', 0.8, 0.8, '按掣', () => {
+          if (typeof sfx === 'function') sfx('click');
+          if (typeof toast === 'function') toast('「閘口收到——訪客靠左，貨櫃車靠右。」', 2200);
+        });
+        interactable('過磅單', -1.6, 0.5, '睇', () => {
+          if (typeof sfx === 'function') sfx('click');
+          if (typeof toast === 'function') toast('過磅單（戲仿）：限高 4.5 m · 八號泊位', 2400);
+        });
+      }
+      return { spawn: [0, -1.4], yaw: 0 };
+    }
+  };
+
+  INTERIORS.kw_ind_lobby = {
+    name: '工業中心大堂（戲仿）', city: '香港 · 葵涌工廈帶', light: '冷白＋黃燈箱',
+    desc: '灰石屎大堂、貨台門、信箱牆。夜晚得個更仔喺度睇波。',
+    build(g) {
+      const wallMat = new THREE.MeshStandardMaterial({ color: 0x9a9e98, roughness: 0.88 });
+      const fl = new THREE.MeshStandardMaterial({ color: 0x5a5e58, roughness: 0.75 });
+      buildRoom(g, {
+        x0: -4.5, x1: 4.5, z0: -3.5, z1: 3.5, h: 3.2, wallMat,
+        floorMat: fl, ceilMat: new THREE.MeshStandardMaterial({ color: 0xb8bab4, roughness: 0.9 }),
+        open: [{ side: 's', at: 0, w: 1.2, y0: 0, y1: 2.2, kind: 'door' },
+               { side: 'n', at: -1.5, w: 2.0, y0: 1.0, y1: 2.4, kind: 'window' },
+               { side: 'n', at: 1.5, w: 2.0, y0: 1.0, y1: 2.4, kind: 'window' }]
+      });
+      if (typeof place === 'function') {
+        place(g, 'desk', -2.2, 2.4, Math.PI); place(g, 'chair', -2.2, 1.7, 0.15, { col: false });
+        place(g, 'cooler', 3.8, -2.6, -Math.PI / 2); place(g, 'plant', 3.8, 2.8);
+        for (let i = 0; i < 3; i++) place(g, 'cabinet', -4.1, -2.4 + i * 0.55, Math.PI / 2);
+      }
+      g.add(new THREE.HemisphereLight(0xc8d0c8, 0x2a2820, 0.5));
+      const pl = new THREE.PointLight(0xe8f0e0, 6, 10, 1.5); pl.position.set(0, 2.6, 0); g.add(pl);
+      if (typeof interactable === 'function') {
+        interactable('信箱', -3.6, 2.4, '睇', () => {
+          if (typeof sfx === 'function') sfx('click');
+          if (typeof toast === 'function') toast('信箱（戲仿）：工業中心 · 無掛號', 2000);
+        });
+        interactable('飲水機', 3.2, -2.6, '飲水', () => {
+          if (typeof player !== 'undefined') player.hp = Math.min(100, player.hp + 12);
+          if (typeof sfx === 'function') sfx('click');
+          if (typeof toast === 'function') toast('飲咗杯水（生命 +12）');
+        });
+      }
+      return { spawn: [0, -2.8], yaw: 0 };
+    }
+  };
+
+  INTERIORS.kf_concourse = {
+    name: '葵芳站大堂（戲仿）', city: '香港 · 葵芳', light: '站廳冷白',
+    desc: '綠線站廳 stub。票機、閘機色塊、往出口指示——唔貼真站相。',
+    build(g) {
+      const wallMat = new THREE.MeshStandardMaterial({ color: 0xb0b4b8, roughness: 0.82 });
+      const fl = new THREE.MeshStandardMaterial({ color: 0x6a7074, roughness: 0.55 });
+      buildRoom(g, {
+        x0: -6, x1: 6, z0: -4, z1: 4, h: 4.0, wallMat,
+        floorMat: fl, ceilMat: new THREE.MeshStandardMaterial({ color: 0xd8dce0, roughness: 0.9 }),
+        open: [{ side: 's', at: 0, w: 1.4, y0: 0, y1: 2.4, kind: 'door' },
+               { side: 'n', at: 0, w: 8, y0: 1.2, y1: 3.4, kind: 'window' }],
+        frameMat: (typeof PM !== 'undefined' ? PM.metalDark : undefined)
+      });
+      // 綠線色帶
+      const band = new THREE.Mesh(new THREE.BoxGeometry(11.8, 0.35, 0.08),
+        new THREE.MeshStandardMaterial({ color: 0x1a8a4a, roughness: 0.5 }));
+      band.position.set(0, 3.2, -3.95); g.add(band);
+      if (typeof place === 'function') {
+        place(g, 'cabinet', -5.2, -2.5, Math.PI / 2);
+        place(g, 'cooler', 5.2, -2.8, -Math.PI / 2);
+      }
+      // 票機／閘機色塊
+      const kiosk = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.6, 0.7),
+        new THREE.MeshStandardMaterial({ color: 0x2a4a6a, roughness: 0.45, metalness: 0.25 }));
+      kiosk.position.set(-2.5, 0.8, 1.5); g.add(kiosk);
+      const gate = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.1, 0.35),
+        new THREE.MeshStandardMaterial({ color: 0x3a3e42, roughness: 0.5, metalness: 0.4 }));
+      gate.position.set(1.5, 0.55, 0); g.add(gate);
+      g.add(new THREE.HemisphereLight(0xe0e8f0, 0x2a3038, 0.65));
+      const pl = new THREE.PointLight(0xeef2f8, 8, 14, 1.4); pl.position.set(0, 3.2, 0); g.add(pl);
+      if (typeof interactable === 'function') {
+        interactable('票機', -2.5, 1.5, '撳', () => {
+          if (typeof sfx === 'function') sfx('click');
+          if (typeof toast === 'function') toast('票機（戲仿）：八達通／單程票 —— 站名葵芳', 2400);
+        });
+        interactable('閘機', 1.5, 0, '過閘', () => {
+          if (typeof sfx === 'function') sfx('click');
+          if (typeof toast === 'function') toast('嘟——（戲仿閘機聲）往出口', 1800);
+        });
+      }
+      return { spawn: [0, -3.2], yaw: 0 };
+    }
+  };
+
+  const addDoor = (id, x, z, outYaw) => {
+    if (DOORS.some((d) => d.id === id)) return;
+    const d = { id, pos: new THREE.Vector3(x, 0, z), outYaw: outYaw || 0, label: INTERIORS[id].name };
+    let mat = null;
+    try { if (typeof markerMat !== 'undefined') mat = markerMat; } catch (e) { mat = null; }
+    if (!mat && DOORS.length && DOORS[0].marker) mat = DOORS[0].marker.material;
+    if (mat && typeof scene !== 'undefined') {
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 1, 24, 1, true), mat);
+      m.position.set(x, 0.5, z); m.renderOrder = 6; scene.add(m); d.marker = m;
+    }
+    DOORS.push(d);
+  };
+
+  // 閘口 booth 前、工廈走廊入口、葵芳站 canopy 下
+  addDoor('gatehouse', -22, 40.2, Math.PI);
+  addDoor('kw_ind_lobby', -36, 65.5, Math.PI);
+  addDoor('kf_concourse', -82, 86.2, Math.PI);
+
+  KWAI.enterables = true;
+  console.info('[kwai] enterables: gatehouse / ind lobby / kf concourse');
+}
+
 function kwBuildP1Urban() {
   if (KWAI.p1Built || typeof scene === 'undefined') return;
   const root = KWAI.group || new THREE.Group();
@@ -16674,6 +16815,8 @@ function kwBuildP1Urban() {
     try { await kwLoadKenney(); } catch (e) { console.warn('[kwai-kenney]', e && e.message); }
     kwBuildP1Urban();
     kwBuildDensityD1();
+    kwBuildDensityD3();
+    kwRegisterEnterables();
     kwQuayEdgeSoft();
     if (typeof kwStripPhotoBoards === 'function') kwStripPhotoBoards();
     if (typeof HOOKS !== 'undefined') {
