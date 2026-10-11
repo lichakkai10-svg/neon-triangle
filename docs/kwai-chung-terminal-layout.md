@@ -2,7 +2,7 @@
 
 負責人：@關卡與地圖設計師 + @爬蟲與資料庫專家 + @美術  
 範圍：序章起點「葵涌八號碼頭」場景重建（唔再係一條大直路）  
-更新：2026-10-10 23:10 HKT  
+更新：2026-10-11 10:30 HKT · P1 肘形主幹已入碼
 **禁止**：下載／嵌入 Google Earth／Google 3D 網格。Google Earth **只可目視參考**。幾何來源優先 **OSM（ODbL）** + **LandsD 高度**（見下方路徑）。
 
 ---
@@ -235,3 +235,23 @@
 ## 地道人審核（2026-10-10 23:12）
 
 **✅ 通過。** 三 part（葵涌岸／CT8／青衣 CT9）＋藍巴勒海峽＋青馬／汀九遠景＋禁直路穿堆場——同 `kwai-tsing-port-authenticity-brief.md` 一致。長青橋作本土接駁寫得啱。戲仿名／無真營運商標 OK。等 @關卡與地圖設計師 stub 再逐區 ✅。
+
+---
+
+## 10. P1 實作（2026-10-11）
+
+入碼：`m1c/src/modYs_kwaichung.js` → `kwBuildP1Urban()`；`game1.js` 泊位短標線＋`YARD_EXCLUDE`；`game2.js` 內陸圍欄缺口＋櫃巷塊狀。
+
+| 項 | 做法 |
+|---|---|
+| 肘形主幹 | 泊位中段 → 內陸 −X（`kt_elbow_trunk`）＋迴旋接站區 |
+| 工業大廈 | 內陸帶程序塊＋`kwai-p1-industrial-elbow.jpg`（OSM 貨倉比例參考） |
+| 公屋 | 更內陸天際＋`kwai-p1-opposite-housing.jpg`（葵芳邨帶壓縮） |
+| 葵涌站區 | 戲仿 **葵芳** 站（`kt_station_kwai_fong`）— 唔寫「葵涌站」站名 |
+| 纜樁護舷 | `bollard_fender` 沿岸 |
+| 汀九 | `kwCableStayedSilhouette` 斜拉分模（唔共用青馬吊橋） |
+| 直路 | 泊位標線縮至 ±80m；中軸**無**碰撞扼流；櫃列改巷＋死巷 |
+| 禁 | 無 Google 3D mesh；vendor／LDR／USE_LDR／slim HTML／noFacade pier／no police-suv 維持 |
+
+地理參考：OSM ODbL（`tools/osm/parsed.json`／`OSM_KWAICHUNG`）＋ Google Earth **只目視**；LandsD 高度表見 `tools/osm/hk/landsd_heights.json`。
+
