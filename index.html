@@ -274,7 +274,7 @@ body.aim #cross{transform:scale(.45)}
     if(b && cur < n) b.style.width=n+'%';
     if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
-  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core12。","用流動數據請等陣——資產喺度解壓。","聽日目標：落難香江 · 信和安全屋。"];
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core15。","用流動數據請等陣——資產喺度解壓。","聽日目標：落難香江 · 信和安全屋。"];
   var tipEl=document.getElementById("loadTips"); var ti=0;
   if(tipEl) tipEl.textContent=tips[0];
   var tipTimer=setInterval(function(){
@@ -284,7 +284,7 @@ body.aim #cross{transform:scale(.45)}
   setTimeout(function(){
     if(done) return;
     var t=document.getElementById('loadTxt');
-    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core12';
+    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core15';
   },45000);
 })();
 </script>
@@ -15564,7 +15564,8 @@ const KWAI = {
   osmScale: 0.075,
   group: null,
   tex: {},
-  mats: {}
+  mats: {},
+  kenney: { ready: false, buildings: [], extras: [] }
 };
 
 function kwAtlas(mat, col, row, cols, rows) {
@@ -16031,11 +16032,34 @@ function kwBuildThreePartStub() {
  *  站名牌寫「葵芳」唔寫「葵涌站」。等 OSM 樓腳精校。
  */
 function kwIndBlock(parent, x, z, w, h, d, tex) {
-  // 真 3D 擠出＋窗洞／外置冷氣 mesh——唔用相片立面
+  // Kenney Industrial GLB 優先；缺檔先程序擠出＋窗／AC
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.userData.kwaichung = true; g.name = 'kt_ind_block_n';
+  const pool = KWAI.kenney && KWAI.kenney.buildings;
+  if (pool && pool.length) {
+    const src = pool[Math.abs(Math.floor(x * 3 + z * 7)) % pool.length];
+    const cl = src.clone(true);
+    cl.userData.kwaichung = true;
+    kwScaleGround(cl, w, h, d);
+    g.add(cl);
+    // 偶加煙囪／貨櫃點綴
+    const ex = KWAI.kenney.extras;
+    if (ex && ex.length && (Math.abs(Math.floor(x + z)) % 4 === 0)) {
+      const e = ex[Math.abs(Math.floor(z)) % ex.length].clone(true);
+      e.position.set(w * 0.35, 0, d * 0.35);
+      const eb = new THREE.Box3().setFromObject(e);
+      const es = new THREE.Vector3(); eb.getSize(es);
+      const s = Math.min(3.5 / Math.max(es.x, 0.01), 8 / Math.max(es.y, 0.01), 3.5 / Math.max(es.z, 0.01));
+      e.scale.multiplyScalar(s);
+      eb.setFromObject(e); e.position.y -= eb.min.y;
+      g.add(e);
+    }
+    parent.add(g);
+    if (typeof addCollider === 'function') addCollider(x, z, w / 2, d / 2, h);
+    return g;
+  }
   const bodyMat = new THREE.MeshStandardMaterial({ color: 0x5a5e62, roughness: 0.88 });
   const winMat = new THREE.MeshStandardMaterial({ color: 0x1e2830, roughness: 0.28, metalness: 0.35, emissive: new THREE.Color(0.1, 0.14, 0.18), emissiveIntensity: 0.35 });
   const acMat = new THREE.MeshStandardMaterial({ color: 0x8a9096, roughness: 0.55, metalness: 0.35 });
-  const g = new THREE.Group(); g.position.set(x, 0, z); g.userData.kwaichung = true; g.name = 'kt_ind_block_n';
   const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bodyMat);
   body.position.y = h / 2; body.castShadow = body.receiveShadow = true; body.userData.noMerge = true;
   g.add(body);
@@ -16063,8 +16087,6 @@ function kwIndBlock(parent, x, z, w, h, d, tex) {
   putFace(0, 1, true); putFace(0, -1, true); putFace(1, 0, false); putFace(-1, 0, false);
   const dock = new THREE.Mesh(new THREE.BoxGeometry(w * 0.9, 1.2, 2.2), new THREE.MeshStandardMaterial({ color: 0x4a4e52, roughness: 0.7 }));
   dock.position.set(0, 0.6, d / 2 + 1.0); g.add(dock);
-  const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, h * 0.55, 6), new THREE.MeshStandardMaterial({ color: 0x3a4044, roughness: 0.5, metalness: 0.4 }));
-  pipe.position.set(w / 2 - 0.3, h * 0.45, d / 2 + 0.2); g.add(pipe);
   parent.add(g);
   if (typeof addCollider === 'function') addCollider(x, z, w / 2, d / 2, h);
   return g;
@@ -16115,6 +16137,65 @@ async function kwLoadP1() {
   KWAI.p1Ready = true;
   return true;
 }
+
+
+/** Kenney City Kit Industrial（CC0）——工廈真 3D GLB */
+async function kwLoadKenney() {
+  if (KWAI.kenney.ready) return true;
+  if (typeof loadGLTF !== 'function') return false;
+  const lite = (typeof IS_SAFARI !== 'undefined' && IS_SAFARI)
+    || (typeof IS_IPHONE !== 'undefined' && IS_IPHONE)
+    || (typeof LOW_MEM !== 'undefined' && LOW_MEM);
+  const letters = lite
+    ? ['a', 'c', 'e', 'g', 'i', 'k', 'm', 'o']
+    : 'abcdefghijklmnopqrst'.split('');
+  const base = 'gltf/kenney-city-kit-industrial/';
+  const out = [];
+  const ms = lite ? 7000 : 12000;
+  for (const L of letters) {
+    try {
+      const g = await loadGLTF(base + 'building-' + L + '.glb', ms);
+      if (!g || !g.scene) continue;
+      const root = g.scene;
+      root.traverse((o) => {
+        if (!o.isMesh) return;
+        o.castShadow = o.receiveShadow = true;
+        o.userData.noMerge = true;
+        o.userData.kwaichung = true;
+      });
+      out.push(root);
+    } catch (e) {
+      console.warn('[kwai-kenney]', L, e && e.message);
+    }
+  }
+  KWAI.kenney.buildings = out;
+  // 煙囪／水塔／貨櫃點綴（可缺）
+  const extras = lite ? ['chimney-small.glb', 'shipping-container-a.glb']
+    : ['chimney-medium.glb', 'chimney-large.glb', 'water-tower.glb', 'shipping-container-a.glb', 'shipping-container-b.glb', 'detail-tank.glb'];
+  for (const f of extras) {
+    try {
+      const g = await loadGLTF(base + f, ms);
+      if (g && g.scene) {
+        g.scene.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.userData.noMerge = true; o.userData.kwaichung = true; } });
+        KWAI.kenney.extras.push(g.scene);
+      }
+    } catch (e) { /* optional */ }
+  }
+  KWAI.kenney.ready = out.length > 0;
+  console.info('[kwai-kenney]', out.length, 'buildings', KWAI.kenney.extras.length, 'extras');
+  return KWAI.kenney.ready;
+}
+
+function kwScaleGround(obj, w, h, d) {
+  const box = new THREE.Box3().setFromObject(obj);
+  const sz = new THREE.Vector3(); box.getSize(sz);
+  if (sz.x < 1e-3 || sz.y < 1e-3 || sz.z < 1e-3) return;
+  obj.scale.set(w / sz.x, h / sz.y, d / sz.z);
+  // 貼地
+  box.setFromObject(obj);
+  obj.position.y -= box.min.y;
+}
+
 
 function kwFender(parent, x, z) {
   const rub = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.95 });
@@ -16590,6 +16671,7 @@ function kwBuildP1Urban() {
     }
     if (!KWAI.threePart) kwBuildThreePartStub();
     try { await kwLoadP1(); } catch (e) { console.warn('[kwai-p1]', e && e.message); }
+    try { await kwLoadKenney(); } catch (e) { console.warn('[kwai-kenney]', e && e.message); }
     kwBuildP1Urban();
     kwBuildDensityD1();
     kwQuayEdgeSoft();
