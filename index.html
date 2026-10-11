@@ -274,7 +274,7 @@ body.aim #cross{transform:scale(.45)}
     if(b && cur < n) b.style.width=n+'%';
     if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
-  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core9。","用流動數據請等陣——資產喺度解壓。","聽日目標：落難香江 · 信和安全屋。"];
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core11。","用流動數據請等陣——資產喺度解壓。","聽日目標：落難香江 · 信和安全屋。"];
   var tipEl=document.getElementById("loadTips"); var ti=0;
   if(tipEl) tipEl.textContent=tips[0];
   var tipTimer=setInterval(function(){
@@ -284,7 +284,7 @@ body.aim #cross{transform:scale(.45)}
   setTimeout(function(){
     if(done) return;
     var t=document.getElementById('loadTxt');
-    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core9';
+    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core11';
   },45000);
 })();
 </script>
@@ -8917,7 +8917,10 @@ const SFX10 = {
   radio_news_sting: () => tone([[70,0,0.28,'sine',1],[110,0.02,0.22,'triangle',0.6],[392,0.06,0.28,'sawtooth',0.35],[494,0.1,0.25,'sawtooth',0.28]],0.22),
   radio_clear_chime: () => tone([[659,0,0.15,'sine'],[523,0.12,0.22,'sine']],0.14),
   radio_off_click: () => tone([[200,0,0.05,'square',0.4]],0.1),
-  ui_fine: () => tone([[880,0,0.06,'square',0.35],[1320,0.05,0.08,'sine',0.4],[220,0.12,0.18,'triangle',0.25]],0.14) // 罰單：嘟＋紙感，非 GTA 懸賞
+  ui_fine: () => tone([[880,0,0.06,'square',0.35],[1320,0.05,0.08,'sine',0.4],[220,0.12,0.18,'triangle',0.25]],0.14), // 罰單：嘟＋紙感，非 GTA 懸賞
+  ship_horn: () => tone([[75,0,0.7,'sine',1],[95,0.15,0.55,'sawtooth',0.35],[60,0.5,0.6,'sine',0.5]],0.22), // 船笛戲仿，非真碼頭號
+  crane_servo: () => tone([[180,0,0.35,'sawtooth',0.4],[220,0.15,0.4,'square',0.2],[140,0.4,0.35,'triangle',0.25]],0.12), // 岸吊機械
+  port_water: () => tone([[90,0,0.4,'sine',0.3],[110,0.2,0.5,'triangle',0.15]],0.08) // 岸邊水拍薄層
 };
 /** 雨夜床聲增益（amb_rain_night_loop placeholder＝既有 audio.rain）*/
 function setRainBed(gain = 0.13) {
@@ -11964,6 +11967,7 @@ HOOKS.sim.push((dt) => {
             '無煙監察組提示：禁煙區吸煙，定額罰款三千元。',
             '交通執法組提示：非法泊車定額罰款四百元；行車中使用手提電話亦可被票控。',
             '交通執法組提醒：超速、衝紅燈、斑馬線未讓行人均屬定額罰款項目。',
+            '街道秩序組提示：公眾地方阻街、非法擺放廢物，定額罰款六千元。',
             '醫療消息：公立急症室合資格人士每次收費約四百元，非緊急請考慮普通科門診。'
           ];
     radioToast(`${s.name}｜${ads[Math.floor(Math.random() * ads.length)]}`, 2400);
@@ -16775,6 +16779,63 @@ Object.assign(window, {
   govWastedFee, govWastedLabel, govBailFee, govBailLabel
 });
 if (typeof window.NT === 'object') Object.assign(window.NT, { GOV_FEES, FINE_CATALOG, LITTER, issueFine, govBailFee, govBailLabel });
+
+/* =========================================================================
+ * 葵青口岸環境音（船笛／岸吊／水拍）——跟 KWAI.zones kt_part_*
+ * 肘形 P2 落地後偶發；戲仿、非真碼頭商標聲。唔郁 Pages。
+ * ========================================================================= */
+const PORTAMB = { cool: 0, craneCool: 0, waterCool: 0, lastZone: '' };
+
+function portAmbPlayerXZ() {
+  if (typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined' && car.pos)
+    return { x: car.pos.x, z: car.pos.z };
+  if (typeof player !== 'undefined' && player.pos)
+    return { x: player.pos.x, z: player.pos.z };
+  return null;
+}
+
+/** 粗分區：靠海／Part B 南／Part C 遠岸／Part A 堆場 */
+function portAmbZone(x, z) {
+  const bx = (typeof BOUND !== 'undefined') ? BOUND.x : 28.5;
+  if (x > bx + 120) return 'kt_part_c_tsingyi_skyline';
+  if (z < -180 && x > bx - 10) return 'kt_part_b_ct8_hint';
+  if (x > bx - 8) return 'kt_quay_edge';
+  return 'kt_part_a_yard';
+}
+
+function portAmbSim(dt) {
+  if (typeof state === 'undefined' || !state.started) return;
+  if (typeof INT !== 'undefined' && INT.active) return;
+  if (document.body && document.body.classList.contains('cine')) return;
+  if (typeof KWAI === 'undefined' || !KWAI.threePart) return;
+  PORTAMB.cool = Math.max(0, PORTAMB.cool - dt);
+  PORTAMB.craneCool = Math.max(0, PORTAMB.craneCool - dt);
+  PORTAMB.waterCool = Math.max(0, PORTAMB.waterCool - dt);
+  const p = portAmbPlayerXZ(); if (!p) return;
+  const zone = portAmbZone(p.x, p.z);
+  PORTAMB.lastZone = zone;
+  const nearSea = zone === 'kt_quay_edge' || zone === 'kt_part_b_ct8_hint' || zone === 'kt_part_c_tsingyi_skyline';
+  if (!nearSea && zone !== 'kt_part_a_yard') return;
+  if (typeof sfx !== 'function') return;
+  // 船笛：靠海稀疏
+  if (nearSea && PORTAMB.cool <= 0 && Math.random() < dt * 0.04) {
+    PORTAMB.cool = 18 + Math.random() * 22;
+    sfx('ship_horn', zone === 'kt_part_c_tsingyi_skyline' ? 0.55 : 0.85);
+  }
+  // 岸吊：Part B／C／碼頭邊
+  if (nearSea && PORTAMB.craneCool <= 0 && Math.random() < dt * 0.06) {
+    PORTAMB.craneCool = 9 + Math.random() * 14;
+    sfx('crane_servo', 0.7);
+  }
+  // 水拍：碼頭邊較密、遠岸較稀
+  if (nearSea && PORTAMB.waterCool <= 0 && Math.random() < dt * (zone === 'kt_quay_edge' ? 0.08 : 0.03)) {
+    PORTAMB.waterCool = 4 + Math.random() * 6;
+    sfx('port_water', zone === 'kt_part_c_tsingyi_skyline' ? 0.4 : 0.65);
+  }
+}
+
+HOOKS.sim.push(portAmbSim);
+if (typeof window !== 'undefined' && window.NT) Object.assign(NT, { PORTAMB, portAmbSim });
 /* =========================================================================
  * M1c · 罰款地圖觸發（source: data/fines-official.json · 唔用 verified 撞車 id）
  *  · 掛街景 props：黃格／雙白線／欄杆泊車／超速／西門紅燈／垃圾桶亂拋
