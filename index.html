@@ -274,7 +274,7 @@ body.aim #cross{transform:scale(.45)}
     if(b && cur < n) b.style.width=n+'%';
     if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
-  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core8。","用流動數據請等陣——資產喺度解壓。","聽日目標：落難香江 · 信和安全屋。"];
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core9。","用流動數據請等陣——資產喺度解壓。","聽日目標：落難香江 · 信和安全屋。"];
   var tipEl=document.getElementById("loadTips"); var ti=0;
   if(tipEl) tipEl.textContent=tips[0];
   var tipTimer=setInterval(function(){
@@ -284,7 +284,7 @@ body.aim #cross{transform:scale(.45)}
   setTimeout(function(){
     if(done) return;
     var t=document.getElementById('loadTxt');
-    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core8';
+    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core9';
   },45000);
 })();
 </script>
@@ -350,10 +350,10 @@ const BOUND = { x: 28.5, z: 186 };                    // 可活動範圍（圍�
 // 不放貨櫃的區域（M2：泊位辦公室、碼頭控制室所在位置）{ x0, x1, z0, z1 }
 const YARD_EXCLUDE = [
   { x0: 9, x1: 30, z0: 18, z1: 40 }, { x0: -30, x1: -9, z0: -66, z1: -44 },
-  // P1 肘形主幹走廊（向內陸 −X）＋工業／站區預留 —— 唔再對稱夾滿直路
-  { x0: -95, x1: -8, z0: 28, z1: 95 },
-  { x0: -95, x1: -35, z0: 90, z1: 175 },
-  { x0: -22, x1: 22, z0: 55, z1: 95 }
+  // core9：肘形主幹走廊（spawn 前方左轉 −X）＋工廈／站區 —— 清直路櫃夾
+  { x0: -110, x1: -6, z0: 8, z1: 120 },
+  { x0: -110, x1: -40, z0: 110, z1: 180 },
+  { x0: -18, x1: 18, z0: 20, z1: 55 }
 ];
 // 各模組掛勾：sim（每步邏輯）、frame（每幀渲染前）、minimap（雷達上加繪，世界座標）
 const HOOKS = { sim: [], frame: [], minimap: [], shot: [], death: [], carImpact: [], busted: [], wantedCleared: [] };
@@ -740,17 +740,18 @@ function addStrip(x, z, w, l) {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(w, l), lineMat);
   m.rotation.x = -Math.PI / 2; m.position.set(x, 0.006, z); m.receiveShadow = true; scene.add(m); return m;
 }
-// P1：泊位段短標線（±80m）；完整肘形主幹由 modYs_kwaichung.js 繪製 —— 唔再 ±172m 直路貫穿
-const BERTH_Z = 80;
-addStrip(-ROAD_HALF + 0.2, 0, 0.18, BERTH_Z * 2);      // 左邊線（泊位段）
-addStrip(ROAD_HALF - 0.2, 0, 0.18, BERTH_Z * 2);       // 右邊線
-addStrip(-0.12, 0, 0.12, BERTH_Z * 2);
-addStrip(0.12, 0, 0.12, BERTH_Z * 2);
-{ // 分線虛線（只泊位段）
+// core9：泊位段更短標線（南 −36→轉彎 z≈32）；肘形主幹由 modYs —— 唔再 ±172m 直路貫穿
+const BERTH_Z = 36;
+addStrip(-ROAD_HALF + 0.2, -2, 0.18, BERTH_Z * 2);      // 左邊線（短泊位）
+addStrip(ROAD_HALF - 0.2, -2, 0.18, BERTH_Z * 2);       // 右邊線
+addStrip(-0.12, -2, 0.12, BERTH_Z * 2);
+addStrip(0.12, -2, 0.12, BERTH_Z * 2);
+{ // 分線虛線（只短泊位；轉彎以北交俾肘形黃線）
   const dashGeo = new THREE.PlaneGeometry(0.12, 3); dashGeo.rotateX(-Math.PI / 2);
-  const n = Math.floor((BERTH_Z * 2) / 9) * 2;
+  const z0 = -BERTH_Z - 2, z1 = 30; // 唔畫過肘形轉彎口
+  const n = Math.floor((z1 - z0) / 9) * 2 + 4;
   const dashes = new THREE.InstancedMesh(dashGeo, lineMat, n); let k = 0; const m4 = new THREE.Matrix4();
-  for (let z = -BERTH_Z; z < BERTH_Z && k < n; z += 9) for (const x of [-3.5, 3.5]) { m4.makeTranslation(x, 0.006, z); dashes.setMatrixAt(k++, m4); }
+  for (let z = z0; z < z1 && k < n; z += 9) for (const x of [-3.5, 3.5]) { m4.makeTranslation(x, 0.006, z); dashes.setMatrixAt(k++, m4); }
   dashes.count = k; dashes.receiveShadow = true; scene.add(dashes);
 }
 // 停車格 / 碼頭泊位標記「8」（地面黃線，不是發光板）
@@ -893,8 +894,8 @@ const splash = { visible: false, material: { uniforms: { uCam: { value: new THRE
   };
   // 海側（+X）全程保留——加厚石壆防高速穿牆落海（仍唔封內陸肘形缺口）
   wall(BOUND.x + 2.0, 0, 4.0, BOUND.z * 2 + 1.6);
-  // 內陸側（−X）：南段＋北段，中間 z≈35–100 開肘形出口（通往工業區／葵涌站）
-  const wGap0 = 35, wGap1 = 100;
+  // 內陸側（−X）：南段＋北段，中間加闊肘形出口（core9：spawn 前方左轉入工廈／葵芳）
+  const wGap0 = 12, wGap1 = 118;
   const wSouthLen = wGap0 - (-BOUND.z);
   const wNorthLen = BOUND.z - wGap1;
   wall(-BOUND.x - 0.4, (-BOUND.z + wGap0) / 2, 0.8, wSouthLen);
@@ -1023,8 +1024,7 @@ function loadGLTF(name, timeoutMs) {
  * ========================================================================= */
 const containerStacks = []; // 小地圖 / 碰撞用
 function planContainerLayout() {
-  // P1：櫃列改「巷＋死巷」塊狀——唔再對稱夾滿 ±172m 直路
-  // 南段（z<30）保留兩側短列；北／內陸讓位俾肘形路
+  // core9：櫃列「巷＋死巷」；南段短列；北／內陸讓位俾 spawn 前方肘形左轉
   const blocks = [
     { side: 1, z0: -YARD_Z, z1: 25, lanes: 3 },
     { side: -1, z0: -YARD_Z, z1: 20, lanes: 3 },
@@ -2506,9 +2506,13 @@ function drawMinimap() {
   c.save(); c.translate(cx, cy); c.rotate(yaw + Math.PI); c.scale(-S, S); c.translate(-center.x, -center.z);
   c.fillStyle = '#37454c'; c.fillRect(BOUND.x + 36, -600, 400, 1200);                                       // 海
   c.fillStyle = '#323a3e'; c.fillRect(-BOUND.x, -BOUND.z, BOUND.x * 2, BOUND.z * 2);                        // 碼頭範圍
-  c.fillStyle = '#8c949a'; c.fillRect(-ROAD_HALF, -YARD_Z - 14, ROAD_HALF * 2, YARD_Z * 2 + 28);            // 主幹道
+  // core9：短泊位＋內陸肘形（唔再畫 ±172m 直主幹）
+  c.fillStyle = '#8c949a';
+  c.fillRect(-ROAD_HALF, -40, ROAD_HALF * 2, 78);            // 短泊位
+  c.fillRect(-85, 38, 85 - ROAD_HALF + 8, 22);               // 左轉內陸臂
   c.fillStyle = '#6f777c'; for (const x of [-BOUND.x + 3, BOUND.x - 3]) c.fillRect(x - 2.5, -BOUND.z, 5, BOUND.z * 2); // 後巷
-  for (let z = -YARD_Z - 8; z <= YARD_Z + 8; z += YARD_Z + 8) c.fillRect(-BOUND.x, z - 3, BOUND.x * 2, 6);   // 橫路
+  c.fillRect(-BOUND.x, -42, BOUND.x * 2, 6);                 // 南橫路
+  c.fillRect(-90, 68, 70, 6);                                // 站前橫路
   for (const h of HOOKS.minimap) h(c, S);
   for (const s of containerStacks) { const v = 74 + s.h * 6; c.fillStyle = `rgb(${v},${v + 6},${v + 10})`; c.fillRect(s.x - CONT.W / 2, s.z - s.len / 2, CONT.W, s.len); }
   // 車輛圖示（不在車上時顯示藍色車標）
@@ -16128,21 +16132,48 @@ function kwBreakStraightTunnel(parent) {
   }
 }
 
+
+/** 地面左轉箭咀＋「工廈／站」黃字感 —— spawn 望北即見 */
+function kwLeftTurnMark(parent, x, z) {
+  const yel = new THREE.MeshStandardMaterial({ color: 0xe0b000, roughness: 0.45, metalness: 0.05 });
+  const g = new THREE.Group(); g.position.set(x, 0.03, z);
+  g.userData.kwaichung = true; g.name = 'kt_left_turn_mark';
+  // 箭身（向 −X）
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(10, 0.04, 1.6), yel);
+  shaft.position.set(-6, 0, 0); g.add(shaft);
+  // 箭頭（三角近似：兩斜塊）
+  const a1 = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.04, 0.9), yel);
+  a1.position.set(-12.2, 0, 1.4); a1.rotation.y = 0.55; g.add(a1);
+  const a2 = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.04, 0.9), yel);
+  a2.position.set(-12.2, 0, -1.4); a2.rotation.y = -0.55; g.add(a2);
+  // 泊位側導向虛線（＋Z → 轉彎）
+  for (let i = 0; i < 5; i++) {
+    const d = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.04, 1.8), yel);
+    d.position.set(2.2, 0, -14 - i * 4.5); g.add(d);
+  }
+  parent.add(g);
+  return g;
+}
+
 function kwBuildP1Urban() {
   if (KWAI.p1Built || typeof scene === 'undefined') return;
   const root = KWAI.group || new THREE.Group();
   if (!KWAI.group) { root.name = 'kwaichung-dock'; KWAI.group = root; scene.add(root); }
 
-  // OSM 全尺度太大； pier 場景用壓縮偏移（方向跟 modYs_offsets_from_pier_lm）
-  // −X≈東、+Z≈北（見 data/kwai-chung-osm-footprints.json）
-  const S = KWAI.osmScale != null ? KWAI.osmScale : 0.075;
-  const ox = (dx, dz) => ({ x: dx * S, z: dz * S });
-  const st = ox(-913.2, 308.91);
-  const hs = ox(-980.12, 854.94);
-  const ind = ox(-566.25, -1085.37);
-  const poly = [{"x": -463.29, "z": -2003.76, "label": "閘口／碼頭內"}, {"x": -617.72, "z": -1168.86, "label": "工廈轉彎"}, {"x": -772.15, "z": -333.96, "label": "近葵芳"}, {"x": -895.7, "z": 250.47, "label": "站前"}].map((p) => ({ x: p.x * S, z: p.z * S, label: p.label }));
+  // —— core9：肘形主幹由 spawn 前方起跳（唔再用遠距 OSM 壓縮線）——
+  // spawn≈(3.5,-12) 望 +Z；左轉 −X＝內陸工廈／葵芳站。座標可玩尺度。
+  const poly = [
+    { x: 0, z: -28, label: '泊位南' },
+    { x: 0, z: 32, label: '肘形轉彎' },
+    { x: -42, z: 48, label: '工廈走廊' },
+    { x: -78, z: 72, label: '近葵芳' }
+  ];
 
-  // 肘形主幹：沿壓縮 polyline 鋪瀝青段
+  // 顯眼 L 形瀝青（轉彎中心）——玩家一向前就見到左轉主幹
+  kwAsphaltElbow(root, 0, 28, 0);
+  kwLeftTurnMark(root, -2, 30);
+
+  // 沿 poly 鋪肘形段（加闊瀝青，蓋過舊直路視覺）
   for (let i = 0; i < poly.length - 1; i++) {
     const a = poly[i], b = poly[i + 1];
     const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2;
@@ -16150,56 +16181,94 @@ function kwBuildP1Urban() {
     const len = Math.hypot(dx, dz) || 1;
     const yaw = Math.atan2(dx, dz);
     const asp = new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.95 });
-    const road = new THREE.Mesh(new THREE.BoxGeometry(12, 0.06, len + 2), asp);
-    road.position.set(mx, 0.02, mz); road.rotation.y = yaw;
+    const road = new THREE.Mesh(new THREE.BoxGeometry(16, 0.07, len + 4), asp);
+    road.position.set(mx, 0.025, mz); road.rotation.y = yaw;
     road.userData.kwaichung = true; road.name = 'kt_elbow_seg_' + i;
+    road.receiveShadow = true;
     root.add(road);
     kwElbowRoadMark(root, mx, mz, yaw);
   }
-  // 閘口接到第一段肘（碼頭內）
-  const g0 = poly[0] || { x: -20, z: -40 };
-  kwGatehouse(root, g0.x - 8, g0.z);
-  kwBarrierYB(root, g0.x, g0.z + 6, 0, 10);
+  // 轉彎後再加一段內陸延伸（加闊可駛帶）
+  {
+    const asp = new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.95 });
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(70, 0.07, 16), asp);
+    arm.position.set(-38, 0.022, 48);
+    arm.userData.kwaichung = true; arm.name = 'kt_elbow_inland_arm';
+    arm.receiveShadow = true; root.add(arm);
+    // 黃邊線
+    const yel = new THREE.MeshStandardMaterial({ color: 0xc9a000, roughness: 0.55 });
+    for (const zz of [40.5, 55.5]) {
+      const s = new THREE.Mesh(new THREE.BoxGeometry(62, 0.04, 0.2), yel);
+      s.position.set(-38, 0.06, zz); root.add(s);
+    }
+  }
 
-  // 工廈：走廊中心＋閘口側
+  // 閘口接到肘形入口（轉彎西側）
+  kwGatehouse(root, -22, 38);
+  kwBarrierYB(root, -14, 42, Math.PI / 2, 10);
+  kwSignBoard(root, -8, 3.2, 36, Math.PI / 2, 2.4, 1.6, 0x1a3a6a, 'sign_height'); // 限高感
+  kwBarrierYB(root, -30, 48, 0, 12);
+
+  // 工廈：沿內陸肘形兩側（−X）
   const indTex = KWAI.tex.elbow || null;
-  kwIndBlock(root, ind.x, ind.z, 16, 20, 14, indTex);
-  kwIndBlock(root, ind.x + 18, ind.z - 12, 14, 18, 12, indTex);
-  kwIndBlock(root, ind.x - 16, ind.z + 10, 15, 22, 13, indTex);
-  kwIndBlock(root, (g0.x + ind.x) / 2, (g0.z + ind.z) / 2, 12, 16, 11, indTex);
+  kwIndBlock(root, -36, 58, 16, 20, 14, indTex);
+  kwIndBlock(root, -52, 44, 14, 18, 12, indTex);
+  kwIndBlock(root, -58, 68, 15, 22, 13, indTex);
+  kwIndBlock(root, -74, 54, 14, 19, 12, indTex);
   if (indTex) {
-    kwBillboard(root, indTex, 30, 14, ind.x - 12, 9, ind.z, Math.PI / 2, 'kt_ind_sign_parody');
+    kwBillboard(root, indTex, 28, 13, -40, 9, 62, Math.PI / 2, 'kt_ind_sign_parody');
   }
 
-  // 對面公屋（葵芳邨方向）
+  // 對面公屋（再內陸／北側）
   if (KWAI.tex.housing) {
-    kwBillboard(root, KWAI.tex.housing, 80, 32, hs.x, 18, hs.z, 0, 'kt_opposite_housing');
-    kwBillboard(root, KWAI.tex.housing, 48, 24, hs.x + 20, 14, hs.z - 25, Math.PI / 2, 'kt_opposite_housing_w');
+    kwBillboard(root, KWAI.tex.housing, 72, 30, -96, 16, 88, Math.PI / 2, 'kt_opposite_housing');
+    kwBillboard(root, KWAI.tex.housing, 48, 24, -88, 14, 110, 0, 'kt_opposite_housing_w');
+  } else {
+    kwEstateSlab(root, -98, 95, 28, 36, 10);
+    kwEstateSlab(root, -110, 78, 22, 42, 10);
   }
 
-  // 葵芳站（戲仿）——用 OSM 相對 pier 偏移
-  kwStationKwaiFong(root, st.x, st.z, KWAI.tex.station || null);
+  // 葵芳站（戲仿）——肘形盡頭
+  kwStationKwaiFong(root, -82, 78, KWAI.tex.station || null);
 
-  // 蓋住原直路北／南視覺，減少「淨係一條直路」
-  const RH = typeof ROAD_HALF === 'number' ? ROAD_HALF : 7;
-  for (const [cz, clen] of [[-40, 50], [40, 50], [-120, 40], [100, 40]]) {
+  // 迴旋感 stub（站前）
+  kwRoundabout(root, -68, 70, 9);
+
+  // 打破「淨係一條直路」：北／南直路肩櫃塊（中軸唔放碰撞）
+  if (typeof kwBreakStraightTunnel === 'function') kwBreakStraightTunnel(root);
+
+  // 蓋住舊直路遠段視覺（±YARD 感）——只蓋轉彎以外的遠直段，轉彎口留空
+  for (const [cz, clen] of [[-70, 36], [100, 40], [140, 36]]) {
     const cover = new THREE.Mesh(
-      new THREE.BoxGeometry(RH * 2 + 6, 0.05, clen),
-      new THREE.MeshStandardMaterial({ color: 0x2c2e30, roughness: 0.95 })
+      new THREE.BoxGeometry(22, 0.05, clen),
+      new THREE.MeshStandardMaterial({ color: 0x3a3e40, roughness: 0.92 }) // 略深＝堆場／非主幹
     );
-    cover.position.set(0, 0.018, cz);
-    cover.userData.kwaichung = true; cover.name = 'kt_straight_cover';
+    cover.position.set(0, 0.016, cz);
+    cover.userData.kwaichung = true; cover.name = 'kt_straight_demote';
     root.add(cover);
   }
 
+  // 小地圖：畫肘形而非 ±172 直路
+  if (typeof HOOKS !== 'undefined') {
+    HOOKS.minimap = HOOKS.minimap || [];
+    HOOKS.minimap.push(function kwElbowMinimap(c) {
+      c.fillStyle = '#8c949a';
+      c.fillRect(-8, -32, 16, 68);          // 短泊位
+      c.fillRect(-78, 40, 78, 18);         // 內陸肘形臂
+      c.fillStyle = '#6a9ccc';
+      c.fillRect(-90, 70, 20, 16);         // 站區提示
+    });
+  }
+
   KWAI.p1Built = true;
-  KWAI.osmScale = S;
+  KWAI.osmScale = 1;
   KWAI.zones = Object.assign(KWAI.zones || {}, {
     elbow: 'kt_elbow_seg_0',
+    inland: 'kt_elbow_inland_arm',
     industry: 'kt_ind_block_n',
     housing: 'kt_opposite_housing',
     station: 'kt_station_kwai_fong',
-    osm: 'kwai-chung-osm-footprints'
+    turn: 'kt_left_turn_mark'
   });
 }
 
