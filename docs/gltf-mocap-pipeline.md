@@ -147,6 +147,7 @@
 
 - Kwai D2a：`kwBuildDensityD2a()` 肘形 5 段弧＋輔路／丁字／行人路／燈柱
 - 碼頭環境音加密：`fender_thud`／`crane_rail`（`modYt_portamb`）
+- Dock+：`kwBuildDockPlus()` 岸壁污線／吊機軌／護舷加密／高桅／地磅（**D2b 未做**）
 - 保留：vendor／LDR／禁相板（`kwStripPhotoBoards`）
 - 玩：`?v=core17`
 
