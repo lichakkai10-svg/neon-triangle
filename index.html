@@ -11174,6 +11174,36 @@ function lmBuildFacade(def, wpos) {
     // 頂部冷光
     const pl = new THREE.PointLight(new THREE.Color(def.color || '#33e0ff'), 18, Math.max(20, W * 2), 1.5);
     pl.position.set(0, H + 0.5, D / 2); G.add(pl);
+    // 程序窗／碼頭構件（禁 documentary 相板）
+    if (def.id === 'estate_corridor') {
+      const winMat = new THREE.MeshStandardMaterial({ color: 0x1a2830, roughness: 0.35, metalness: 0.25,
+        emissive: new THREE.Color(0.35, 0.4, 0.45), emissiveIntensity: 0.2 });
+      const acMat = new THREE.MeshStandardMaterial({ color: 0x6a7078, roughness: 0.7, metalness: 0.4 });
+      for (let row = 0; row < Math.floor(H / 3.0); row++) {
+        for (let col = 0; col < Math.floor(W / 3.2); col++) {
+          const wi = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.3), winMat);
+          wi.position.set(-W / 2 + 2 + col * 3.2, 2.0 + row * 3.0, D / 2 + 0.06);
+          wi.name = 'lm-proc-win'; G.add(wi);
+          if ((row + col) % 3 === 0) {
+            const ac = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.45, 0.5), acMat);
+            ac.position.set(-W / 2 + 2 + col * 3.2, 1.35 + row * 3.0, D / 2 + 0.35);
+            G.add(ac);
+          }
+        }
+      }
+    } else if (def.id === 'starferry_tst') {
+      const roofMat = new THREE.MeshStandardMaterial({ color: 0x1a5a38, roughness: 0.65, metalness: 0.15 });
+      const colMat = new THREE.MeshStandardMaterial({ color: 0x2a6b45, roughness: 0.7 });
+      const deckMat = new THREE.MeshStandardMaterial({ color: 0x5a5e62, roughness: 0.9 });
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(W * 1.05, 0.35, D * 0.85), roofMat);
+      roof.position.set(0, H + 0.1, 0); G.add(roof);
+      for (const sx of [-W * 0.35, 0, W * 0.35]) {
+        const col = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, H * 0.85, 8), colMat);
+        col.position.set(sx, H * 0.42, D / 2 - 0.8); G.add(col);
+      }
+      const apron = new THREE.Mesh(new THREE.BoxGeometry(W * 1.2, 0.2, 4), deckMat);
+      apron.position.set(0, 0.1, D / 2 + 2); G.add(apron);
+    }
   }
   if (def.pad) {
     const pad = new THREE.Mesh(new THREE.BoxGeometry(def.pad, 0.15, def.pad),
@@ -14620,9 +14650,7 @@ const B2ART = {
   ready: false,
   tex: {},
   files: {
-    ifc: 'ifc-lobby-day.jpg',
-    estate: 'public-housing-day.jpg',
-    ferry: 'harbour-ferry-pier-day.jpg',
+    // ifc／estate／ferry documentary JPG 停用（禁相板）
     vehDN: 'p1-cc0-vehicles-day-night.jpg'
   },
   applied: {}
@@ -14655,10 +14683,10 @@ function b2FacadePlane(L, tex, name, emiNight) {
 
 function b2ApplyFacades() {
   if (typeof LM === 'undefined' || !LM.byId) return;
-  if (B2ART.tex.ifc) b2FacadePlane(LM.byId.ifc_lobby, B2ART.tex.ifc, 'art-b2-ifc', 0.4);
-  if (B2ART.tex.estate) b2FacadePlane(LM.byId.estate_corridor, B2ART.tex.estate, 'art-b2-estate', 0.25);
-  if (B2ART.tex.ferry) b2FacadePlane(LM.byId.starferry_tst, B2ART.tex.ferry, 'art-b2-ferry', 0.3);
+  // 硬規則：禁 documentary 門面相板（碼頭／公屋／國金）——保留程序 3D facade（docs/kwai-no-photo-boards.md）
+  // 舊：ifc／estate／ferry → b2FacadePlane 整面 JPG；core14 起唔再貼
   B2ART.applied.facades = true;
+  B2ART.applied.facadesPhoto = false;
 }
 
 function b2ApplyVehicleSheet() {
@@ -15526,9 +15554,9 @@ function scapePlaceP0() {
 Object.assign(window.NT || (window.NT = {}), { SCAPE, scapePlaceP0 });
 /* =========================================================================
  * M1c · 葵涌貨櫃碼頭真實化（寫實比例）
- *  · kwai-chung-pier-overview-day.jpg → 只做 LM kwai_chung_pier 小門面（唔做全景天空盒）
- *  · kwai-chung-pier-props.jpg → 吊機／船舷／纜樁／油漬石屎（atlas）
- *  · 貨櫃唔印真船公司標；青馬／汀九遠景用戲仿名
+ *  · 禁 documentary 相板（docs/kwai-no-photo-boards.md）：overview／公屋／站／街景大 Plane
+ *  · kwai-chung-pier-props.jpg → 只做 atlas PBR 切片（鏽／石屎），唔做全景
+ *  · 貨櫃唔印真船公司標；青馬／汀九／遠景＝程序 mesh
  *  · 非關鍵路徑：缺檔跳過
  * ========================================================================= */
 const KWAI = {
@@ -15608,23 +15636,18 @@ function kwHull(parent, x, z, len) {
   g.userData.kwaichung = true;
   kwBox(g, mat, 8, 6, len || 42, 0, 2.2, 0);
   kwBox(g, mat, 6, 4, 10, 0, 7.5, -len * 0.15);
-  if (KWAI.mats.hullFace) {
-    kwPlane(g, KWAI.mats.hullFace, len * 0.9, 5.5, 4.1, 2.8, 0, Math.PI / 2);
-  }
+  // 禁船舷 documentary 相板
   parent.add(g);
   return g;
 }
 
 /** 吊機門架貼圖補強（加喺現有剪影旁） */
-function kwCraneDecal(parent, x, z) {
-  if (!KWAI.mats.crane) return;
-  kwPlane(parent, KWAI.mats.crane, 28, 36, x, 22, z, -Math.PI / 2);
-}
+function kwCraneDecal(/* parent, x, z */) { /* 禁吊機大相板 */ }
 
-/** 油漬石屎地貼 */
+/** 油漬石屎地貼（程序色塊，唔用 documentary atlas） */
 function kwOilPatch(parent, x, z, s) {
-  if (!KWAI.mats.oil) return;
-  const p = kwPlane(parent, KWAI.mats.oil, s || 4.5, s || 3.2, x, 0.04, z, 0, -Math.PI / 2);
+  const mat = new THREE.MeshStandardMaterial({ color: 0x1a1814, roughness: 0.4, metalness: 0.05, transparent: true, opacity: 0.55 });
+  const p = kwPlane(parent, mat, s || 4.5, s || 3.2, x, 0.04, z, 0, -Math.PI / 2);
   return p;
 }
 
@@ -15660,48 +15683,60 @@ function kwBridgeSkyline(parent) {
   return g;
 }
 
-function kwApplyLandmarkFacade() {
-  if (!KWAI.tex.overview || typeof LM === 'undefined' || !LM.byId) return;
-  const L = LM.byId.kwai_chung_pier;
-  if (!L || !L.facade || L.facade.getObjectByName('art-kw-pier')) return;
-  const def = L.def, W = (def.w || 32) * 0.94, H = Math.min(18, (def.h || 10) * 1.4);
-  const mat = new THREE.MeshStandardMaterial({
-    map: KWAI.tex.overview,
-    roughness: 0.65,
-    metalness: 0.05,
-    emissiveMap: KWAI.tex.overview,
-    emissive: new THREE.Color(0xffffff),
-    emissiveIntensity: (typeof TOD !== 'undefined' && TOD.mode === 'day') ? 0.08 : 0.32,
-    polygonOffset: true,
-    polygonOffsetFactor: -1
+
+/** 運行時清走殘留 documentary 相板（名／貼圖檔名） */
+function kwStripPhotoBoards() {
+  if (typeof scene === 'undefined') return;
+  const banName = /art-kw-pier|kt_opposite_housing|kt_station_facade|kt_ind_wall|kt_ind_sign_parody|kw-parody-bridge-skyline|streetscape.*photo|overview/i;
+  const banTex = /kwai-chung-pier-overview|kwai-p1-opposite-housing|kwai-p1-kwai-fong-station|kwai-p1-road-streetscape|kwai-p1-industrial-elbow|public-housing-day|harbour-ferry/i;
+  const kill = [];
+  scene.traverse((o) => {
+    if (!o.isMesh) return;
+    if (o.name && banName.test(o.name)) { kill.push(o); return; }
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    for (const m of mats) {
+      if (!m) continue;
+      const map = m.map || m.emissiveMap;
+      const src = (map && (map.name || map.source?.data?.src || map.userData?.url || '')) + '';
+      const img = map && map.image && (map.image.currentSrc || map.image.src || '');
+      if (banTex.test(src) || banTex.test(img || '')) { kill.push(o); return; }
+      // 巨型直立 Plane（高>12 且闊>20）疑似相板
+      if (o.geometry && o.geometry.type === 'PlaneGeometry') {
+        const p = o.geometry.parameters || {};
+        if ((p.width || 0) >= 20 && (p.height || 0) >= 12 && Math.abs(o.rotation.x) < 0.2) {
+          kill.push(o); return;
+        }
+      }
+    }
   });
-  mat.userData.kwEmi = { day: 0.08, night: 0.32 };
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(W, H), mat);
-  m.name = 'art-kw-pier';
-  m.userData.noMerge = true;
-  m.userData.kwaichung = true;
-  m.position.set(0, H / 2 + 0.4, (def.d || 18) / 2 + 0.1);
-  L.facade.add(m);
+  for (const o of kill) {
+    if (o.parent) o.parent.remove(o);
+    o.visible = false;
+  }
+  if (kill.length) console.info('[kwai] stripped photo boards', kill.length);
+}
+
+function kwApplyLandmarkFacade() {
+  // 地道硬規則：禁 documentary 碼頭相板（docs/kwai-no-photo-boards.md）
+  return;
 }
 
 async function kwLoad() {
-  if (KWAI.ready || typeof loadTex !== 'function') return KWAI.ready;
-  try { KWAI.tex.overview = await loadTex('kwai-chung-pier-overview-day.jpg', true, false); } catch (e) { console.warn('[kwai]', e && e.message); }
-  try { KWAI.tex.props = await loadTex('kwai-chung-pier-props.jpg', true, false); } catch (e) { console.warn('[kwai]', e && e.message); }
-  if (!KWAI.tex.overview && !KWAI.tex.props) return false;
-  const P = KWAI.tex.props;
-  if (P) {
-    // atlas 約 4×2：吊機｜船舷｜纜樁｜貨櫃PBR / 油漬｜石屎｜尺度標｜預留
-    KWAI.mats.crane = kwMat(P, 0, 0, 4, 2, { roughness: 0.55, metalness: 0.35 });
-    KWAI.mats.hullFace = kwMat(P, 1, 0, 4, 2, { roughness: 0.6 });
-    KWAI.mats.bollard = kwMat(P, 2, 0, 4, 2, { roughness: 0.45, metalness: 0.5 });
-    KWAI.mats.contPbr = kwMat(P, 3, 0, 4, 2, { roughness: 0.75 });
-    KWAI.mats.oil = kwMat(P, 0, 1, 4, 2, { roughness: 0.35, transparent: true });
-    KWAI.mats.concrete = kwMat(P, 1, 1, 4, 2, { roughness: 0.9 });
-  }
-  KWAI.mats.hull = (typeof shared === 'function')
-    ? shared(new THREE.MeshStandardMaterial({ color: 0x1a3040, roughness: 0.65, metalness: 0.15 }))
-    : new THREE.MeshStandardMaterial({ color: 0x1a3040, roughness: 0.65, metalness: 0.15 });
+  if (KWAI.ready) return KWAI.ready;
+  // core14：唔載 pier overview／props documentary atlas——全程序材質
+  KWAI.tex.overview = null;
+  KWAI.tex.props = null;
+  KWAI.mats.crane = null;
+  KWAI.mats.hullFace = null;
+  KWAI.mats.oil = null;
+  KWAI.mats.concrete = null;
+  KWAI.mats.contPbr = null;
+  const solid = (c, r, m) => {
+    const mat = new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m || 0 });
+    return (typeof shared === 'function') ? shared(mat) : mat;
+  };
+  KWAI.mats.bollard = solid(0x2a2c2e, 0.55, 0.45);
+  KWAI.mats.hull = solid(0x1a3040, 0.65, 0.15);
   KWAI.ready = true;
   return true;
 }
@@ -15720,18 +15755,15 @@ function kwBuildDock() {
     kwBollard(g, bx - 2.2, z);
     kwBollard(g, bx - 2.2, z + 8);
   }
-  // 油漬／石屎補丁（泊位路面）
+  // 油漬補丁（程序色，無相）
   for (const [x, z, s] of [[4, 20, 5], [-6, -30, 4], [8, 60, 6], [-3, 100, 4.5], [2, -60, 5]]) {
     kwOilPatch(g, x, z, s);
-    if (KWAI.mats.concrete) {
-      const p = kwPlane(g, KWAI.mats.concrete, s * 1.4, s * 1.1, x + 3, 0.02, z - 4, 0, -Math.PI / 2);
-    }
   }
-  // 遠泊船舷（海側）
+  // 遠泊船舷（海側 3D）
   kwHull(g, bx + 48, -40, 48);
   kwHull(g, bx + 52, 70, 36);
-  // 吊機貼圖補強
-  for (const cz of [-70, -5, 60, 125]) kwCraneDecal(g, bx + 22, cz);
+  // 程序岸吊（唔貼 crane 相板）
+  for (const cz of [-70, -5, 60, 125]) kwProcCrane(g, bx + 22, cz, 0.9, -Math.PI / 2);
   // 戲仿跨海橋遠景（青馬／汀九帶）
   kwBridgeSkyline(g);
 
@@ -15967,7 +15999,7 @@ function kwBuildThreePartStub() {
   kwHull(partC, -40, -50, 40);
   root.add(partC);
 
-  // —— 青馬／汀九遠景剪影（程序化；有 overview 貼圖時保留舊板）——
+  // —— 青馬／汀九遠景剪影（純程序；禁 overview 相板）——
   kwBridgeSilhouette(root, bx + 260, 180, 160, 'kt_tsing_ma_silhouette');
   kwCableStayedSilhouette(root, bx + 200, 280, 120, 'kt_ting_kau_silhouette');
 
@@ -15999,35 +16031,36 @@ function kwBuildThreePartStub() {
  *  站名牌寫「葵芳」唔寫「葵涌站」。等 OSM 樓腳精校。
  */
 function kwIndBlock(parent, x, z, w, h, d, tex) {
-  const faceTex = tex || KWAI.tex.indFacade || KWAI.tex.elbow || null;
+  // 真 3D 擠出＋窗洞／外置冷氣 mesh——唔用相片立面
   const bodyMat = new THREE.MeshStandardMaterial({ color: 0x5a5e62, roughness: 0.88 });
-  const faceMat = faceTex
-    ? new THREE.MeshStandardMaterial({
-        map: faceTex, roughness: 0.78, metalness: 0.04,
-        emissive: new THREE.Color(0xffffff), emissiveMap: faceTex,
-        emissiveIntensity: (typeof TOD !== 'undefined' && TOD.mode === 'day') ? 0.05 : 0.22,
-        polygonOffset: true, polygonOffsetFactor: -1
-      })
-    : bodyMat;
-  if (faceMat.userData) faceMat.userData.kwEmi = { day: 0.05, night: 0.22 };
+  const winMat = new THREE.MeshStandardMaterial({ color: 0x1e2830, roughness: 0.28, metalness: 0.35, emissive: new THREE.Color(0.1, 0.14, 0.18), emissiveIntensity: 0.35 });
+  const acMat = new THREE.MeshStandardMaterial({ color: 0x8a9096, roughness: 0.55, metalness: 0.35 });
   const g = new THREE.Group(); g.position.set(x, 0, z); g.userData.kwaichung = true; g.name = 'kt_ind_block_n';
   const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bodyMat);
   body.position.y = h / 2; body.castShadow = body.receiveShadow = true; body.userData.noMerge = true;
   g.add(body);
-  // 臨街立面（窗格＋外置冷氣板）——四面貼，唔再淨係方盒色塊
-  if (faceTex) {
-    for (const [sx, sz, yaw, fw, fh] of [
-      [0, d / 2 + 0.06, 0, w * 0.96, h * 0.92],
-      [0, -d / 2 - 0.06, Math.PI, w * 0.96, h * 0.92],
-      [w / 2 + 0.06, 0, Math.PI / 2, d * 0.96, h * 0.92],
-      [-w / 2 - 0.06, 0, -Math.PI / 2, d * 0.96, h * 0.92]
-    ]) {
-      const pl = new THREE.Mesh(new THREE.PlaneGeometry(fw, fh), faceMat);
-      pl.position.set(sx, h / 2, sz); pl.rotation.y = yaw;
-      pl.userData.noMerge = true; pl.userData.kwaichung = true; g.add(pl);
+  const rows = Math.max(3, Math.floor(h / 3.6));
+  const colsW = Math.max(2, Math.floor(w / 3.0));
+  const colsD = Math.max(2, Math.floor(d / 3.0));
+  const putFace = (nx, nz, alongW) => {
+    const cols = alongW ? colsW : colsD;
+    const span = alongW ? w : d;
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const u = -span / 2 + 1.6 + col * (span - 2.2) / Math.max(1, cols - 1);
+        const y = 2.4 + row * (h - 4) / Math.max(1, rows - 1);
+        const wi = new THREE.Mesh(new THREE.BoxGeometry(alongW ? 1.5 : 0.12, 1.35, alongW ? 0.12 : 1.5), winMat);
+        wi.position.set(alongW ? u : nx * (w / 2 + 0.08), y, alongW ? nz * (d / 2 + 0.08) : u);
+        wi.userData.noMerge = true; g.add(wi);
+        if (row % 2 === 1 && col % 2 === 0) {
+          const ac = new THREE.Mesh(new THREE.BoxGeometry(alongW ? 1.0 : 0.5, 0.65, alongW ? 0.5 : 1.0), acMat);
+          ac.position.set(alongW ? u + 0.9 : nx * (w / 2 + 0.4), y - 0.15, alongW ? nz * (d / 2 + 0.4) : u + 0.9);
+          g.add(ac);
+        }
+      }
     }
-  }
-  // 貨台＋喉管感（戲仿）
+  };
+  putFace(0, 1, true); putFace(0, -1, true); putFace(1, 0, false); putFace(-1, 0, false);
   const dock = new THREE.Mesh(new THREE.BoxGeometry(w * 0.9, 1.2, 2.2), new THREE.MeshStandardMaterial({ color: 0x4a4e52, roughness: 0.7 }));
   dock.position.set(0, 0.6, d / 2 + 1.0); g.add(dock);
   const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, h * 0.55, 6), new THREE.MeshStandardMaterial({ color: 0x3a4044, roughness: 0.5, metalness: 0.4 }));
@@ -16037,20 +16070,9 @@ function kwIndBlock(parent, x, z, w, h, d, tex) {
   return g;
 }
 
-function kwBillboard(parent, tex, w, h, x, y, z, yaw, name) {
-  if (!tex) return null;
-  const mat = new THREE.MeshStandardMaterial({
-    map: tex, roughness: 0.7, metalness: 0.02,
-    emissive: new THREE.Color(0xffffff), emissiveMap: tex,
-    emissiveIntensity: (typeof TOD !== 'undefined' && TOD.mode === 'day') ? 0.08 : 0.25,
-    polygonOffset: true, polygonOffsetFactor: -1
-  });
-  mat.userData.kwEmi = { day: 0.08, night: 0.25 };
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
-  m.position.set(x, y, z); m.rotation.y = yaw || 0;
-  m.userData.noMerge = true; m.userData.kwaichung = true; m.name = name || 'kt_billboard';
-  parent.add(m);
-  return m;
+function kwBillboard(/* parent, tex, ... */) {
+  // 硬禁：任何相片 Plane billboard（docs/kwai-no-photo-boards.md）
+  return null;
 }
 
 function kwAsphaltElbow(parent, x, z, yaw) {
@@ -16075,7 +16097,8 @@ function kwStationKwaiFong(parent, x, z, tex) {
   const hall = new THREE.Mesh(new THREE.BoxGeometry(22, 7, 14), conc); hall.position.y = 3.5; g.add(hall);
   const canopy = new THREE.Mesh(new THREE.BoxGeometry(26, 0.35, 6), new THREE.MeshStandardMaterial({ color: 0x3a4046, roughness: 0.6, metalness: 0.3 }));
   canopy.position.set(0, 5.2, 8); g.add(canopy);
-  if (tex) kwBillboard(g, tex, 18, 5.5, 0, 4.2, 7.2, 0, 'kt_station_facade');
+  // 禁站廳 documentary 相板——只用 3D 盒＋色牌
+  // if (tex) kwBillboard(...)
   // 戲仿站名牌（葵芳 · 唔寫葵涌站）
   const signMat = new THREE.MeshStandardMaterial({ color: 0x1a4a8a, roughness: 0.45 });
   const sign = new THREE.Mesh(new THREE.BoxGeometry(8, 1.4, 0.12), signMat);
@@ -16086,23 +16109,12 @@ function kwStationKwaiFong(parent, x, z, tex) {
 }
 
 async function kwLoadP1() {
-  if (KWAI.p1Ready) return true;
-  const files = {
-    elbow: 'kwai-p1-industrial-elbow.jpg',
-    housing: 'kwai-p1-opposite-housing.jpg',
-    station: 'kwai-p1-kwai-fong-station.jpg',
-    // P1-dense：窗格＋外置冷氣（優先做立面）
-    indFacade: 'kwai-p1-industrial-facade.jpg',
-    housingFacade: 'kwai-p1-housing-facade.jpg',
-    roadStreet: 'kwai-p1-road-streetscape.jpg'
-  };
-  for (const [k, f] of Object.entries(files)) {
-    try { KWAI.tex[k] = await loadTex(f, true, false); } catch (e) { console.warn('[kwai-p1]', f, e && e.message); }
-  }
-  KWAI.p1Ready = !!(KWAI.tex.indFacade || KWAI.tex.elbow || KWAI.tex.housingFacade || KWAI.tex.housing || KWAI.tex.station);
-  return KWAI.p1Ready;
+  // 唔再載 documentary 工廈／公屋／站／街景相——純 3D
+  KWAI.tex.elbow = KWAI.tex.housing = KWAI.tex.station = null;
+  KWAI.tex.indFacade = KWAI.tex.housingFacade = KWAI.tex.roadStreet = null;
+  KWAI.p1Ready = true;
+  return true;
 }
-
 
 function kwFender(parent, x, z) {
   const rub = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.95 });
@@ -16114,37 +16126,25 @@ function kwFender(parent, x, z) {
 }
 
 function kwEstateSlab(parent, x, z, w, h, d) {
-  const faceTex = KWAI.tex.housingFacade || KWAI.tex.housing || null;
+  // 真 3D 公屋長條＋窗／晾衫感冷氣——唔貼屋邨相
   const conc = new THREE.MeshStandardMaterial({ color: 0xb8b0a4, roughness: 0.85 });
-  const faceMat = faceTex
-    ? new THREE.MeshStandardMaterial({
-        map: faceTex, roughness: 0.72, metalness: 0.02,
-        emissive: new THREE.Color(0xffffff), emissiveMap: faceTex,
-        emissiveIntensity: (typeof TOD !== 'undefined' && TOD.mode === 'day') ? 0.06 : 0.28,
-        polygonOffset: true, polygonOffsetFactor: -1
-      })
-    : new THREE.MeshStandardMaterial({ color: 0x2a3540, roughness: 0.4, metalness: 0.2, emissive: new THREE.Color(0.12, 0.15, 0.2), emissiveIntensity: 0.3 });
-  if (faceMat.userData) faceMat.userData.kwEmi = { day: 0.06, night: 0.28 };
+  const winMat = new THREE.MeshStandardMaterial({ color: 0x243040, roughness: 0.32, metalness: 0.2, emissive: new THREE.Color(0.15, 0.18, 0.22), emissiveIntensity: 0.4 });
+  const acMat = new THREE.MeshStandardMaterial({ color: 0x9aa0a6, roughness: 0.6, metalness: 0.25 });
   const g = new THREE.Group(); g.position.set(x, 0, z); g.name = 'kt_estate_skyline'; g.userData.kwaichung = true;
-  const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), conc); body.position.y = h / 2; g.add(body);
-  if (faceTex) {
-    for (const [sx, sz, yaw, fw, fh] of [
-      [0, d / 2 + 0.08, 0, w * 0.98, h * 0.94],
-      [0, -d / 2 - 0.08, Math.PI, w * 0.98, h * 0.94],
-      [w / 2 + 0.08, 0, Math.PI / 2, d * 0.98, h * 0.94],
-      [-w / 2 - 0.08, 0, -Math.PI / 2, d * 0.98, h * 0.94]
-    ]) {
-      const pl = new THREE.Mesh(new THREE.PlaneGeometry(fw, fh), faceMat);
-      pl.position.set(sx, h / 2, sz); pl.rotation.y = yaw;
-      pl.userData.noMerge = true; pl.userData.kwaichung = true; g.add(pl);
-    }
-  } else {
-    // 無貼圖：簡單窗格
-    for (let row = 0; row < Math.floor(h / 3.2); row++) {
-      for (let col = 0; col < Math.floor(w / 3.5); col++) {
-        const wi = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.4), faceMat);
-        wi.position.set(-w / 2 + 2 + col * 3.5, 2.2 + row * 3.2, d / 2 + 0.05);
-        g.add(wi);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), conc); body.position.y = h / 2; body.castShadow = true; g.add(body);
+  const rows = Math.max(8, Math.floor(h / 3.0));
+  const cols = Math.max(4, Math.floor(w / 3.2));
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const u = -w / 2 + 2.0 + col * (w - 3.5) / Math.max(1, cols - 1);
+      const y = 2.5 + row * (h - 5) / Math.max(1, rows - 1);
+      for (const nz of [1, -1]) {
+        const wi = new THREE.Mesh(new THREE.BoxGeometry(1.55, 1.35, 0.14), winMat);
+        wi.position.set(u, y, nz * (d / 2 + 0.08)); g.add(wi);
+        if ((row + col) % 3 === 0) {
+          const ac = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.55, 0.45), acMat);
+          ac.position.set(u + 1.0, y - 0.2, nz * (d / 2 + 0.35)); g.add(ac);
+        }
       }
     }
   }
@@ -16331,7 +16331,7 @@ function kwBuildDensityD1() {
     // 近站／迴旋
     [-62, 60, 14, HIND[3], 12], [-66, 78, 13, HIND[6], 11], [-70, 95, 15, HIND[0], 12]
   ];
-  const indTex = KWAI.tex.indFacade || KWAI.tex.elbow || null;
+  const indTex = null; // 禁相
   const signs = ['工業中心', '物流中心', '貨倉', '工業中心', '物流'];
   let si = 0;
   for (let i = 0; i < indSpecs.length; i++) {
@@ -16473,7 +16473,7 @@ function kwBuildP1Urban() {
     arm.position.set(-38, 0.022, 48);
     arm.userData.kwaichung = true; arm.name = 'kt_elbow_inland_arm';
     arm.receiveShadow = true; root.add(arm);
-    if (KWAI.tex.roadStreet) {
+    if (false && KWAI.tex.roadStreet) { // 禁街景 documentary 相板
       const rm = new THREE.MeshStandardMaterial({
         map: KWAI.tex.roadStreet, roughness: 0.9, metalness: 0.02,
         transparent: true, opacity: 0.92, polygonOffset: true, polygonOffsetFactor: -2
@@ -16497,7 +16497,7 @@ function kwBuildP1Urban() {
   kwBarrierYB(root, -30, 48, 0, 12);
 
   // 工廈：沿內陸肘形兩側（−X）——優先密度立面
-  const indTex = KWAI.tex.indFacade || KWAI.tex.elbow || null;
+  const indTex = null; // 禁相
   kwIndBlock(root, -36, 58, 16, 36, 14, indTex);
   kwIndBlock(root, -52, 44, 14, 45, 12, indTex);
   kwIndBlock(root, -58, 68, 15, 52, 13, indTex);
@@ -16512,13 +16512,15 @@ function kwBuildP1Urban() {
     } catch (e) { /* */ }
   }
 
-  // 對面公屋：只用 3D 排樓（唔再貼大相板當背景）
-  kwEstateSlab(root, -98, 95, 28, 36, 10);
-  kwEstateSlab(root, -110, 78, 22, 42, 10);
-  kwEstateSlab(root, -92, 112, 26, 40, 10);
+  // 對面公屋：3D 排樓 dense_p1 高度（70–110）
+  kwEstateSlab(root, -98, 95, 28, 78, 10);
+  kwEstateSlab(root, -110, 78, 22, 95, 10);
+  kwEstateSlab(root, -92, 112, 26, 85, 10);
+  kwEstateSlab(root, -118, 100, 30, 110, 11);
+  kwEstateSlab(root, -105, 125, 24, 90, 10);
 
   // 葵芳站（戲仿）——肘形盡頭
-  kwStationKwaiFong(root, -82, 78, KWAI.tex.station || null);
+  kwStationKwaiFong(root, -82, 78, null); // 禁站相
 
   // 迴旋感 stub（站前）
   kwRoundabout(root, -68, 70, 9);
@@ -16591,6 +16593,7 @@ function kwBuildP1Urban() {
     kwBuildP1Urban();
     kwBuildDensityD1();
     kwQuayEdgeSoft();
+    if (typeof kwStripPhotoBoards === 'function') kwStripPhotoBoards();
     if (typeof HOOKS !== 'undefined') {
       HOOKS.tod = HOOKS.tod || [];
       HOOKS.tod.push(kwOnTod);
@@ -16603,6 +16606,7 @@ function kwBuildP1Urban() {
       if (typeof NT !== 'undefined' && NT.ready) {
         // LM 可能較遲；再試門面一次
         kwApplyLandmarkFacade();
+        if (typeof kwStripPhotoBoards === 'function') kwStripPhotoBoards();
         clearInterval(t0);
       }
     });
