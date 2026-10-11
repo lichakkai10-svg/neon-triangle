@@ -142,3 +142,11 @@
 - `artStripPhotoBoards` 匹配 `art-b2-*`＋`userData.artB2`
 - 另：葵涌 D3 細節＋閘口／工廈大堂／葵芳站可入
 - 玩：`?v=core16`
+
+## 11. core17 合並（2026-10-11）
+
+- Kwai D2a：`kwBuildDensityD2a()` 肘形 5 段弧＋輔路／丁字／行人路／燈柱
+- 碼頭環境音加密：`fender_thud`／`crane_rail`（`modYt_portamb`）
+- 保留：vendor／LDR／禁相板（`kwStripPhotoBoards`）
+- 玩：`?v=core17`
+
