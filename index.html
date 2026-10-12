@@ -274,7 +274,7 @@ body.aim #cross{transform:scale(.45)}
     if(b && cur < n) b.style.width=n+'%';
     if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
-  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core18。","用流動數據請等陣——資產喺度解壓。","聽日目標：落難香江 · 信和安全屋。"];
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core19。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
   var tipEl=document.getElementById("loadTips"); var ti=0;
   if(tipEl) tipEl.textContent=tips[0];
   var tipTimer=setInterval(function(){
@@ -284,7 +284,7 @@ body.aim #cross{transform:scale(.45)}
   setTimeout(function(){
     if(done) return;
     var t=document.getElementById('loadTxt');
-    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core18';
+    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core19';
   },45000);
 })();
 </script>
@@ -10988,9 +10988,9 @@ const LM_DEFS = [
     name: '旺角金城大押', city: '香港 · 油尖旺區 · 旺角', light: '暖黃燈箱 + 鐵閘陰影',
     desc: '旺角當舖（戲仿）。當錶、當金、聽街坊八卦——同油麻地廟街係另一條街，唔好混為一談。' },
   { id: 'sino_centre', region: 'hk', lat: 22.31635, lon: 114.16995, h: 22, w: 18, d: 14, yaw: 0,
-    neon: '信和中心', color: '#ff66aa', theme: 'store',
-    name: '信和中心（安全屋）', city: '香港 · 油尖旺區 · 旺角', light: '商場冷白 + 二手舖霓虹',
-    desc: '旺角彌敦道信和中心（戲仿）。二手動漫／遊戲機舖後檔可當避風頭——出街先睇清楚差人巡邏。landfall 目標點。' },
+    neon: '信旺中心', color: '#ff66aa', theme: 'store',
+    name: '信旺中心（安全屋）', city: '香港 · 油尖旺區 · 旺角', light: '商場冷白 + 二手舖霓虹',
+    desc: '旺角彌敦道信旺中心（戲仿）。二手動漫／遊戲機舖後檔可當避風頭——出街先睇清楚差人巡邏。landfall 目標點。' },
   { id: 'temple_pawn', region: 'hk', lat: 22.30650, lon: 114.17000, h: 12, w: 9, d: 7, yaw: 0,
     neon: '廟街大押', color: '#d4af37', theme: 'pawn',
     name: '廟街福星大押', city: '香港 · 油尖旺區 · 油麻地', light: '紅燈籠 + 蝠鼠吊金錢燈箱',
