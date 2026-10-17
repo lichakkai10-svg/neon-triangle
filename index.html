@@ -274,7 +274,7 @@ body.aim #cross{transform:scale(.45)}
     if(b && cur < n) b.style.width=n+'%';
     if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
-  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core23。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","進度會自動保存——下次開遊戲揀「繼續」就得。","載入唔郁？拉下刷新，或加 ?v=core23。","今日目標：落難香江 · 信旺安全屋。"];
   var tipEl=document.getElementById("loadTips"); var ti=0;
   if(tipEl) tipEl.textContent=tips[0];
   var tipTimer=setInterval(function(){
@@ -8828,6 +8828,17 @@ Object.assign(window.NT, { mbBuild, MB_ROOM, HUMAN, OUTFITS, startHideout });
 const SAVE_KEY = 'neonTriangle.save.v2';
 const SAVE_KEY_LEGACY = 'neonTriangle.save.v1';
 const SAVE = { on: !URLQ.has('nosave'), resume: null, decided: false, lastT: 0, data: null, pendingBoot: false };
+if (URLQ.has('nosave')) { setTimeout(() => { if (typeof toast === 'function') toast('今次唔會存檔', 2200); }, 1200); }
+if (URLQ.has('new')) { setTimeout(() => { if (typeof toast === 'function') toast('已開新遊戲', 1800); }, 800); }
+/* core23：私密瀏覽阻寫探測 */
+try {
+  const k = 'neonTriangle.save.probe';
+  localStorage.setItem(k, '1'); localStorage.removeItem(k);
+} catch (e) {
+  SAVE._privToast = true;
+  setTimeout(() => { if (typeof toast === 'function') toast('唔能夠存檔（可能開咗私密瀏覽）——用一般模式再試', 4200); }, 1600);
+}
+
 function saveRead() {
   try {
     let s = localStorage.getItem(SAVE_KEY);
@@ -8860,14 +8871,21 @@ function saveNow(why = '') {
     localStorage.setItem(SAVE_KEY, JSON.stringify(d));
     try { localStorage.setItem(SAVE_KEY_LEGACY, JSON.stringify(d)); } catch (e) {}
     SAVE.data = d; SAVE.lastT = state.time; SAVE.why = why;
+    if (why === 'manual' && typeof toast === 'function') toast('已儲存進度', 1600);
     return true;
-  } catch (e) { return false; }
+  } catch (e) {
+    if (!SAVE._privToast) {
+      SAVE._privToast = true;
+      if (typeof toast === 'function') toast('唔能夠存檔（可能開咗私密瀏覽）——用一般模式再試', 4200);
+    }
+    return false;
+  }
 }
 function saveApply(d) {
   for (const [id, s] of Object.entries(d.heroes || {})) if (HEROES[id]) Object.assign(HEROES[id], s);
   Object.assign(FLAGS, d.flags || {}); SIDE9.robCount = d.side?.robCount || 0; SAVE.resume = d.resume || null;
   loadHero(HEROES[d.cur] ? d.cur : 'kit');
-  if (typeof toast === 'function') toast('已讀取存檔 · 進度保留', 2200);
+  if (typeof toast === 'function') toast('已載入上次進度', 2200);
 }
 /* 任務開始前存檔（記住進行中任務；任務期間唔再自動存，避免「帶住戰利品重玩」）*/
 { const _st = startMission; startMission = function (id, retry) {
@@ -8906,21 +8924,29 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) saveB
 #saveMenu .info{font-size:13px;color:#cfd8de;text-align:center;line-height:1.7}#saveMenu .info b{color:#fff}
 #saveMenu .btns{display:flex;gap:14px;margin-top:10px}#saveMenu .btns div{min-width:130px;padding:11px 18px;text-align:center;font-size:16px;font-weight:800;letter-spacing:.2em;color:#eee;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.5)}
 #saveMenu .btns div.pri{border-color:rgba(240,196,25,.85);color:#f0c419}#saveMenu .sm{font-size:10px;color:#7d8a92;margin-top:6px}`; document.head.appendChild(st);
-  const m = document.createElement('div'); m.id = 'saveMenu'; m.innerHTML = '<h1>霓虹三角</h1><div class="info" id="saveInfo"></div><div class="btns"><div class="pri" id="saveCont">繼續</div><div id="saveNew">新遊戲</div></div><div class="sm">自動存檔 · 任務／買嘢／自由活動每 8 秒 · 刷新可繼續</div>'; document.body.appendChild(m);
+  const m = document.createElement('div'); m.id = 'saveMenu'; m.innerHTML = '<h1>霓虹三角</h1><div class="info" id="saveInfo"></div><div class="btns"><div class="pri" id="saveCont">繼續</div><div id="saveNew">新遊戲</div></div><div class="sm" id="saveSub">偵測到上次進度——可以繼續，或者重新開始。</div>'; document.body.appendChild(m);
   const go = (cont) => { if (!m.classList.contains('show')) return; m.classList.remove('show'); state.locked = false; SAVE.decided = true;
-    if (cont && SAVE.menuData) { const d = SAVE.menuData; withFade(() => { saveApply(d); if (d.resume && MISSIONS[d.resume] && !d.flags?.gameDone) startMission(d.resume); else { toast('繼續自由活動', 2000); saveNow('continue'); } }); }
-    else { saveClear(); startMission('manifest'); } };
+    if (cont && SAVE.menuData) { const d = SAVE.menuData; withFade(() => { saveApply(d); if (d.resume && MISSIONS[d.resume] && !d.flags?.gameDone) startMission(d.resume); else { toast('已載入上次進度', 2000); saveNow('continue'); } }); }
+    else { saveClear(); if (typeof toast === 'function') toast('已開新遊戲', 1800); startMission('manifest'); } };
   m.querySelector('#saveCont').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); go(true); });
-  m.querySelector('#saveNew').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); go(false); });
-  window.addEventListener('keydown', (e) => { if (!m.classList.contains('show')) return; if (e.key === 'Enter') go(true); else if (e.key === 'n' || e.key === 'N') go(false); }, true);
+  m.querySelector('#saveNew').addEventListener('pointerdown', (e) => {
+    e.stopPropagation(); e.preventDefault();
+    if (!window.confirm('開新遊戲會覆蓋存檔。確定？')) return;
+    go(false);
+  });
+  window.addEventListener('keydown', (e) => { if (!m.classList.contains('show')) return; if (e.key === 'Enter') go(true); else if (e.key === 'n' || e.key === 'N') { if (window.confirm('開新遊戲會覆蓋存檔。確定？')) go(false); } }, true);
   SAVE.go = go;
 }
 function showSaveMenu(d) {
+  if (!d || (d.v !== 1 && d.v !== 2)) {
+    if (typeof toast === 'function') toast('存檔讀唔到——已改開新遊戲', 2800);
+    SAVE.decided = true; saveClear(); startMission('manifest'); return;
+  }
   SAVE.menuData = d; state.locked = true;
   const h = d.heroes?.[d.cur] || {}, who = HEROES[d.cur]?.full || '阿傑', when = new Date(d.t);
   const pad = (n) => String(n).padStart(2, '0'), place = { hk: '香港', macau: '澳門', taiwan: '台灣' }[h.area] || '香港';
   const mis = d.flags?.gameDone ? '全劇終 · 自由活動' : d.resume && MISSION_DB?.[d.resume] ? `任務：<b>${MISSION_DB[d.resume].name}</b>（由頭開始）` : '自由活動';
-  $('saveInfo').innerHTML = `上次存檔：${when.getMonth() + 1}月${when.getDate()}日 ${pad(when.getHours())}:${pad(when.getMinutes())}<br>${mis}<br>${who} · ${place} · <b>$${(h.cash || 0).toLocaleString('en-US')}</b>　黑錢 $${(h.dirty || 0).toLocaleString('en-US')}`;
+  $('saveInfo').innerHTML = `偵測到上次進度——可以繼續，或者重新開始。<br>上次存檔：${when.getMonth() + 1}月${when.getDate()}日 ${pad(when.getHours())}:${pad(when.getMinutes())}<br>${mis}<br>${who} · ${place} · <b>$${(h.cash || 0).toLocaleString('en-US')}</b>　黑錢 $${(h.dirty || 0).toLocaleString('en-US')}`;
   $('saveMenu').classList.add('show');
 }
 Object.assign(window.NT, { SAVE, saveNow, saveRead, saveClear, saveCollect, saveApply, showSaveMenu });
@@ -18988,9 +19014,33 @@ function kwAspMat() {
   return asp;
 }
 
+/** core23：折線簡化（距離＋角度），先簡再畫可駛路——降段數保幀率 */
+function kwSimplifyPts(pts, tol) {
+  if (!pts || pts.length < 3) return pts || [];
+  tol = tol != null ? tol : 12;
+  const out = [pts[0]];
+  for (let i = 1; i < pts.length - 1; i++) {
+    const a = out[out.length - 1], b = pts[i], c = pts[i + 1];
+    const ax = a.x != null ? a.x : a.dx, az = a.z != null ? a.z : a.dz;
+    const bx = b.x != null ? b.x : b.dx, bz = b.z != null ? b.z : b.dz;
+    const cx = c.x != null ? c.x : c.dx, cz = c.z != null ? c.z : c.dz;
+    if (![ax, az, bx, bz, cx, cz].every(Number.isFinite)) continue;
+    const d1 = Math.hypot(bx - ax, bz - az);
+    if (d1 < tol) continue;
+    // 共線略過
+    const cross = Math.abs((bx - ax) * (cz - az) - (bz - az) * (cx - ax));
+    const base = Math.hypot(cx - ax, cz - az) || 1;
+    if (cross / base < tol * 0.35 && d1 < tol * 3) continue;
+    out.push(b);
+  }
+  out.push(pts[pts.length - 1]);
+  return out.length >= 2 ? out : pts;
+}
+
 /** 折線 → 可駛瀝青段（世界 dx/dz）；禁直線高速長 primary */
 function kwPaintPolyline(parent, pts, opts) {
   opts = opts || {};
+  pts = kwSimplifyPts(pts, opts.tol != null ? opts.tol : (opts.wiggle ? 14 : 18));
   const asp = opts.mat || kwAspMat();
   const width = opts.width || 10;
   const y = opts.y != null ? opts.y : 0.028;
