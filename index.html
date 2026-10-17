@@ -274,7 +274,7 @@ body.aim #cross{transform:scale(.45)}
     if(b && cur < n) b.style.width=n+'%';
     if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
-  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core21。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core22。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
   var tipEl=document.getElementById("loadTips"); var ti=0;
   if(tipEl) tipEl.textContent=tips[0];
   var tipTimer=setInterval(function(){
@@ -284,7 +284,7 @@ body.aim #cross{transform:scale(.45)}
   setTimeout(function(){
     if(done) return;
     var t=document.getElementById('loadTxt');
-    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core21';
+    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core22';
   },45000);
 })();
 </script>
@@ -8940,7 +8940,10 @@ const SFX10 = {
   /* D3 工廈／碼頭疏響——唔旺角霓虹床 */
   ac_hum: () => tone([[78,0,0.85,'sine',0.55],[95,0.1,0.7,'triangle',0.25],[62,0.35,0.55,'sine',0.35]],0.06), // 窗式／分體冷氣低嗡
   gate_scrape: () => tone([[180,0,0.18,'sawtooth',0.35],[140,0.08,0.22,'square',0.2],[90,0.15,0.28,'triangle',0.3],[220,0.05,0.12,'sawtooth',0.12]],0.09), // 銹灰摺閘近距輕刮
-  pallet_clack: () => tone([[210,0,0.06,'triangle',0.7],[160,0.05,0.08,'square',0.25],[130,0.1,0.12,'sine',0.4]],0.1) // 卡板／貨台疏木鐵響
+  pallet_clack: () => tone([[210,0,0.06,'triangle',0.7],[160,0.05,0.08,'square',0.25],[130,0.1,0.12,'sine',0.4]],0.1), // 卡板／貨台疏木鐵響
+  /* §6／core22：市政噠燈戲仿、廣華坊靜院、電車帶（tram_bell 已有） */
+  bus_wait_blip: () => { const n=[]; for(let i=0;i<3;i++) n.push([980,i*0.11,0.07,'square',0.35]); tone(n,0.08); }, // 巴士站噠噠殼戲仿短嘀（非真過路系統）
+  hospital_quiet: () => tone([[180,0,0.5,'sine',0.4],[220,0.15,0.45,'triangle',0.2],[140,0.35,0.4,'sine',0.25]],0.05) // 廣華坊醫院靜院疏層
 };
 /** 雨夜床聲增益（amb_rain_night_loop placeholder＝既有 audio.rain）*/
 function setRainBed(gain = 0.13) {
@@ -11148,6 +11151,10 @@ const LM_DEFS = [
     neon: '外港', color: '#1e6bb8', theme: 'hosp',
     name: '外港客輪碼頭（戲仿口岸）', city: '澳門 · 半島', light: '碼頭冷白 + 司警巡視',
     desc: '澳門外港客輪碼頭口岸（戲仿）。進出動線：大廳→黃線→閘機→登船；警報時司警封鎖閘口。分流可接發財車往路氹。' },
+  { id: 'kwong_wah_parody', region: 'hk', lat: 22.3154, lon: 114.1722, h: 20, w: 30, d: 22, yaw: -0.35, pad: 36,
+    neon: '廣華坊醫院', color: '#e8f0f8', theme: 'hosp',
+    name: '廣華坊醫院（戲仿）', city: '香港 · 油尖旺區 · 油麻地／旺角', light: '日：白牆冷光／夜：急症綠燈',
+    desc: '油麻地窩打老道醫院帶戲仿外形（gov §6）。進出動線：門廊→急症分流→病房。禁真「廣華醫院」全名同醫管局徽——只對比例／街貌，禁相板。' },
   { id: 'kln_central_ps', region: 'hk', lat: 22.3018, lon: 114.1725, h: 16, w: 22, d: 16, yaw: 0,
     neon: '九龍中央警署', color: '#4a6fa5', theme: 'hosp',
     name: '九龍中央警署（戲仿）', city: '香港 · 油尖旺區', light: '日：冷白接待／夜：藍燈迴廊',
@@ -16029,11 +16036,18 @@ function scapeZebra(parent, x, z, yaw) {
 function scapeBin(parent, x, z, style) {
   const M = scapeMats();
   const orange = style === 'orange' || style === 'fehd' || style === 'muni';
-  const mat = orange ? M.binOrange
+  let mat = orange ? M.binOrange
     : (style === 'small' || style === 'square' ? M.binGrey : M.binGreen);
+  if (orange && typeof scapeMatFromStreet === 'function') {
+    const texMat = scapeMatFromStreet('bin', 1, 1.4, 0.62, null);
+    if (texMat) mat = texMat;
+  }
   const w = style === 'small' ? 0.45 : (style === 'square' ? 0.55 : (orange ? 0.58 : 0.5));
   const h = style === 'small' ? 0.85 : (orange ? 1.15 : 1.05);
-  const g = new THREE.Group(); g.position.set(x, 0, z); g.name = orange ? 'scape-bin-orange' : 'scape-bin'; parent.add(g);
+  const g = new THREE.Group(); g.position.set(x, 0, z);
+  g.name = orange ? 'scape-bin-orange' : 'scape-bin';
+  if (orange) g.userData.typeId = 'bin_fehd_orange';
+  parent.add(g);
   scapeBox(mat, w, h, w, 0, h / 2, 0, g);
   scapeBox(M.pole, w * 1.05, 0.06, w * 1.05, 0, h + 0.03, 0, g);
   if (orange) {
@@ -16041,8 +16055,9 @@ function scapeBin(parent, x, z, style) {
       const c = document.createElement('canvas'); c.width = 128; c.height = 64;
       const ctx = c.getContext('2d');
       ctx.fillStyle = '#e07020'; ctx.fillRect(0, 0, 128, 64);
-      ctx.fillStyle = '#1a1a1a'; ctx.font = 'bold 28px sans-serif';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('清潔', 64, 32);
+      ctx.fillStyle = '#1a1a1a'; ctx.font = 'bold 18px "PingFang HK","Noto Sans TC",sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('废物箱（戲仿）', 64, 32);
       const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
       const lab = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.21), new THREE.MeshBasicMaterial({ map: tex }));
       lab.position.set(0, h * 0.55, w / 2 + 0.02); g.add(lab);
@@ -16082,7 +16097,8 @@ function scapeSign(parent, x, z, yaw) {
   const M = scapeMats();
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0; parent.add(g);
   scapeBox(M.pole, 0.08, 2.8, 0.08, 0, 1.4, 0, g);
-  scapeBox(M.sign, 1.4, 0.7, 0.06, 0, 2.6, 0, g);
+  const face = scapeMatFromStreet('sign', 1.5, 0.7, 0.55, M.sign);
+  scapeBox(face, 1.5, 0.75, 0.06, 0, 2.6, 0, g);
 }
 
 function scapeScooterBay(parent, x, z, yaw) {
@@ -16114,18 +16130,45 @@ function scapeTramRail(parent, x, z, yaw) {
   scapeBox(M.rail, 0.08, 0.06, 10, 0.55, 0.04, 0, g);
 }
 
-/** core21：橙垃圾桶／巴士站／望左望右／唐樓騎樓／戲仿便利店／街市簷篷堆箱——禁相板 */
+/** gov §6：橙垃圾桶／噠噠巴士站／望左望右／唐樓騎樓／戲仿便利店／街市——禁相板 */
 function scapeLookLR(parent, x, z, yaw, which) {
   const M = scapeMats();
-  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0; parent.add(g);
-  scapeBox(M.pole, 0.07, 2.2, 0.07, 0, 1.1, 0, g);
-  const bg = new THREE.MeshStandardMaterial({ color: 0xf5f0e6, roughness: 0.65, metalness: 0.05 });
-  scapeBox(bg, 0.85, 0.55, 0.05, 0, 2.15, 0.02, g);
-  // 箭咀色塊（戲仿「望左／望右」）
-  const arrow = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.5 });
-  const dir = which === 'right' ? 1 : -1;
-  scapeBox(arrow, 0.35, 0.08, 0.04, dir * 0.12, 2.15, 0.06, g);
-  scapeBox(arrow, 0.12, 0.12, 0.04, dir * 0.28, 2.15, 0.06, g);
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0;
+  g.name = which === 'right' ? 'mark_look_lr_right' : 'mark_look_lr_left';
+  g.userData.typeId = 'mark_look_lr';
+  parent.add(g);
+  const zh = which === 'right' ? '望右' : '望左';
+  const en = which === 'right' ? 'LOOK RIGHT' : 'LOOK LEFT';
+  const key = which === 'right' ? 'lookR' : 'lookL';
+  let usedTex = false;
+  const mat = scapeMatFromStreet(key, 1, 1, 0.9, null);
+  if (mat) {
+    const pl = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.55), mat);
+    pl.rotation.x = -Math.PI / 2; pl.position.y = 0.03; g.add(pl);
+    usedTex = true;
+  }
+  try {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 96;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, 256, 96);
+    ctx.fillStyle = usedTex ? 'rgba(240,240,232,0.0)' : '#f0f0e8';
+    if (!usedTex) ctx.fillRect(8, 8, 240, 80);
+    ctx.fillStyle = '#f4f4f0';
+    ctx.font = 'bold 46px "PingFang HK","Noto Sans TC",sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4;
+    ctx.strokeText(zh, 128, 38); ctx.fillText(zh, 128, 38);
+    ctx.font = 'bold 13px sans-serif';
+    ctx.strokeText(en, 128, 72); ctx.fillText(en, 128, 72);
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    const pl2 = new THREE.Mesh(new THREE.PlaneGeometry(1.85, 0.7),
+      new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
+    pl2.rotation.x = -Math.PI / 2; pl2.position.y = usedTex ? 0.045 : 0.035; g.add(pl2);
+  } catch (e) {
+    if (!usedTex) {
+      scapeBox(M.zebra, 1.6, 0.03, 0.55, 0, 0.03, 0, g);
+    }
+  }
 }
 
 function scapeBusStop(parent, x, z, yaw) {
@@ -16133,31 +16176,128 @@ function scapeBusStop(parent, x, z, yaw) {
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0; g.name = 'scape_bus_stop'; parent.add(g);
   scapeBox(M.pole, 0.1, 2.8, 0.1, -1.4, 1.4, 0, g);
   scapeBox(M.pole, 0.1, 2.8, 0.1, 1.4, 1.4, 0, g);
-  scapeBox(M.concrete, 3.2, 0.08, 1.4, 0, 2.85, 0, g); // 頂棚
-  scapeBox(M.sign, 0.9, 1.1, 0.06, -1.4, 2.0, 0.2, g); // 站牌
-  scapeBox(M.tileGrey, 3.0, 0.06, 1.2, 0, 0.5, 0.15, g); // 企位
+  scapeBox(M.concrete, 3.2, 0.08, 1.4, 0, 2.85, 0, g);
+  const panel = scapeMatFromStreet('bus', 1, 1.2, 0.7, M.sign);
+  scapeBox(panel, 0.95, 1.2, 0.06, -1.4, 2.0, 0.2, g);
+  scapeBox(M.tileGrey, 3.0, 0.06, 1.2, 0, 0.5, 0.15, g);
   if (typeof makeNeonSign === 'function') {
     try {
-      const sg = makeNeonSign('巴士站（戲仿）', '#1a4a8a', false);
-      sg.scale.setScalar(0.45); sg.position.set(0, 3.1, 0.2); g.add(sg);
+      const sg = makeNeonSign('巴士站（戲仿）· 1A 彌敦道', '#1a4a8a', false);
+      sg.scale.setScalar(0.4); sg.position.set(0, 3.1, 0.2); g.add(sg);
     } catch (e) { /* */ }
+  }
+  // 柱頂噠噠倒數燈殼（gov §6 sign_bus_wait）
+  scapeBusWaitLamp(g, 1.4, 0, 0);
+}
+
+/** gov §6 sign_bus_wait：柱頂黃／橙閃殼＋戲仿路線號——禁真巴公司 logo */
+function scapeBusWaitLamp(parent, x, z, yaw) {
+  const M = scapeMats();
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0;
+  g.name = 'sign_bus_wait'; g.userData.typeId = 'sign_bus_wait'; parent.add(g);
+  scapeBox(M.pole, 0.09, 3.4, 0.09, 0, 1.7, 0, g);
+  const shell = new THREE.MeshStandardMaterial({
+    color: 0xf0a010, roughness: 0.35, metalness: 0.25,
+    emissive: new THREE.Color(0.55, 0.28, 0.02), emissiveIntensity: 0.85
+  });
+  scapeBox(shell, 0.42, 0.32, 0.22, 0, 3.45, 0.05, g);
+  scapeBox(M.pole, 0.48, 0.04, 0.28, 0, 3.62, 0.05, g);
+  try {
+    const c = document.createElement('canvas'); c.width = 128; c.height = 96;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#1a2a40'; ctx.fillRect(0, 0, 128, 96);
+    ctx.fillStyle = '#f0c020'; ctx.font = 'bold 36px monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('12', 64, 36);
+    ctx.fillStyle = '#c8d0d8'; ctx.font = 'bold 16px "PingFang HK","Noto Sans TC",sans-serif';
+    ctx.fillText('噠噠', 64, 68);
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.27),
+      new THREE.MeshBasicMaterial({ map: tex }));
+    face.position.set(0, 3.45, 0.17); g.add(face);
+  } catch (e) { /* */ }
+  try {
+    const c2 = document.createElement('canvas'); c2.width = 160; c2.height = 64;
+    const ctx2 = c2.getContext('2d');
+    ctx2.fillStyle = '#f5f5f0'; ctx2.fillRect(0, 0, 160, 64);
+    ctx2.fillStyle = '#1a1a1a';
+    ctx2.font = 'bold 22px "PingFang HK","Noto Sans TC",sans-serif';
+    ctx2.textAlign = 'center'; ctx2.textBaseline = 'middle';
+    ctx2.fillText('1A（戲仿）', 80, 32);
+    const tex2 = new THREE.CanvasTexture(c2); tex2.colorSpace = THREE.SRGBColorSpace;
+    const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 0.22),
+      new THREE.MeshBasicMaterial({ map: tex2 }));
+    plate.position.set(0, 2.55, 0.1); g.add(plate);
+  } catch (e) { /* */ }
+}
+
+function scapeBusWait(parent, x, z, yaw, routeLabel) {
+  const M = scapeMats();
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0;
+  g.name = 'scape_bus_wait'; parent.add(g);
+  scapeBusWaitLamp(g, 0, 0, 0);
+  if (typeof makeNeonSign === 'function' && routeLabel) {
+    try {
+      const sg = makeNeonSign(routeLabel, '#1a4a8a', false);
+      sg.scale.setScalar(0.32); sg.position.set(0.7, 2.2, 0.15); g.add(sg);
+    } catch (e) { /* */ }
+  }
+}
+
+/** gov §6 sign_hospital_ext：廣華坊醫院（戲仿）——禁真廣華全名／醫管局徽 */
+function scapeHospitalExt(parent, x, z, yaw) {
+  const M = scapeMats();
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0;
+  g.name = 'sign_hospital_ext'; g.userData.typeId = 'sign_hospital_ext';
+  g.userData.copy = '廣華坊醫院（戲仿）'; parent.add(g);
+  scapeBox(M.pole, 0.1, 3.0, 0.1, 0, 1.5, 0, g);
+  const bg = new THREE.MeshStandardMaterial({ color: 0xf0f4f8, roughness: 0.55, metalness: 0.08 });
+  scapeBox(bg, 2.4, 0.85, 0.08, 0, 2.85, 0.04, g);
+  // 急症綠條
+  const green = new THREE.MeshStandardMaterial({
+    color: 0x2a8a4a, roughness: 0.5,
+    emissive: new THREE.Color(0.05, 0.35, 0.12), emissiveIntensity: 0.4
+  });
+  scapeBox(green, 2.4, 0.12, 0.09, 0, 3.35, 0.04, g);
+  try {
+    const c = document.createElement('canvas'); c.width = 384; c.height = 128;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#f0f4f8'; ctx.fillRect(0, 0, 384, 128);
+    ctx.fillStyle = '#1a3a5a';
+    ctx.font = 'bold 36px "PingFang HK","Noto Sans TC",sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('廣華坊醫院（戲仿）', 192, 52);
+    ctx.font = '22px "PingFang HK","Noto Sans TC",sans-serif';
+    ctx.fillStyle = '#3a6a4a';
+    ctx.fillText('急症 · 門診', 192, 92);
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(2.25, 0.75),
+      new THREE.MeshBasicMaterial({ map: tex }));
+    face.position.set(0, 2.85, 0.1); g.add(face);
+  } catch (e) {
+    if (typeof makeNeonSign === 'function') {
+      try {
+        const sg = makeNeonSign('廣華坊醫院（戲仿）', '#1a4a6a', false);
+        sg.scale.setScalar(0.55); sg.position.set(0, 2.9, 0.12); g.add(sg);
+      } catch (e2) { /* */ }
+    }
   }
 }
 
 function scapeTongLauArcade(parent, x, z, yaw) {
   const M = scapeMats();
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0; g.name = 'scape_tonglau'; parent.add(g);
-  // 騎樓柱＋簷；門面用 market／facade tonglau tile（若已載）
   let faceMat = M.concrete;
   const tex = SCAPE.marketTex && SCAPE.marketTex.tonglau;
   if (tex) {
     const map = tex.clone(); map.wrapS = map.wrapT = THREE.RepeatWrapping; map.repeat.set(2, 3);
     faceMat = new THREE.MeshStandardMaterial({ map, color: 0xffffff, roughness: 0.82 });
   }
+  const pillar = scapeMatFromStreet('arcade', 1, 3, 0.8, M.concrete);
   for (let i = 0; i < 4; i++) {
-    scapeBox(M.concrete, 0.4, 3.6, 0.4, i * 4.2, 1.8, 0, g);
+    scapeBox(pillar, 0.45, 3.6, 0.45, i * 4.2, 1.8, 0, g);
     scapeBox(faceMat, 3.8, 8.5, 5.5, i * 4.2 + 2.0, 4.25, -2.2, g);
-    scapeBox(M.concrete, 4.0, 0.28, 2.2, i * 4.2 + 2.0, 3.5, 0.6, g); // 騎樓簷
+    scapeBox(M.concrete, 4.0, 0.28, 2.2, i * 4.2 + 2.0, 3.5, 0.6, g);
   }
 }
 
@@ -16165,11 +16305,14 @@ function scapeConvenience(parent, x, z, yaw) {
   const M = scapeMats();
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0; g.name = 'scape_conven_parody'; parent.add(g);
   scapeBox(M.conven, 7.5, 4.2, 6.0, 0, 2.1, 0, g);
-  scapeBox(M.concrete, 7.8, 0.2, 1.8, 0, 2.9, 3.2, g); // 簷
+  scapeBox(M.concrete, 7.8, 0.2, 1.8, 0, 2.9, 3.2, g);
+  // 紅白 fascia（戲仿便利站 · 禁真 logo）
+  const fascia = scapeMatFromStreet('conven', 3, 0.6, 0.55, M.conven);
+  scapeBox(fascia, 7.6, 0.7, 0.12, 0, 3.5, 3.05, g);
   if (typeof makeNeonSign === 'function') {
     try {
-      const sg = makeNeonSign('8仔便利（戲仿）', '#2fd060', false);
-      sg.scale.setScalar(0.7); sg.position.set(0, 3.6, 3.15); g.add(sg);
+      const sg = makeNeonSign('便利站（戲仿）· 24小時', '#c01010', false);
+      sg.scale.setScalar(0.65); sg.position.set(0, 3.55, 3.2); g.add(sg);
     } catch (e) { /* */ }
   }
 }
@@ -16194,6 +16337,41 @@ async function scapeLoadMarketTex() {
     } catch (e) { console.warn('[scape-market]', f, e && e.message); }
   }));
   SCAPE.marketTex._done = true;
+}
+
+async function scapeLoadStreetTex() {
+  if (SCAPE.streetTex && SCAPE.streetTex._done) return;
+  SCAPE.streetTex = SCAPE.streetTex || {};
+  if (typeof loadTex !== 'function') { SCAPE.streetTex._done = true; return; }
+  const files = {
+    bin: 'tex/street/bin_orange_plastic.jpg',
+    bus: 'tex/street/bus_stop_panel.jpg',
+    sign: 'tex/street/sign_green_directional.jpg',
+    lookL: 'tex/street/mark_look_left.jpg',
+    lookR: 'tex/street/mark_look_right.jpg',
+    arcade: 'tex/street/arcade_tonglau_pillar.jpg',
+    conven: 'tex/street/convenience_fascia_parody.jpg',
+    weigh: 'tex/street/weighbridge_hazard_metal.jpg',
+    gate: 'tex/street/gate_barrier_blue_white.jpg',
+    hazard: 'tex/street/mark_hazard_yellow_black.jpg'
+  };
+  await Promise.all(Object.entries(files).map(async ([k, f]) => {
+    try {
+      const tex = await loadTex(f, true, true);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      SCAPE.streetTex[k] = tex;
+    } catch (e) { console.warn('[scape-street]', f, e && e.message); }
+  }));
+  SCAPE.streetTex._done = true;
+}
+
+function scapeMatFromStreet(key, rx, ry, rough, fallback) {
+  const tex = SCAPE.streetTex && SCAPE.streetTex[key];
+  if (!tex) return fallback;
+  const map = tex.clone();
+  map.wrapS = map.wrapT = THREE.RepeatWrapping;
+  map.repeat.set(rx || 1, ry || 1);
+  return new THREE.MeshStandardMaterial({ map, color: 0xffffff, roughness: rough != null ? rough : 0.8, metalness: 0.05 });
 }
 
 function scapeMatFromMarket(key, rx, ry, rough, fallback) {
@@ -16247,6 +16425,72 @@ function scapeWetMarket(parent, x, z, yaw) {
   }
   // 巷口唐樓密度
   scapeTongLauArcade(g, -2, -9.5, 0);
+}
+
+/** gov §6 稀疏掛載——跟 docs/gov-municipal-street-props.md §6 + 地道人密度準則 */
+function scapePlaceMuniS6() {
+  if (SCAPE.muniS6) return;
+  const lite = (typeof IS_SAFARI !== 'undefined' && IS_SAFARI)
+    || (typeof LOW_MEM !== 'undefined' && LOW_MEM)
+    || (typeof URLQ !== 'undefined' && URLQ.has && URLQ.has('ldr'));
+
+  // mark_look_lr：每口斑馬最多一組（唔雙面塞滿）
+  // 旺角彌敦斑馬 → 只望左
+  scapeAt('hk', 22.3190, 114.1695, null, (p, x, z) => scapeLookLR(p, x - 2.2, z, 0, 'left'));
+  // 油麻地斑馬 → 只望右
+  scapeAt('hk', 22.3116, 114.1709, null, (p, x, z) => {
+    scapeZebra(p, x, z, 0.1);
+    scapeLookLR(p, x - 2.0, z, 0.1, 'right');
+  });
+  if (!lite) {
+    // 佐敦斑馬 → 只望左
+    scapeAt('hk', 22.3049, 114.1719, null, (p, x, z) => {
+      scapeZebra(p, x, z, 0);
+      scapeLookLR(p, x - 2.1, z, 0, 'left');
+    });
+  }
+
+  // bin_fehd_orange：行人帶約 40–60 m 一級；禁真食環徽；櫃巷唔放
+  // 彌敦帶（約 50 m 級距 · 緯度 ~0.00045 ≈ 50 m）
+  const nathanBins = lite
+    ? [[22.3193, 114.1695], [22.3165, 114.1702]]
+    : [[22.3193, 114.1695], [22.3178, 114.1699], [22.3165, 114.1702], [22.3148, 114.1706]];
+  nathanBins.forEach(([la, lo], i) => {
+    scapeAt('hk', la, lo, null, (p, x, z) => scapeBin(p, x + (i % 2 ? 1.8 : -1.6), z + 0.8, 'orange'));
+  });
+  // 荃灣行人帶疏
+  scapeAt('hk', 22.3710, 114.1172, null, (p, x, z) => scapeBin(p, x, z, 'orange'));
+  if (!lite) scapeAt('hk', 22.3704, 114.1165, null, (p, x, z) => scapeBin(p, x, z, 'orange'));
+  // 元朗行人帶疏（唔抄街市檔口密度入桶）
+  scapeAt('hk', 22.4448, 114.0232, null, (p, x, z) => scapeBin(p, x, z, 'orange'));
+  if (!lite) scapeAt('hk', 22.4440, 114.0222, null, (p, x, z) => scapeBin(p, x, z, 'orange'));
+  // 澳維持小圓桶、台維持方桶（P0 已掛）——唔抄港橙桶入澳台
+
+  // sign_bus_wait：市鎮巴士灣噠噠殼（對 TRANSIT.busStops）；禁真巴公司 logo
+  const busBays = lite
+    ? [
+        [22.3192, 114.1695, 0.1, '1A（戲仿）'],
+        [22.3706, 114.1168, 0.4, '38（戲仿）']
+      ]
+    : [
+        [22.2975, 114.1722, 0.0, '1A（戲仿）'],
+        [22.3048, 114.1718, 0.05, '1A（戲仿）'],
+        [22.3115, 114.1708, 0.0, '1A（戲仿）'],
+        [22.3192, 114.1695, 0.1, '1A（戲仿）'],
+        [22.3706, 114.1168, 0.4, '38（戲仿）']
+      ];
+  busBays.forEach(([la, lo, yaw, route], i) => {
+    scapeAt('hk', la, lo, null, (p, x, z) => {
+      if (i === 0 || i === busBays.length - 1) scapeBusStop(p, x, z, yaw); // 兩端保留亭
+      else scapeBusWait(p, x, z, yaw, route);
+    });
+  });
+
+  // sign_hospital_ext：油麻地／旺角醫院帶（窩打老道）——禁真廣華全名／醫管局徽
+  scapeAt('hk', 22.3154, 114.1722, null, (p, x, z) => scapeHospitalExt(p, x + 6, z + 4, -0.4));
+
+  SCAPE.muniS6 = true;
+  console.info('[streetscape] gov §6 muni hung', lite ? '(safari lite)' : '');
 }
 
 function scapeAt(region, lat, lon, local, fn) {
@@ -16305,20 +16549,14 @@ function scapePlaceP0() {
   scapeAt('tw', null, null, { x: -42, z: 98 }, (p, x, z) => scapeSign(p, x, z, -0.4));
   scapeAt('tw', null, null, { x: -38, z: 102 }, (p, x, z) => scapeScooterBay(p, x, z, 0.2));
 
-  // —— core21 街景優先：橙桶／巴士站／望左望右／便利店／唐樓／元朗街市 ——
-  scapeAt('hk', 22.3193, 114.1695, null, (p, x, z) => scapeBin(p, x + 2.2, z + 1.5, 'orange'));
-  scapeAt('hk', 22.3187, 114.1698, null, (p, x, z) => scapeBin(p, x, z, 'orange'));
-  scapeAt('hk', 22.3200, 114.1692, null, (p, x, z) => scapeBusStop(p, x, z, 0.1));
-  scapeAt('hk', 22.3191, 114.1696, null, (p, x, z) => scapeLookLR(p, x, z, 0, 'left'));
-  scapeAt('hk', 22.3191, 114.16955, null, (p, x, z) => scapeLookLR(p, x + 3.5, z, Math.PI, 'right'));
+  // —— gov §6 市政補丁（稀疏；禁相板；唔塞葵涌 D3）——
+  scapePlaceMuniS6();
+
+  // 唐樓／便利店／元朗街市（街景清單·非市政牌；維持戲仿）
   scapeAt('hk', 22.3198, 114.1688, null, (p, x, z) => scapeTongLauArcade(p, x, z, 0.05));
   scapeAt('hk', 22.3185, 114.1700, null, (p, x, z) => scapeConvenience(p, x, z, -0.2));
-  // 元朗大橋街市一帶（研究比例；戲仿檔名）
   scapeAt('hk', 22.4445, 114.0228, null, (p, x, z) => scapeWetMarket(p, x, z, 0.3));
-  // 荃灣街密度：唐樓＋橙桶
   scapeAt('hk', 22.3708, 114.1170, null, (p, x, z) => scapeTongLauArcade(p, x, z, 0.4));
-  scapeAt('hk', 22.3710, 114.1172, null, (p, x, z) => scapeBin(p, x, z, 'orange'));
-  scapeAt('hk', 22.3706, 114.1168, null, (p, x, z) => scapeBusStop(p, x, z, 0.4));
 
   SCAPE.placed = true;
 
@@ -16351,6 +16589,7 @@ function scapePlaceP0() {
     if (!window.NT || !NT.ready) return false;
     if (typeof hkGeo !== 'function' || typeof scene === 'undefined') return false;
     try { await scapeLoadMarketTex(); } catch (e) { console.warn('[scape-market]', e); }
+    try { await scapeLoadStreetTex(); } catch (e) { console.warn('[scape-street]', e); }
     try { scapePlaceP0(); } catch (e) { console.warn('[streetscape]', e); }
     return SCAPE.placed;
   };
@@ -16358,7 +16597,7 @@ function scapePlaceP0() {
   setTimeout(() => boot(), 0);
 }
 
-Object.assign(window.NT || (window.NT = {}), { SCAPE, scapePlaceP0 });
+Object.assign(window.NT || (window.NT = {}), { SCAPE, scapePlaceP0, scapePlaceMuniS6, scapeLookLR, scapeBusWait, scapeHospitalExt });
 /* =========================================================================
  * M1c · 葵涌貨櫃碼頭真實化（寫實比例）
  *  · 禁 documentary 相板（docs/kwai-no-photo-boards.md）：overview／公屋／站／街景大 Plane
@@ -16689,25 +16928,74 @@ function kwSignBoard(parent, x, y, z, yaw, w, h, color, name) {
 }
 
 function kwGatehouse(parent, x, z) {
+  // ref09 比例：門架＋紅白閘臂＋黃基座＋戲仿 LED「地磅」——禁真碼頭相板
   const conc = new THREE.MeshStandardMaterial({ color: 0x8a8e90, roughness: 0.85 });
-  const yb = new THREE.MeshStandardMaterial({ color: 0xc9a000, roughness: 0.55, metalness: 0.2 });
-  const blu = new THREE.MeshStandardMaterial({ color: 0x1a3a6a, roughness: 0.5 });
+  const yb = new THREE.MeshStandardMaterial({ color: 0xc9a000, roughness: 0.55, metalness: 0.25 });
+  const red = new THREE.MeshStandardMaterial({ color: 0xc01010, roughness: 0.45 });
+  const wht = new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.55 });
+  const glass = new THREE.MeshStandardMaterial({ color: 0x1a2838, roughness: 0.28, metalness: 0.4 });
   const g = new THREE.Group(); g.position.set(x, 0, z); g.userData.kwaichung = true; g.name = 'gatehouse_weighbridge';
-  const booth = new THREE.Mesh(new THREE.BoxGeometry(3.2, 2.8, 2.6), conc); booth.position.y = 1.4; g.add(booth);
-  const pad = new THREE.Mesh(new THREE.BoxGeometry(8, 0.12, 4), conc); pad.position.set(5, 0.06, 0); g.add(pad);
-  for (let i = 0; i < 4; i++) {
-    const b = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.1, 0.2), yb);
-    b.position.set(-2 + i * 1.2, 0.55, 2.2); g.add(b);
+  // 亭（灰玻璃感）
+  const booth = new THREE.Mesh(new THREE.BoxGeometry(2.6, 2.6, 2.4), conc); booth.position.set(-1.2, 1.3, 0); g.add(booth);
+  const win = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.0, 0.08), glass); win.position.set(-1.2, 1.55, 1.22); g.add(win);
+  // 地磅墊（黃邊）
+  const pad = new THREE.Mesh(new THREE.BoxGeometry(10, 0.14, 4.2), conc); pad.position.set(5.5, 0.07, 0); g.add(pad);
+  for (const ox of [-4.9, 4.9]) {
+    const rim = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.16, 4.0), yb);
+    rim.position.set(5.5 + ox, 0.18, 0); g.add(rim);
   }
-  // gov §5：閘頂戲仿牌
-  const top = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.9, 0.12), blu); top.position.set(1.5, 3.4, 1.4); g.add(top);
-  top.name = 'sign_gate_parody'; // 貨櫃碼頭閘口（戲仿）
+  // 門架（混凝土橫樑）
+  const postL = new THREE.Mesh(new THREE.BoxGeometry(0.45, 4.2, 0.45), conc); postL.position.set(0.5, 2.1, 2.0); g.add(postL);
+  const postR = new THREE.Mesh(new THREE.BoxGeometry(0.45, 4.2, 0.45), conc); postR.position.set(10.5, 2.1, 2.0); g.add(postR);
+  const beam = new THREE.Mesh(new THREE.BoxGeometry(10.5, 0.55, 0.55), conc); beam.position.set(5.5, 4.3, 2.0); g.add(beam);
+  // 戲仿 LED「LANE 1 地磅」
+  const led = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.35, 0.12),
+    new THREE.MeshStandardMaterial({ color: 0x111111, emissive: new THREE.Color(0.7, 0.08, 0.08), emissiveIntensity: 0.85, roughness: 0.4 }));
+  led.position.set(5.5, 4.0, 2.28); led.name = 'sign_weigh_led_parody'; g.add(led);
+  if (typeof makeNeonSign === 'function') {
+    try {
+      const sg = makeNeonSign('LANE 1 · 地磅（戲仿）', '#ff3030', false);
+      sg.scale.setScalar(0.4); sg.position.set(5.5, 4.0, 2.4); g.add(sg);
+    } catch (e) { /* */ }
+  }
+  // 黃基座＋紅白閘臂
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.85, 0.7), yb); base.position.set(0.8, 0.42, 1.2); g.add(base);
+  const arm = new THREE.Group(); arm.position.set(0.8, 0.95, 1.2); arm.name = 'kt_gate_boom';
+  for (let i = 0; i < 8; i++) {
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.12, 0.1), i % 2 ? red : wht);
+    stripe.position.set(0.5 + i * 0.9, 0, 0); arm.add(stripe);
+  }
+  g.add(arm);
+  // street tex（weigh／gate／hazard）若已載——禁相板，只 PBR 切片
+  try {
+    if (typeof scapeMatFromStreet === 'function') {
+      const wMat = scapeMatFromStreet('weigh', 2, 1, 0.55, null);
+      if (wMat) { pad.material = wMat; }
+      const gMat = scapeMatFromStreet('gate', 4, 0.3, 0.45, null);
+      if (gMat) {
+        arm.traverse((ch) => { if (ch.isMesh) ch.material = gMat; });
+      }
+      const hMat = scapeMatFromStreet('hazard', 1, 2, 0.6, null);
+      if (hMat) {
+        // applied to YB posts below via hazardPosts flag
+        g.userData._hazardMat = hMat;
+      }
+    }
+  } catch (e) { /* */ }
+  // 黃黑柱
+  for (let i = 0; i < 4; i++) {
+    const mat = g.userData._hazardMat || (i % 2 ? yb : new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.7 }));
+    const b = new THREE.Mesh(new THREE.BoxGeometry(0.22, 1.1, 0.22), mat);
+    b.position.set(-2 + i * 1.2, 0.55, 2.4); g.add(b);
+  }
+  const top = new THREE.Mesh(new THREE.BoxGeometry(5.5, 0.7, 0.12),
+    new THREE.MeshStandardMaterial({ color: 0x1a3a6a, roughness: 0.5 }));
+  top.position.set(1.2, 3.5, -1.2); top.name = 'sign_gate_parody'; g.add(top);
   parent.add(g);
-  // 限高 4.5 m、分流、黃黑欄、往葵芳
   if (typeof kwSignBoard === 'function') {
     kwSignBoard(parent, x - 6, 2.4, z + 4, 0, 1.6, 1.6, 0xf0f0f0, 'sign_height');
-    kwSignBoard(parent, x + 8, 2.2, z + 3, 0.15, 3.2, 0.9, 0x1a3a6a, 'sign_lane'); // 貨櫃車靠右 · 訪客靠左
-    kwSignBoard(parent, x - 4, 2.0, z - 8, Math.PI, 2.8, 0.8, 0x1a3a6a, 'sign_to_kf'); // 往葵芳（戲仿）
+    kwSignBoard(parent, x + 8, 2.2, z + 3, 0.15, 3.2, 0.9, 0x1a3a6a, 'sign_lane');
+    kwSignBoard(parent, x - 4, 2.0, z - 8, Math.PI, 2.8, 0.8, 0x1a3a6a, 'sign_to_kf');
   }
   if (typeof kwBarrierYB === 'function') {
     kwBarrierYB(parent, x - 5, z + 1, Math.PI / 2, 6);
@@ -17744,6 +18032,10 @@ function kwBuildDensityD2b() {
     scapeZebra(g, -31, 56, Math.PI / 2);
     scapeZebra(g, -65, 73, 0.35);
   }
+  // gov §6：工廈入口斑馬薄掛望左一組（唔雙面；櫃巷唔放橙桶）
+  if (typeof scapeLookLR === 'function') {
+    scapeLookLR(g, -31, 57.4, Math.PI / 2, 'left');
+  }
   if (typeof scapeTrafficLight === 'function') {
     scapeTrafficLight(g, -29, 53, Math.PI / 2);
     scapeTrafficLight(g, -63, 69, 0.4);
@@ -17759,7 +18051,8 @@ function kwBuildDensityD2b() {
     density_d2b: 'kt_d2b_signage',
     d2b_height_gate: 'kt_sign_height_gate',
     d2b_to_kf: 'kt_sign_to_kf',
-    d2b_weigh: 'kt_weigh_hint'
+    d2b_weigh: 'kt_weigh_hint',
+    d2b_look_lr: 'mark_look_lr'
   });
   console.info('[kwai] D2b signage hung (gov copy)');
 }
@@ -19437,6 +19730,104 @@ Object.assign(window, {
   govWastedFee, govWastedLabel, govBailFee, govBailLabel
 });
 if (typeof window.NT === 'object') Object.assign(window.NT, { GOV_FEES, FINE_CATALOG, LITTER, issueFine, govBailFee, govBailLabel });
+
+/* =========================================================================
+ * 市政 §6 環境音（core22）：巴士站噠嘀戲仿／廣華坊靜院／港島電車帶疏鈴
+ * 跟 docs/streetscape-muni-s6-stub.md · docs/gov-municipal-street-props.md §6
+ * 禁真過路系統／真醫管局／真巴公司聲。唔郁 Pages。
+ * ========================================================================= */
+const MUNIAMB = { busCool: 0, hospCool: 0, tramCool: 0, lastNear: '' };
+
+function muniAmbPlayerXZ() {
+  if (typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined' && car.pos)
+    return { x: car.pos.x, z: car.pos.z };
+  if (typeof player !== 'undefined' && player.pos)
+    return { x: player.pos.x, z: player.pos.z };
+  return null;
+}
+
+/** 巴士噠殼世界座標（跟 scapePlaceMuniS6 busBays；hkGeo） */
+function muniAmbBusPoints() {
+  if (typeof hkGeo !== 'function') return [];
+  const bays = [
+    [22.2975, 114.1722],
+    [22.3048, 114.1718],
+    [22.3115, 114.1708],
+    [22.3192, 114.1695],
+    [22.3706, 114.1168]
+  ];
+  return bays.map(([la, lo]) => {
+    const g = hkGeo(la, lo);
+    return { x: g.x, z: g.z };
+  });
+}
+
+function muniAmbHospXZ() {
+  if (typeof hkGeo !== 'function') return null;
+  const g = hkGeo(22.3154, 114.1722);
+  return { x: g.x, z: g.z };
+}
+
+/** 港島北岸電車走廊：對 TRANSIT.tram 站點近距 */
+function muniAmbNearTram(x, z) {
+  if (typeof TRANSIT === 'undefined' || !TRANSIT.tram || typeof hkGeo !== 'function') return false;
+  for (const s of TRANSIT.tram) {
+    const g = hkGeo(s.lat, s.lon);
+    const dx = x - g.x, dz = z - g.z;
+    if (dx * dx + dz * dz < 55 * 55) return true;
+  }
+  return false;
+}
+
+function muniAmbSim(dt) {
+  if (typeof state === 'undefined' || !state.started) return;
+  if (typeof INT !== 'undefined' && INT.active && INT.active !== 'hospital') return;
+  if (document.body && document.body.classList.contains('cine')) return;
+  if (typeof sfx !== 'function') return;
+  MUNIAMB.busCool = Math.max(0, MUNIAMB.busCool - dt);
+  MUNIAMB.hospCool = Math.max(0, MUNIAMB.hospCool - dt);
+  MUNIAMB.tramCool = Math.max(0, MUNIAMB.tramCool - dt);
+  const p = muniAmbPlayerXZ(); if (!p) return;
+
+  // 廣華坊／醫院室內：靜院疏層
+  const inHosp = (typeof INT !== 'undefined' && INT.active === 'hospital')
+    || (typeof INT !== 'undefined' && INT.enterDoor && INT.enterDoor.kwh);
+  const hosp = muniAmbHospXZ();
+  let nearHosp = inHosp;
+  if (!nearHosp && hosp) {
+    const dx = p.x - hosp.x, dz = p.z - hosp.z;
+    nearHosp = dx * dx + dz * dz < 40 * 40;
+  }
+  if (nearHosp && MUNIAMB.hospCool <= 0 && Math.random() < dt * 0.06) {
+    MUNIAMB.hospCool = 8 + Math.random() * 12;
+    MUNIAMB.lastNear = 'hospital';
+    sfx('hospital_quiet', 0.7);
+  }
+
+  // 巴士站噠噠殼：近距戲仿短嘀（非真過路聲）
+  if (MUNIAMB.busCool <= 0) {
+    const pts = muniAmbBusPoints();
+    for (const b of pts) {
+      const dx = p.x - b.x, dz = p.z - b.z;
+      if (dx * dx + dz * dz < 18 * 18 && Math.random() < dt * 0.09) {
+        MUNIAMB.busCool = 6 + Math.random() * 10;
+        MUNIAMB.lastNear = 'bus_wait';
+        sfx('bus_wait_blip', 0.55);
+        break;
+      }
+    }
+  }
+
+  // 港島電車帶：步行近軌偶發叮（搭車時 modYn_transit 已響）
+  if (!inHosp && MUNIAMB.tramCool <= 0 && muniAmbNearTram(p.x, p.z) && Math.random() < dt * 0.035) {
+    MUNIAMB.tramCool = 14 + Math.random() * 20;
+    MUNIAMB.lastNear = 'tram';
+    sfx('tram_bell', 0.45);
+  }
+}
+
+HOOKS.sim.push(muniAmbSim);
+if (typeof window !== 'undefined' && window.NT) Object.assign(NT, { MUNIAMB, muniAmbSim });
 
 /* =========================================================================
  * 葵青口岸環境音（船笛／岸吊／水拍／護舷／吊機軌／D3 工廈）——跟 KWAI.zones kt_part_*

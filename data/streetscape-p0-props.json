@@ -1,10 +1,11 @@
 {
   "project": "neon-triangle",
-  "updated": "2026-10-10T22:56:00+08:00",
+  "updated": "2026-10-17T10:27:00+08:00",
   "owner": "關卡與地圖設計師",
   "align": [
     "docs/streetscape-authenticity-checklist.md",
-    "docs/gov-border-police-copy.md"
+    "docs/gov-border-police-copy.md",
+    "docs/gov-municipal-street-props.md"
   ],
   "rules": "當地有咩先加咩；唔塞滿；唔假 cyber；唔歐美道具；唔郁 Pages／vendor",
   "p0_zones": [
@@ -70,7 +71,8 @@
       "review": {
         "status": "pass",
         "note": "✅ P0 齊。下一輪可加巴士站亭（非阻）。階磚灰／淺紅通過。"
-      }
+      },
+      "muni_s6_note": "orange bins + look_lr + bus_wait hung via scapePlaceMuniS6; density pending 地道人"
     },
     {
       "id": "central_pier",
@@ -277,5 +279,92 @@
     "警署外藍欄（kln_central_ps 外）"
   ],
   "review_status": "authentic_check_passed_2026-10-10",
-  "reviewed_by": "香港澳門台灣地道人"
+  "reviewed_by": "香港澳門台灣地道人",
+  "muni_s6": {
+    "doc": "docs/gov-municipal-street-props.md §6",
+    "stub": "docs/streetscape-muni-s6-stub.md",
+    "ban": [
+      "photo boards",
+      "real FEHD crest",
+      "real bus co logo",
+      "real 廣華醫院 name / HA crest",
+      "HK orange bins in Mac/TW",
+      "orange bins in Kwai container aisles",
+      "dump into Kwai Chung D3"
+    ],
+    "reuse": [
+      {
+        "id": "kt_weigh_hint",
+        "copy": "地磅 · 跟指示停",
+        "where": "Kwai weighbridge (D2b hung)"
+      }
+    ],
+    "props": [
+      {
+        "type": "mark_look_lr",
+        "copy": "望左／望右 (tiny LOOK LEFT OK)",
+        "rule": "HK urban zebras + thin industrial entrance; max one group per crossing",
+        "placements": [
+          {
+            "zone": "mk_nathan",
+            "lat": 22.319,
+            "lon": 114.1695,
+            "which": "left"
+          },
+          {
+            "zone": "ymt",
+            "lat": 22.3116,
+            "lon": 114.1709,
+            "which": "right"
+          },
+          {
+            "zone": "jordan",
+            "lat": 22.3049,
+            "lon": 114.1719,
+            "which": "left",
+            "safari_skip": true
+          },
+          {
+            "zone": "kwai_ind_zebra",
+            "local": [
+              -31,
+              57.4
+            ],
+            "which": "left",
+            "note": "thin; no dual"
+          }
+        ]
+      },
+      {
+        "type": "bin_fehd_orange",
+        "copy": "废物箱（戲仿）",
+        "rule": "sidewalk every ~40–60 m; no FEHD crest; not in container aisles",
+        "zones": [
+          "mk_nathan",
+          "tsuen_wan",
+          "yuen_long"
+        ],
+        "mac": "keep trash_bin_small round",
+        "tw": "keep trash_bin_square"
+      },
+      {
+        "type": "sign_bus_wait",
+        "copy": "噠噠 countdown shell + parody route",
+        "rule": "town bus bays; no real bus co logo",
+        "align_transit": "TRANSIT.busStops + Tsuen Wan bay"
+      },
+      {
+        "type": "sign_hospital_ext",
+        "copy": "廣華坊醫院（戲仿）",
+        "lat": 22.3154,
+        "lon": 114.1722,
+        "zone": "ymt_waterloo_hospital_band",
+        "landmark_id": "kwong_wah_parody"
+      }
+    ],
+    "review": {
+      "status": "pending",
+      "by": "香港澳門台灣地道人"
+    }
+  }
 }

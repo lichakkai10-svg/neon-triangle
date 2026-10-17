@@ -1,0 +1,73 @@
+{
+  "updated": "2026-10-17T10:25:00+08:00",
+  "path": "m1c/assets/tex/street/",
+  "ban": [
+    "photo billboards",
+    "real trademarks as textures",
+    "7-Eleven/OK/Cafe de Coral logos"
+  ],
+  "props": [
+    {
+      "id": "bin_orange",
+      "file": "bin_orange_plastic.jpg",
+      "hex": "#E85A1A",
+      "geo": "Cylinder/Box ~0.5×1.0×0.5 ribbed"
+    },
+    {
+      "id": "bus_stop",
+      "file": "bus_stop_panel.jpg",
+      "hex": "#6A7480",
+      "geo": "shelter frame + frosted panel; parody route plate emissive text"
+    },
+    {
+      "id": "road_sign",
+      "file": "sign_green_directional.jpg",
+      "hex": "#1A6B3A",
+      "geo": "Box face + pole; text via canvas/emissive not JPG glyphs of real places"
+    },
+    {
+      "id": "look_left",
+      "file": "mark_look_left.jpg",
+      "geo": "Plane on asphalt at crossing edge"
+    },
+    {
+      "id": "look_right",
+      "file": "mark_look_right.jpg",
+      "geo": "Plane on asphalt"
+    },
+    {
+      "id": "arcade",
+      "file": "arcade_tonglau_pillar.jpg",
+      "hex_pillar": "#2A9A8A",
+      "geo": "騎樓：柱＋梁 underside; upper floors use facade_tonglau_ac_grid"
+    },
+    {
+      "id": "conveni",
+      "file": "convenience_fascia_parody.jpg",
+      "name_parody": "便利站 CircleK-style red/white bands NO logo",
+      "geo": "G/F shop Box + fascia strip"
+    },
+    {
+      "id": "weigh_pad",
+      "file": "weighbridge_hazard_metal.jpg",
+      "hex": "#C9A000",
+      "geo": "flat Box lane pad + yellow border; follow ref 09 proportions"
+    },
+    {
+      "id": "gate_arm",
+      "file": "gate_barrier_blue_white.jpg",
+      "note": "ref gate arm is red/white — also use color 0xC01010/0xF0F0F0 Box stripes; blue/white for secondary lane"
+    },
+    {
+      "id": "hazard_road",
+      "file": "mark_hazard_yellow_black.jpg",
+      "geo": "curb / pillar diagonal"
+    }
+  ],
+  "pier_gate_from_ref09": {
+    "portal": "concrete overhead beam ~lane width×3; parody LED 'LANE n 地磅' red emissive dots not photo",
+    "boom": "red-white striped arm + yellow base",
+    "booth": "grey glass box under portal",
+    "sign": "parody 注意板 red/white — fictional text only"
+  }
+}
