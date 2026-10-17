@@ -274,7 +274,7 @@ body.aim #cross{transform:scale(.45)}
     if(b && cur < n) b.style.width=n+'%';
     if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
-  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core25。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core26。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
   var tipEl=document.getElementById("loadTips"); var ti=0;
   if(tipEl) tipEl.textContent=tips[0];
   var tipTimer=setInterval(function(){
@@ -284,7 +284,7 @@ body.aim #cross{transform:scale(.45)}
   setTimeout(function(){
     if(done) return;
     var t=document.getElementById('loadTxt');
-    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core25';
+    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core26';
   },45000);
 })();
 </script>
@@ -21791,6 +21791,380 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
 
   Object.assign(window.NT = window.NT || {}, { CW, cwBuild });
 })();
+
+
+/* =========================================================================
+ * core26 · 葵青 densify 可駛彎道＋樓腳 Extrude
+ *  · data/osm-kt-drive-extrude-core25.json（schema＝YTM／CW）
+ *  · 可駛：drive_trunk（path÷chord≤4）— 葵涌道／貨櫃碼頭路／葵富路／興芳路
+ *  · 樓腳：buildings[].footprint_ring → Shape 牆身＋頂；高度 levels*3.1／height_m／csdi
+ *  · tex/facade/kc/ RepeatWrapping；district facade_d_kc
+ *  · elbow_trunk 仍優先 pier 肘形（modYs／skeleton）；本檔只加內陸 densify，唔取代肘
+ *  · 保留 ytmBuild＋cwBuild；禁直軸／相板／Google mesh
+ * ========================================================================= */
+(function () {
+  const KT = {
+    ready: false,
+    group: null,
+    data: null,
+    tex: {},
+    mats: {}
+  };
+
+  async function ktFetch(paths) {
+    for (const u of paths) {
+      try {
+        const r = await fetch(u, { cache: 'no-store' });
+        if (r && r.ok) return await r.json();
+      } catch (e) { /* */ }
+    }
+    return null;
+  }
+
+  async function ktLoadTex() {
+    if (typeof loadTex !== 'function') return;
+    const files = {
+      industrial: 'tex/facade/kc/kc_industrial_concrete.jpg',
+      corrugated: 'tex/facade/kc/kc_corrugated_warehouse.jpg',
+      container: 'tex/facade/kc/kc_container_accent.jpg',
+      housing: 'tex/facade/kc/kc_publichousing_green.jpg',
+      hazard: 'tex/facade/kc/kc_weigh_hazard_curb.jpg',
+      sidewalk: 'tex/facade/kc/kc_sidewalk_stained.jpg',
+      district: 'tex/facade/district/facade_d_kc.jpg'
+    };
+    for (const [k, f] of Object.entries(files)) {
+      try {
+        const t = await loadTex(f, true, true);
+        if (t) {
+          t.wrapS = t.wrapT = THREE.RepeatWrapping;
+          t.repeat.set(k === 'sidewalk' || k === 'hazard' ? 4 : 2, k === 'sidewalk' || k === 'hazard' ? 4 : 3);
+          KT.tex[k] = t;
+        }
+      } catch (e) { /* */ }
+    }
+    const mk = (map, rough, metal, color) => new THREE.MeshStandardMaterial({
+      map: map || null,
+      color: map ? 0xffffff : (color || 0x6a7078),
+      roughness: rough == null ? 0.88 : rough,
+      metalness: metal == null ? 0.04 : metal
+    });
+    KT.mats.industrial = mk(KT.tex.industrial || KT.tex.district, 0.9, 0.04);
+    KT.mats.corrugated = mk(KT.tex.corrugated || KT.tex.industrial, 0.78, 0.18);
+    KT.mats.container = mk(KT.tex.container, 0.55, 0.22);
+    KT.mats.housing = mk(KT.tex.housing || KT.tex.district, 0.88, 0.03);
+    KT.mats.road = new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.5, metalness: 0.08 });
+    KT.mats.sidewalk = mk(KT.tex.sidewalk, 0.92, 0.02, 0x7a7e72);
+    KT.mats.hazard = mk(KT.tex.hazard, 0.7, 0.06, 0xc9a000);
+    KT.mats.yel = new THREE.MeshStandardMaterial({ color: 0xc9a000, emissive: 0x332200, emissiveIntensity: 0.35 });
+  }
+
+  function ktPickMat(b) {
+    const kind = ((b.building || b.block_type || '') + ' ' + (b.name || b.name_zh || '')).toLowerCase();
+    if (/container|貨櫃|yard|depot|logistics|倉庫|warehouse|industrial|廠/.test(kind)) return KT.mats.corrugated || KT.mats.industrial;
+    if (/corrugat|鐵皮|tin/.test(kind)) return KT.mats.corrugated || KT.mats.industrial;
+    if (/accent|shipping|crane/.test(kind)) return KT.mats.container || KT.mats.industrial;
+    if (/apartments|residential|house|公屋|housing|estate/.test(kind)) return KT.mats.housing || KT.mats.industrial;
+    if (/yes|industrial|factory|manufacture/.test(kind)) return KT.mats.industrial;
+    return KT.mats.industrial || KT.mats.housing;
+  }
+
+  function ktHeight(b, csdiNear) {
+    if (b.levels && b.levels > 0) return Math.min(180, b.levels * 3.1);
+    if (b.height_m && b.height_m > 2) return Math.min(180, b.height_m);
+    if (b.storeys && b.storeys > 0) return Math.min(180, b.storeys * 3.1);
+    if (b.top_height_m != null && b.base_height_m != null) {
+      const h = b.top_height_m - b.base_height_m;
+      if (h > 2) return Math.min(180, h);
+    }
+    if (csdiNear) {
+      if (csdiNear.height_m > 2) return Math.min(180, csdiNear.height_m);
+      if (csdiNear.storeys > 0) return Math.min(180, csdiNear.storeys * 3.1);
+      if (csdiNear.top_height_m != null && csdiNear.base_height_m != null) {
+        const h = csdiNear.top_height_m - csdiNear.base_height_m;
+        if (h > 2) return Math.min(180, h);
+      }
+    }
+    const kind = ((b.building || b.block_type || '') + ' ' + (b.name || b.name_zh || '')).toLowerCase();
+    if (/tower|office|hotel/.test(kind)) return 72;
+    if (/apartments|residential|公屋|housing/.test(kind)) return 42;
+    if (/industrial|warehouse|factory|貨櫃|廠/.test(kind)) return 18;
+    if (/retail|commercial|shop/.test(kind)) return 14;
+    return 22; // 葵青工廈常見預設
+  }
+
+  function ktExtrudeOne(ring, h, mat, parent, name) {
+    if (!ring || ring.length < 3 || h < 2) return false;
+    let pts = ring.map((p) => new THREE.Vector2(p.dx, p.dz));
+    if (pts.length > 2) {
+      const a = pts[0], b = pts[pts.length - 1];
+      if (Math.hypot(a.x - b.x, a.y - b.y) < 0.05) pts = pts.slice(0, -1);
+    }
+    if (pts.length < 3) return false;
+    let cx = 0, cz = 0;
+    for (const p of pts) { cx += p.x; cz += p.y; }
+    cx /= pts.length; cz /= pts.length;
+    const ins = 0.06;
+    pts = pts.map((p) => {
+      const dx = cx - p.x, dz = cz - p.y, L = Math.hypot(dx, dz) || 1;
+      return new THREE.Vector2(p.x + dx / L * Math.min(ins, L * 0.15), p.y + dz / L * Math.min(ins, L * 0.15));
+    });
+    if (THREE.ShapeUtils.isClockWise(pts)) pts.reverse();
+
+    const pos = [], uv = [], idx = [];
+    const n = pts.length;
+    let acc = 0;
+    for (let k = 0; k < n; k++) {
+      const p0 = pts[k], p1 = pts[(k + 1) % n];
+      const L = p0.distanceTo(p1);
+      if (L < 0.3) continue;
+      const vi = pos.length / 3;
+      const u0 = acc / 4.2, u1 = (acc + L) / 4.2, v1 = h / 3.2;
+      acc += L;
+      pos.push(p0.x, 0, p0.y, p1.x, 0, p1.y, p1.x, h, p1.y, p0.x, h, p0.y);
+      uv.push(u0, 0, u1, 0, u1, v1, u0, v1);
+      idx.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3);
+    }
+    if (pos.length < 12) return false;
+    try {
+      const tris = THREE.ShapeUtils.triangulateShape(pts, []);
+      const ri = pos.length / 3;
+      for (const p of pts) { pos.push(p.x, h, p.y); uv.push(p.x / 40, p.y / 40); }
+      for (const t of tris) idx.push(ri + t[0], ri + t[1], ri + t[2]);
+    } catch (e) { /* skip roof */ }
+
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    const mesh = new THREE.Mesh(g, mat);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.userData.noMerge = true;
+    mesh.userData.kt = true;
+    mesh.name = name || 'kt_extrude';
+    parent.add(mesh);
+    if (typeof addCollider === 'function') {
+      let minx = Infinity, maxx = -Infinity, minz = Infinity, maxz = -Infinity;
+      for (const p of pts) {
+        if (p.x < minx) minx = p.x; if (p.x > maxx) maxx = p.x;
+        if (p.y < minz) minz = p.y; if (p.y > maxz) maxz = p.y;
+      }
+      const hx = (maxx - minx) * 0.5, hz = (maxz - minz) * 0.5;
+      if (hx > 1 && hz > 1) addCollider((minx + maxx) * 0.5, (minz + maxz) * 0.5, hx, hz, Math.min(h, 40));
+    }
+    return true;
+  }
+
+  function ktRoadRibbon(parent, pts, width, mat) {
+    if (!pts || pts.length < 2) return 0;
+    let n = 0;
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const a = pts[i], b = pts[i + 1];
+      const len = Math.hypot(b.dx - a.dx, b.dz - a.dz);
+      if (len < 4) continue;
+      const yaw = Math.atan2(b.dx - a.dx, b.dz - a.dz);
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, 0.08, len), mat);
+      mesh.position.set((a.dx + b.dx) * 0.5, 0.03, (a.dz + b.dz) * 0.5);
+      mesh.rotation.y = yaw;
+      mesh.receiveShadow = true;
+      mesh.userData.noMerge = true;
+      mesh.userData.kt = true;
+      mesh.name = 'kt_drive_trunk';
+      parent.add(mesh);
+      if (n % 2 === 0 && KT.mats.yel) {
+        for (const side of [-width * 0.42, width * 0.42]) {
+          const edge = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.03, Math.min(len, 48)), KT.mats.yel);
+          edge.position.set(mesh.position.x + Math.cos(yaw) * side, 0.07, mesh.position.z - Math.sin(yaw) * side);
+          edge.rotation.y = yaw;
+          parent.add(edge);
+        }
+      }
+      if (KT.mats.sidewalk && n % 3 === 0) {
+        for (const side of [-width * 0.72, width * 0.72]) {
+          const sw = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.05, Math.min(len, 36)), KT.mats.sidewalk);
+          sw.position.set(mesh.position.x + Math.cos(yaw) * side, 0.04, mesh.position.z - Math.sin(yaw) * side);
+          sw.rotation.y = yaw;
+          sw.receiveShadow = true;
+          sw.userData.kt = true;
+          parent.add(sw);
+        }
+      }
+      n++;
+    }
+    return n;
+  }
+
+  function ktNearestCsdi(cx, cz, list) {
+    let best = null, bd = 140;
+    for (const c of list) {
+      const p = c.centroid; if (!p) continue;
+      const d = Math.hypot(p.dx - cx, p.dz - cz);
+      if (d < bd) { bd = d; best = c; }
+    }
+    return best;
+  }
+
+  async function ktBuild() {
+    if (KT.ready || typeof scene === 'undefined') return;
+    const data = await ktFetch([
+      'data/osm-kt-drive-extrude-core25.json',
+      '../data/osm-kt-drive-extrude-core25.json',
+      './assets/data/osm-kt-drive-extrude-core25.json'
+    ]);
+    if (!data) {
+      console.warn('[kt] osm-kt-drive-extrude-core25.json 未到手');
+      return;
+    }
+    KT.data = data;
+    await ktLoadTex();
+
+    const root = new THREE.Group();
+    root.name = 'kt-core26';
+    scene.add(root);
+    KT.group = root;
+
+    const lite = typeof NT !== 'undefined' && NT.safariLite;
+    const gRoad = new THREE.Group();
+    gRoad.name = 'kt_drive_trunks';
+    gRoad.userData.noMerge = true;
+    let roadSegs = 0;
+    const roadnetPts = [];
+    // densify inland trunks only — elbow_trunk pier geometry stays on skeleton/modYs
+    for (const trunk of (data.drive_trunk || [])) {
+      const ratio = trunk.path_chord_ratio || 1;
+      if (ratio > 4) continue;
+      const pts = trunk.points || [];
+      if (pts.length < 2) continue;
+      const nm = (trunk.name_zh || '') + (trunk.id || '');
+      // skip anything that looks like the pier elbow label — keep elbow_trunk authoritative
+      if (/肘|elbow_trunk|pier.?elbow/i.test(nm)) continue;
+      const w = /葵涌道|貨櫃碼頭路/.test(nm) ? 14 : 11;
+      roadSegs += ktRoadRibbon(gRoad, pts, w, KT.mats.road);
+      for (const p of pts) roadnetPts.push({ x: p.dx, z: p.dz });
+    }
+    root.add(gRoad);
+
+    try {
+      if (typeof ROADNET !== 'undefined' && Array.isArray(ROADNET) && roadnetPts.length > 1) {
+        const base = ROADNET.length;
+        const step = Math.max(1, Math.floor(roadnetPts.length / (lite ? 40 : 120)));
+        const sampled = [];
+        for (let i = 0; i < roadnetPts.length; i += step) sampled.push(roadnetPts[i]);
+        if (sampled[sampled.length - 1] !== roadnetPts[roadnetPts.length - 1]) sampled.push(roadnetPts[roadnetPts.length - 1]);
+        for (const p of sampled) ROADNET.push({ x: p.x, z: p.z, nb: [] });
+        const link = (a, b) => {
+          if (a < 0 || b < 0 || a >= ROADNET.length || b >= ROADNET.length) return;
+          if (!ROADNET[a].nb.includes(b)) ROADNET[a].nb.push(b);
+          if (!ROADNET[b].nb.includes(a)) ROADNET[b].nb.push(a);
+        };
+        for (let i = 0; i + 1 < sampled.length; i++) link(base + i, base + i + 1);
+      }
+    } catch (e) { console.warn('[kt-roadnet]', e && e.message); }
+
+    const gBld = new THREE.Group();
+    gBld.name = 'kt_extrude_buildings';
+    gBld.userData.noMerge = true;
+    const csdi = data.csdi_buildings || [];
+    const blds = data.buildings || [];
+    const cap = lite ? 220 : 520;
+    let nBld = 0;
+    const ranked = blds.slice().sort((a, b) => {
+      const ha = a.height_m || (a.levels || 0) * 3.1;
+      const hb = b.height_m || (b.levels || 0) * 3.1;
+      return hb - ha;
+    });
+    for (const b of ranked) {
+      if (nBld >= cap) break;
+      const ring = b.footprint_ring;
+      if (!ring || ring.length < 3) continue;
+      const c = b.centroid || {};
+      const near = ktNearestCsdi(c.dx || ring[0].dx, c.dz || ring[0].dz, csdi);
+      const h = ktHeight(b, near);
+      const mat = ktPickMat(b);
+      if (ktExtrudeOne(ring, h, mat, gBld, 'kt_bld_' + (b.osm_id || nBld))) nBld++;
+    }
+    const csdiCap = lite ? 80 : 180;
+    let nCsdi = 0;
+    for (const c of csdi) {
+      if (nCsdi >= csdiCap || nBld + nCsdi >= cap + 80) break;
+      const ring = c.footprint_ring;
+      if (!ring || ring.length < 3) continue;
+      const cen = c.centroid; if (!cen) continue;
+      let nearOsm = false;
+      for (const b of ranked.slice(0, Math.min(nBld, 200))) {
+        const bc = b.centroid; if (!bc) continue;
+        if (Math.hypot(bc.dx - cen.dx, bc.dz - cen.dz) < 25) { nearOsm = true; break; }
+      }
+      if (nearOsm) continue;
+      const h = ktHeight(c, null);
+      const mat = /container|貨櫃|warehouse|industrial|廠/i.test((c.block_type || '') + (c.name_zh || ''))
+        ? (KT.mats.corrugated || KT.mats.industrial)
+        : (KT.mats.industrial || KT.mats.housing);
+      if (ktExtrudeOne(ring, h, mat, gBld, 'kt_csdi_' + (c.csdi_objectid || nCsdi))) nCsdi++;
+    }
+    root.add(gBld);
+
+    if (typeof HOOKS !== 'undefined') {
+      HOOKS.minimap = HOOKS.minimap || [];
+      HOOKS.minimap.push(function ktMinimap(c) {
+        const p = (typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined')
+          ? car.pos : (typeof player !== 'undefined' ? player.pos : null);
+        if (!p || !KT.data) return;
+        c.strokeStyle = '#9bb070';
+        c.lineWidth = 4;
+        for (const trunk of (KT.data.drive_trunk || [])) {
+          if ((trunk.path_chord_ratio || 1) > 4) continue;
+          const pts = trunk.points || [];
+          if (pts.length < 2) continue;
+          c.beginPath();
+          let started = false;
+          for (const q of pts) {
+            if (Math.abs(q.dx - p.x) > 700 || Math.abs(q.dz - p.z) > 700) { started = false; continue; }
+            if (!started) { c.moveTo(q.dx, q.dz); started = true; }
+            else c.lineTo(q.dx, q.dz);
+          }
+          if (started) c.stroke();
+        }
+      });
+      HOOKS.frame = HOOKS.frame || [];
+      HOOKS.frame.push(function ktStream() {
+        if (!KT.group) return;
+        const p = (typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined')
+          ? car.pos : (typeof player !== 'undefined' ? player.pos : null);
+        if (!p) return;
+        // 葵青中心約葵涌道／興芳（densify pack centroid）
+        const cx = -990, cz = -250;
+        const d = Math.hypot(p.x - cx, p.z - cz);
+        const v = d < 4500;
+        if (KT.group.visible !== v) KT.group.visible = v;
+      });
+    }
+
+    if (typeof ZONES !== 'undefined') {
+      ZONES['kt:core26'] = ['葵青區', '進入：葵青 densify'];
+    }
+
+    KT.ready = true;
+    console.info('[kt] core26 drive+extrude densify', {
+      roadSegs,
+      buildings: nBld,
+      csdi: nCsdi,
+      trunks: (data.drive_trunk || []).length,
+      tex: Object.keys(KT.tex),
+      elbow_untouched: true
+    });
+  }
+
+  const t0 = setInterval(() => {
+    if (typeof scene === 'undefined' || typeof THREE === 'undefined') return;
+    clearInterval(t0);
+    ktBuild().catch((e) => console.warn('[kt]', e && e.message));
+  }, 510);
+
+  Object.assign(window.NT = window.NT || {}, { KT, ktBuild });
+})();
+
 
 
 /* =========================================================================

@@ -1,0 +1,36 @@
+{
+  "updated": "2026-10-17T20:40:00+08:00",
+  "for": "core26",
+  "ban": [
+    "photo plates",
+    "Google mesh"
+  ],
+  "central_west": {
+    "path": "m1c/assets/tex/facade/cw/",
+    "district_facade": "facade/district/facade_d_cw.jpg",
+    "modules": [
+      "cw_sheungwan_tonglau.jpg",
+      "cw_central_glass.jpg",
+      "cw_midlevels_balcony.jpg",
+      "cw_desvoeux_granite.jpg",
+      "cw_hollywood_brick.jpg",
+      "cw_sidewalk_granite.jpg"
+    ],
+    "drive_json": "osm-cw-drive-extrude-core25.json"
+  },
+  "kwai_tsing": {
+    "path": "m1c/assets/tex/facade/kc/",
+    "district_facade": "facade/district/facade_d_kc.jpg",
+    "modules": [
+      "kc_industrial_concrete.jpg",
+      "kc_corrugated_warehouse.jpg",
+      "kc_container_accent.jpg",
+      "kc_publichousing_green.jpg",
+      "kc_weigh_hazard_curb.jpg",
+      "kc_sidewalk_stained.jpg"
+    ],
+    "drive_json": "osm-kt-drive-extrude-core25.json",
+    "also": "elbow_trunk + Kenney industrial"
+  },
+  "note_zh": "core26 掛葵青 densify；elbow_trunk 仍優先 pier；CW/YTM 保留"
+}
