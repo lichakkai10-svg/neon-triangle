@@ -33,8 +33,3 @@
 - 已刪 Pages 資產：pier overview／props、kwai-p1-* facade／station／housing／street、public-housing-day、harbour／star-ferry、ifc-lobby
 - 閘口 gov §5 文案／限高牌保留
 - 玩：`?v=core14`
-
-## core15（2026-10-11）
-
-- 工廈 `kwIndBlock` 優先載 Kenney City Kit Industrial GLB（CC0），Safari／低記憶體只載 8 棟＋煙囪／貨櫃點綴；缺檔回退程序擠出
-- 玩：`?v=core15`
