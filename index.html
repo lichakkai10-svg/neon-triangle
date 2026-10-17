@@ -274,7 +274,7 @@ body.aim #cross{transform:scale(.45)}
     if(b && cur < n) b.style.width=n+'%';
     if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
-  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","進度會自動保存——下次開遊戲揀「繼續」就得。","載入唔郁？拉下刷新，或加 ?v=core23。","今日目標：落難香江 · 信旺安全屋。"];
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","進度會自動保存——下次開遊戲揀「繼續」就得。","載入唔郁？拉下刷新，或加 ?v=core23b。","今日目標：落難香江 · 信旺安全屋。"];
   var tipEl=document.getElementById("loadTips"); var ti=0;
   if(tipEl) tipEl.textContent=tips[0];
   var tipTimer=setInterval(function(){
@@ -284,7 +284,7 @@ body.aim #cross{transform:scale(.45)}
   setTimeout(function(){
     if(done) return;
     var t=document.getElementById('loadTxt');
-    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core23';
+    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core23b';
   },45000);
 })();
 </script>
@@ -19073,21 +19073,35 @@ function kwPaintPolyline(parent, pts, opts) {
   return n;
 }
 
-/** core23：葵涌肘形 arterials（OSM 折線）——唔用直線高速 */
+/** core23b：葵涌肘形——優先 elbow_trunk（簡化 12 點 ratio≈1.4），唔用折返 raw arterials */
 function kwApplyElbowArterialsFromSkel() {
   if (KWAI.elbowArts || typeof scene === 'undefined') return;
   const sk = KWAI.hk18Skel;
-  const arts = sk && sk.kwai_chung_elbow && sk.kwai_chung_elbow.arterials;
-  if (!arts || !arts.length) return;
+  const elbow = sk && sk.kwai_chung_elbow;
+  if (!elbow) return;
+  let arts = [];
+  let src = 'none';
+  if (elbow.elbow_trunk && Array.isArray(elbow.elbow_trunk.points) && elbow.elbow_trunk.points.length >= 2) {
+    arts = [elbow.elbow_trunk];
+    src = 'elbow_trunk';
+  } else if (Array.isArray(elbow.arterials_recommended) && elbow.arterials_recommended.length && Array.isArray(elbow.arterials)) {
+    const want = new Set(elbow.arterials_recommended);
+    arts = elbow.arterials.filter((a) => want.has(a.name_zh) || want.has(a.id));
+    src = 'arterials_recommended';
+  } else {
+    arts = elbow.arterials || [];
+    src = 'arterials';
+  }
+  if (!arts.length) return;
   const root = KWAI.group || new THREE.Group();
   if (!KWAI.group) { root.name = 'kwaichung-dock'; KWAI.group = root; scene.add(root); }
   const g = new THREE.Group(); g.name = 'kt_elbow_arterials_osm'; g.userData.kwaichung = true;
   const asp = kwAspMat();
   const lite = typeof NT !== 'undefined' && NT.safariLite;
   let total = 0;
-  // 優先：貨櫃碼頭路／葵涌道／葵福／興芳系
   const rank = (a) => {
     const n = a.name_zh || a.id || '';
+    if (/肘形|elbow_trunk/.test(n) || a.id === 'arterial_elbow_trunk_drive') return -1;
     if (/貨櫃碼頭/.test(n)) return 0;
     if (/葵涌道/.test(n)) return 1;
     if (/葵福|葵富|葵泰|興芳|荔景/.test(n)) return 2;
@@ -19096,15 +19110,16 @@ function kwApplyElbowArterialsFromSkel() {
   const ordered = arts.slice().sort((a, b) => rank(a) - rank(b));
   for (const road of ordered) {
     if (total >= (lite ? 70 : 160)) break;
-    const pts = (road.points || []).map((p) => ({ x: p.dx, z: p.dz }));
+    const ratio = road.path_chord_ratio || 1;
+    let pts = (road.points || []).map((p) => ({ x: p.dx, z: p.dz }));
+    if (src !== 'elbow_trunk' && ratio > 5) pts = kwSimplifyPts(pts, 22);
     total += kwPaintPolyline(g, pts, {
-      mat: asp, width: /貨櫃碼頭|葵涌道/.test(road.name_zh || '') ? 12 : 9,
-      maxSeg: 44, wiggle: true, cap: lite ? 18 : 36, name: 'kt_art_' + (road.id || 'r')
+      mat: asp, width: /肘形|貨櫃碼頭|葵涌道/.test(road.name_zh || '') || road.id === 'arterial_elbow_trunk_drive' ? 12 : 9,
+      maxSeg: 44, wiggle: src !== 'elbow_trunk', cap: lite ? 18 : 36, name: 'kt_art_' + (road.id || 'r')
     });
   }
   root.add(g);
   KWAI.elbowArts = true;
-  // 禁直軸：再蓋／藏舊中軸高速視覺
   try {
     scene.traverse((o) => {
       if (!o.isMesh || o.userData.kwaichung) return;
@@ -19115,7 +19130,7 @@ function kwApplyElbowArterialsFromSkel() {
       }
     });
   } catch (e) { /* */ }
-  console.info('[kwai-hk18] elbow arterials painted', total);
+  console.info('[kwai-hk18] elbow painted', { src, total, ratio: arts[0] && arts[0].path_chord_ratio });
 }
 
 /** core23：十八區骨架——區心柱＋可駛區間 spine（世界可見，唔只小地圖）*/
@@ -19154,7 +19169,8 @@ function kwBuildHk18Skeleton() {
       }
       if (typeof makeNeonSign === 'function') {
         try {
-          const sg = makeNeonSign((d.name_zh || d.id) + '（骨架）', '#f0c419', false);
+          const _short = ({central_west:'中西',wan_chai:'灣仔',eastern:'東區',southern:'南區',yau_tsim_mong:'油尖旺',sham_shui_po:'深水埗',kowloon_city:'九龍城',wong_tai_sin:'黃大仙',kwun_tong:'觀塘',kwai_tsing:'葵青',tsuen_wan:'荃灣',tuen_mun:'屯門',yuen_long:'元朗',north:'北區',tai_po:'大埔',sha_tin:'沙田',sai_kung:'西貢',islands:'離島'})[d.id] || d.name_zh || d.id;
+          const sg = makeNeonSign(_short, '#f0c419', false);
           sg.scale.setScalar(1.1); sg.position.set(x, h + 4, z); g.add(sg);
         } catch (e) { /* */ }
       }
@@ -19162,15 +19178,15 @@ function kwBuildHk18Skeleton() {
   } else {
     // fallback lat/lon
     const fb = [
-      ['cw', '中西區', 22.2810, 114.1550], ['wc', '灣仔', 22.2770, 114.1730],
-      ['east', '東區', 22.2840, 114.2240], ['south', '南區', 22.2470, 114.1600],
-      ['ytm', '油尖旺', 22.3080, 114.1720], ['ssp', '深水埗', 22.3310, 114.1630],
-      ['kc', '九龍城', 22.3280, 114.1920], ['wts', '黃大仙', 22.3430, 114.1950],
-      ['kt', '觀塘', 22.3120, 114.2250], ['kwt', '葵青', 22.3570, 114.1280],
-      ['tw', '荃灣', 22.3710, 114.1140], ['tm', '屯門', 22.3910, 113.9760],
-      ['yl', '元朗', 22.4450, 114.0270], ['north', '北區', 22.4950, 114.1380],
-      ['tp', '大埔', 22.4500, 114.1690], ['st', '沙田', 22.3820, 114.1880],
-      ['sk', '西貢', 22.3820, 114.2740], ['islands', '離島', 22.2860, 113.9430]
+      ['central_west', '中西區', 22.2810, 114.1550], ['wan_chai', '灣仔', 22.2770, 114.1730],
+      ['eastern', '東區', 22.2840, 114.2240], ['southern', '南區', 22.2470, 114.1600],
+      ['yau_tsim_mong', '油尖旺', 22.3080, 114.1720], ['sham_shui_po', '深水埗', 22.3310, 114.1630],
+      ['kowloon_city', '九龍城', 22.3280, 114.1920], ['wong_tai_sin', '黃大仙', 22.3430, 114.1950],
+      ['kwun_tong', '觀塘', 22.3120, 114.2250], ['kwai_tsing', '葵青', 22.3570, 114.1280],
+      ['tsuen_wan', '荃灣', 22.3710, 114.1140], ['tuen_mun', '屯門', 22.3910, 113.9760],
+      ['yuen_long', '元朗', 22.4450, 114.0270], ['north', '北區', 22.4950, 114.1380],
+      ['tai_po', '大埔', 22.4500, 114.1690], ['sha_tin', '沙田', 22.3820, 114.1880],
+      ['sai_kung', '西貢', 22.3820, 114.2740], ['islands', '離島', 22.2860, 113.9430]
     ];
     for (let i = 0; i < fb.length; i++) {
       const [id, name, lat, lon] = fb[i];
@@ -21003,6 +21019,55 @@ Promise.race([
 });
 
 Object.assign(window, { loadVehicle, load_vehicle, loadRealisticCar, loadRealisticBuildings, loadCharacter });
+
+
+/* core23b：十八區 zone 聲床——長 id（central_west 等）；葵青交 portamb */
+const HK18AMB = { cool: 0, lastId: '', lastCue: '' };
+function hk18AmbPlayerXZ() {
+  if (typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined' && car.pos)
+    return { x: car.pos.x, z: car.pos.z };
+  if (typeof player !== 'undefined' && player.pos) return { x: player.pos.x, z: player.pos.z };
+  return null;
+}
+function hk18AmbNearest(p) {
+  const D = (KWAI && KWAI.hk18Skel && KWAI.hk18Skel.districts) || [];
+  let best = null, bd = 420;
+  for (const def of D) {
+    if (def.dx == null) continue;
+    const d = Math.hypot(p.x - def.dx, p.z - def.dz);
+    if (d < bd) { bd = d; best = def; }
+  }
+  return (best && bd < 360) ? best : null;
+}
+function hk18AmbSim(dt) {
+  if (typeof state === 'undefined' || !state.started) return;
+  if (typeof INT !== 'undefined' && INT.active) return;
+  if (document.body && document.body.classList.contains('cine')) return;
+  if (typeof sfx !== 'function') return;
+  HK18AMB.cool = Math.max(0, HK18AMB.cool - dt);
+  const p = hk18AmbPlayerXZ(); if (!p) return;
+  const def = hk18AmbNearest(p); if (!def) return;
+  HK18AMB.lastId = def.id;
+  if (def.id === 'kwai_tsing') return;
+  if (HK18AMB.cool > 0) return;
+  if (Math.random() > dt * 0.04) return;
+  let cue = null, vol = 0.55;
+  switch (def.id) {
+    case 'southern': cue = Math.random() < 0.55 ? 'port_water' : 'ferry_horn'; vol = cue === 'ferry_horn' ? 0.35 : 0.45; break;
+    case 'islands': cue = 'district_breeze'; vol = 0.6; break;
+    case 'central_west': case 'wan_chai': cue = 'ferry_horn'; vol = 0.32; break;
+    case 'kowloon_city': cue = 'hospital_quiet'; vol = 0.5; break;
+    case 'yuen_long': cue = 'district_breeze'; vol = 0.4; break;
+    case 'yau_tsim_mong': return;
+    default: return;
+  }
+  if (!cue) return;
+  HK18AMB.cool = 18 + Math.random() * 28;
+  HK18AMB.lastCue = cue;
+  try { sfx(cue, vol); } catch (e) { /* */ }
+}
+if (typeof HOOKS !== 'undefined' && HOOKS.sim) HOOKS.sim.push(hk18AmbSim);
+if (typeof window !== 'undefined' && window.NT) Object.assign(NT, { HK18AMB, hk18AmbSim });
 
 </script>
 </body>
