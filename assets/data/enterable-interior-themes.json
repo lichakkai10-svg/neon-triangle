@@ -1,0 +1,588 @@
+{
+  "project": "neon-triangle",
+  "updated": "2026-10-17T10:13:30+08:00",
+  "path_tiles": "m1c/assets/tex/interior/",
+  "available_tiles": [
+    "floor_industrial_concrete.jpg",
+    "floor_industrial_loading_bay.jpg",
+    "floor_linoleum_hospital.jpg",
+    "floor_mahjong_wood.jpg",
+    "floor_station_terrazzo.jpg",
+    "floor_station_vinyl.jpg",
+    "road_wet_asphalt.jpg",
+    "wall_chachanteng_green_mosaic.jpg",
+    "wall_industrial_concrete.jpg",
+    "wall_public_housing_beige.jpg",
+    "wall_station_hall.jpg"
+  ],
+  "note": "可進入室內主題對照；掛 RepeatWrapping；唔用 documentary。站廳：wall_station_hall＋floor_station_terrazzo／floor_station_vinyl（已分開）；工廈：floor_industrial_concrete。",
+  "lm_interior_map": [
+    {
+      "id": "apliu",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "goldcomp",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "mk_mahjong",
+      "interior_kind": "shop_cct",
+      "wall_tex": "wall_chachanteng_green",
+      "floor_tex": "floor_wood",
+      "enterable": true,
+      "wall_file": "wall_chachanteng_green_mosaic.jpg",
+      "floor_file": "floor_mahjong_wood.jpg"
+    },
+    {
+      "id": "mk_pawn",
+      "interior_kind": "shop_cct",
+      "wall_tex": "wall_chachanteng_green",
+      "floor_tex": "floor_wood",
+      "enterable": true,
+      "wall_file": "wall_chachanteng_green_mosaic.jpg",
+      "floor_file": "floor_mahjong_wood.jpg"
+    },
+    {
+      "id": "sino_centre",
+      "interior_kind": "office_lobby",
+      "wall_tex": "wall_station_hall",
+      "floor_tex": "floor_station_vinyl",
+      "enterable": true,
+      "wall_file": "wall_station_hall.jpg",
+      "floor_file": "floor_station_terrazzo.jpg"
+    },
+    {
+      "id": "temple_pawn",
+      "interior_kind": "shop_cct",
+      "wall_tex": "wall_chachanteng_green",
+      "floor_tex": "floor_wood",
+      "enterable": true,
+      "wall_file": "wall_chachanteng_green_mosaic.jpg",
+      "floor_file": "floor_mahjong_wood.jpg"
+    },
+    {
+      "id": "lockhart",
+      "interior_kind": "shop_cct",
+      "wall_tex": "wall_chachanteng_green",
+      "floor_tex": "floor_wood",
+      "enterable": true,
+      "wall_file": "wall_chachanteng_green_mosaic.jpg",
+      "floor_file": "floor_mahjong_wood.jpg"
+    },
+    {
+      "id": "cwb_store",
+      "interior_kind": "shop_cct",
+      "wall_tex": "wall_chachanteng_green",
+      "floor_tex": "floor_wood",
+      "enterable": true,
+      "wall_file": "wall_chachanteng_green_mosaic.jpg",
+      "floor_file": "floor_mahjong_wood.jpg"
+    },
+    {
+      "id": "cwb_cct",
+      "interior_kind": "shop_cct",
+      "wall_tex": "wall_chachanteng_green",
+      "floor_tex": "floor_wood",
+      "enterable": true,
+      "wall_file": "wall_chachanteng_green_mosaic.jpg",
+      "floor_file": "floor_mahjong_wood.jpg"
+    },
+    {
+      "id": "tst_mtr",
+      "interior_kind": "station_hall",
+      "wall_tex": "wall_station_hall",
+      "floor_tex": "floor_station_vinyl",
+      "enterable": true,
+      "wall_file": "wall_station_hall.jpg",
+      "floor_file": "floor_station_terrazzo.jpg"
+    },
+    {
+      "id": "mk_mtr",
+      "interior_kind": "station_hall",
+      "wall_tex": "wall_station_hall",
+      "floor_tex": "floor_station_vinyl",
+      "enterable": true,
+      "wall_file": "wall_station_hall.jpg",
+      "floor_file": "floor_station_terrazzo.jpg"
+    },
+    {
+      "id": "cen_mtr",
+      "interior_kind": "station_hall",
+      "wall_tex": "wall_station_hall",
+      "floor_tex": "floor_station_vinyl",
+      "enterable": true,
+      "wall_file": "wall_station_hall.jpg",
+      "floor_file": "floor_station_terrazzo.jpg"
+    },
+    {
+      "id": "hkg_air",
+      "interior_kind": "station_hall",
+      "wall_tex": "wall_station_hall",
+      "floor_tex": "floor_station_vinyl",
+      "enterable": true,
+      "wall_file": "wall_station_hall.jpg",
+      "floor_file": "floor_station_terrazzo.jpg"
+    },
+    {
+      "id": "hzmb_hk",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "happy_valley",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "shatin_race",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "cwb_pubhouse",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "ytm_cha",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "ssp_store",
+      "interior_kind": "shop_cct",
+      "wall_tex": "wall_chachanteng_green",
+      "floor_tex": "floor_wood",
+      "enterable": true,
+      "wall_file": "wall_chachanteng_green_mosaic.jpg",
+      "floor_file": "floor_mahjong_wood.jpg"
+    },
+    {
+      "id": "inner_wh",
+      "interior_kind": "industrial_lobby",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "cunha_pawn",
+      "interior_kind": "shop_cct",
+      "wall_tex": "wall_chachanteng_green",
+      "floor_tex": "floor_wood",
+      "enterable": true,
+      "wall_file": "wall_chachanteng_green_mosaic.jpg",
+      "floor_file": "floor_mahjong_wood.jpg"
+    },
+    {
+      "id": "coloane",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "mfm_air",
+      "interior_kind": "station_hall",
+      "wall_tex": "wall_station_hall",
+      "floor_tex": "floor_station_vinyl",
+      "enterable": true,
+      "wall_file": "wall_station_hall.jpg",
+      "floor_file": "floor_station_terrazzo.jpg"
+    },
+    {
+      "id": "hzmb_mac",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "longshan",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "ximending",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "tpe_air",
+      "interior_kind": "station_hall",
+      "wall_tex": "wall_station_hall",
+      "floor_tex": "floor_station_vinyl",
+      "enterable": true,
+      "wall_file": "wall_station_hall.jpg",
+      "floor_file": "floor_station_terrazzo.jpg"
+    },
+    {
+      "id": "betel70",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "khh_air",
+      "interior_kind": "station_hall",
+      "wall_tex": "wall_station_hall",
+      "floor_tex": "floor_station_vinyl",
+      "enterable": true,
+      "wall_file": "wall_station_hall.jpg",
+      "floor_file": "floor_station_terrazzo.jpg"
+    },
+    {
+      "id": "ifc_lobby",
+      "interior_kind": "office_lobby",
+      "wall_tex": "wall_station_hall",
+      "floor_tex": "floor_station_vinyl",
+      "enterable": true,
+      "wall_file": "wall_station_hall.jpg",
+      "floor_file": "floor_station_terrazzo.jpg"
+    },
+    {
+      "id": "boa_tower",
+      "interior_kind": "office_lobby",
+      "wall_tex": "wall_station_hall",
+      "floor_tex": "floor_station_vinyl",
+      "enterable": true,
+      "wall_file": "wall_station_hall.jpg",
+      "floor_file": "floor_station_terrazzo.jpg"
+    },
+    {
+      "id": "aberdeen_boat",
+      "interior_kind": "industrial_lobby",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "estate_corridor",
+      "interior_kind": "housing_corridor",
+      "wall_tex": "wall_public_housing_beige",
+      "floor_tex": "floor_wood",
+      "enterable": true,
+      "wall_file": "wall_public_housing_beige.jpg",
+      "floor_file": "floor_mahjong_wood.jpg"
+    },
+    {
+      "id": "cct_mongkok",
+      "interior_kind": "shop_cct",
+      "wall_tex": "wall_chachanteng_green",
+      "floor_tex": "floor_wood",
+      "enterable": true,
+      "wall_file": "wall_chachanteng_green_mosaic.jpg",
+      "floor_file": "floor_mahjong_wood.jpg"
+    },
+    {
+      "id": "starferry_tst",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "ruinasc_vip",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "ruinas_sj",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "neza_temple",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "linsen_beitiao",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "huaxi_night",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "t101_lobby",
+      "interior_kind": "office_lobby",
+      "wall_tex": "wall_station_hall",
+      "floor_tex": "floor_station_vinyl",
+      "enterable": true,
+      "wall_file": "wall_station_hall.jpg",
+      "floor_file": "floor_station_terrazzo.jpg"
+    },
+    {
+      "id": "ly_yuan",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "kwai_chung_pier",
+      "interior_kind": "industrial_lobby",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "kwai_fong_mtr",
+      "interior_kind": "station_hall",
+      "wall_tex": "wall_station_hall",
+      "floor_tex": "floor_station_vinyl",
+      "enterable": true,
+      "wall_file": "wall_station_hall.jpg",
+      "floor_file": "floor_station_terrazzo.jpg"
+    },
+    {
+      "id": "hunghom_tunnel",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "eastwood_hq",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "tai_o",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "mac_lower_street",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "areia_preta",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "mac_tower",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "parisian_vip",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "wannian",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "gun_mod_tw",
+      "interior_kind": "industrial_lobby",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "songshan_air",
+      "interior_kind": "station_hall",
+      "wall_tex": "wall_station_hall",
+      "floor_tex": "floor_station_vinyl",
+      "enterable": true,
+      "wall_file": "wall_station_hall.jpg",
+      "floor_file": "floor_station_terrazzo.jpg"
+    },
+    {
+      "id": "temple_night",
+      "interior_kind": "housing_corridor",
+      "wall_tex": "wall_public_housing_beige",
+      "floor_tex": "floor_wood",
+      "enterable": true,
+      "wall_file": "wall_public_housing_beige.jpg",
+      "floor_file": "floor_mahjong_wood.jpg"
+    },
+    {
+      "id": "hk_macau_ferry",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "mac_outer_port",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "kln_central_ps",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    },
+    {
+      "id": "xinyi_office",
+      "interior_kind": "generic",
+      "wall_tex": "wall_industrial_concrete",
+      "floor_tex": "floor_industrial_concrete",
+      "enterable": true,
+      "wall_file": "wall_industrial_concrete.jpg",
+      "floor_file": "floor_industrial_concrete.jpg"
+    }
+  ],
+  "priority_wire": [
+    "mk_mahjong",
+    "mk_pawn",
+    "temple_pawn",
+    "lockhart",
+    "cwb_store",
+    "cwb_cct",
+    "tst_mtr",
+    "mk_mtr",
+    "cen_mtr",
+    "hkg_air",
+    "ssp_store",
+    "inner_wh",
+    "cunha_pawn",
+    "mfm_air",
+    "tpe_air",
+    "khh_air",
+    "aberdeen_boat",
+    "estate_corridor",
+    "cct_mongkok",
+    "kwai_chung_pier"
+  ],
+  "tile_alias": {
+    "wall": {
+      "wall_station_hall": "wall_industrial_concrete.jpg",
+      "wall_public_housing_beige": "wall_public_housing_beige.jpg",
+      "wall_chachanteng_green": "wall_chachanteng_green_mosaic.jpg",
+      "wall_industrial_concrete": "wall_industrial_concrete.jpg"
+    },
+    "floor": {
+      "floor_station_vinyl": "floor_linoleum_hospital.jpg",
+      "floor_wood": "floor_mahjong_wood.jpg",
+      "floor_industrial_concrete": "floor_linoleum_hospital.jpg"
+    }
+  },
+  "missing_requested": []
+}

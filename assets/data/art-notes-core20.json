@@ -1,0 +1,46 @@
+{
+  "project": "neon-triangle",
+  "updated": "2026-10-17T10:15:00+08:00",
+  "refs": "p1/refs-core20/ (user 5 shots — art study only, NEVER PlaneGeometry billboards)",
+  "ban": [
+    "photo billboards",
+    "Google mesh",
+    "documentary panoramas as facades"
+  ],
+  "from_refs": [
+    {
+      "id": "01-harbour-night-ferry",
+      "need": "harbour water roughness~0.08–0.15 + long vertical neon streaks; Star Ferry green/white warm cabin emissive; IFC/Center silhouette massing from OSM not photo plate"
+    },
+    {
+      "id": "02-mongkok-rain-neon",
+      "need": "road MeshStandard metalness~0.15–0.25 roughness~0.12–0.25 wet; procedural neon sign boxes depth+emissive parody brands; taxi yellow/red; facade_window_ac_module density"
+    },
+    {
+      "id": "03-tian-tan-buddha",
+      "need": "1:1 landmark scale — pedestal tiers + long stair; bronze green-gold; day clear; night soft temple warm only"
+    },
+    {
+      "id": "04-tai-o-stilt",
+      "need": "stilt wood + corrugated; sampan blue awning; canal murky green-grey; wood_tai_o_weathered.jpg"
+    },
+    {
+      "id": "05-peak-harbour-day",
+      "need": "island→harbour→Kowloon depth layers; Mid-Levels packed towers; 2IFC/ICC massing from OSM footprints+height"
+    }
+  ],
+  "runtime_tex": {
+    "path": "m1c/assets/tex/weather/",
+    "files": [
+      "road_wet_asphalt_albedo.jpg",
+      "road_wet_asphalt_roughness.jpg",
+      "neon_reflect_streaks.jpg",
+      "wood_tai_o_weathered.jpg"
+    ],
+    "hook": "night wet: map albedo + roughnessMap; optional Additive/Multiply neon_reflect_streaks on road quad under neon lights; day: higher roughness ~0.85"
+  },
+  "also": [
+    "tex/facade/ for OSM extrude density",
+    "tex/interior/ for enterables"
+  ]
+}

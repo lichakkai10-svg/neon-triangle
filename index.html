@@ -274,7 +274,7 @@ body.aim #cross{transform:scale(.45)}
     if(b && cur < n) b.style.width=n+'%';
     if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
-  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core20。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core21。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
   var tipEl=document.getElementById("loadTips"); var ti=0;
   if(tipEl) tipEl.textContent=tips[0];
   var tipTimer=setInterval(function(){
@@ -284,7 +284,7 @@ body.aim #cross{transform:scale(.45)}
   setTimeout(function(){
     if(done) return;
     var t=document.getElementById('loadTxt');
-    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core20';
+    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core21';
   },45000);
 })();
 </script>
@@ -709,7 +709,7 @@ const groundMat = new THREE.MeshStandardMaterial({
 /* ---------- 濕地倒影 ----------
  * 做法：每幀把整個 scene 沿 Y 軸鏡像（scene.scale.y = -1），以低解析度渲染到 reflRT，
  * 地面著色器再以螢幕座標取樣，按粗糙度（水氹最強）及菲涅耳混合，並用法線圖擾動做出水紋。 */
-const REFL = { enabled: true, scale: 0.25, strength: 1.0, far: 90, skip: false }; // M1c：鏡像鏡頭（唔再翻轉成個 scene）、遠裁剪 90 米（霧入面再遠嘅倒影本身已經睇唔到）
+const REFL = { enabled: true, scale: 0.28, strength: 1.15, far: 100, skip: false }; // core20 雨夜略強 // M1c：鏡像鏡頭（唔再翻轉成個 scene）、遠裁剪 90 米（霧入面再遠嘅倒影本身已經睇唔到）
 const reflRT = new THREE.WebGLRenderTarget(4, 4, { type: USE_LDR ? THREE.UnsignedByteType : THREE.HalfFloatType, depthBuffer: true });
 reflRT.texture.colorSpace = THREE.LinearSRGBColorSpace;
 const reflUniforms = { uReflMap: { value: reflRT.texture }, uReflRes: { value: new THREE.Vector2(1, 1) }, uReflOn: { value: 1 } };
@@ -4439,13 +4439,13 @@ function makeArcadeTex() {
   for (const t of [map, emi]) t.wrapS = THREE.RepeatWrapping;
   return shared(new THREE.MeshStandardMaterial({ map, emissiveMap: emi, emissive: new THREE.Color(1, 1, 1), emissiveIntensity: 1.5, roughness: 0.5 }));
 }
-/** 大招牌：重慶大廈 CHUNGKING MANSIONS（金字黑底，舊式燈箱） */
+/** 大招牌：重慶坊（戲仿｜禁真 CHUNGKING MANSIONS 全稱） */
 function makeCMSign() {
   const tex = canvasTex(1024, 192, (g, W, H) => {
     g.fillStyle = '#121214'; g.fillRect(0, 0, W, H); g.strokeStyle = '#e8c35a'; g.lineWidth = 6; g.strokeRect(10, 10, W - 20, H - 20);
     g.shadowColor = '#ffcf6a'; g.shadowBlur = 16; g.fillStyle = '#ffd877'; g.textAlign = 'center';
-    g.font = 'bold 92px "PingFang HK","Noto Sans TC",serif'; g.fillText('重 慶 大 廈', W / 2, 100);
-    g.font = 'bold 40px "Times New Roman",serif'; g.fillText('CHUNGKING  MANSIONS', W / 2, 160); g.shadowBlur = 0;
+    g.font = 'bold 92px "PingFang HK","Noto Sans TC",serif'; g.fillText('重 慶 坊', W / 2, 100);
+    g.font = 'bold 36px "Times New Roman",serif'; g.fillText('CHUNG KING COURT (PARODY)', W / 2, 160); g.shadowBlur = 0;
   });
   return new THREE.Mesh(new THREE.PlaneGeometry(10, 1.9), new THREE.MeshBasicMaterial({ map: tex, color: new THREE.Color(2.2, 2.2, 2.2) }));
 }
@@ -4619,8 +4619,8 @@ function makeLobbyTex() {
   const lobby = new THREE.Mesh(new THREE.PlaneGeometry(6, 3.6), new THREE.MeshBasicMaterial({ map: makeLobbyTex(), color: new THREE.Color(1.25, 1.25, 1.2) })); lobby.position.set(front - PD, 1.8, cm.door); lobby.rotation.y = Math.PI / 2; g.add(lobby);
   addCollider(front - PD + 0.4, cm.door, 0.4, 3, 4);                                                       // 內街盡頭（假景）擋住
   const pl = new THREE.PointLight(0xfff0d0, 55, 16, 1.7); pl.position.set(front + 1.5, 3.2, cm.door); g.add(pl);
-  // 直身大字「重慶大廈」（有鐵架連住外牆）
-  const vs = makeNeonSign('重慶大廈', '#ffd877', true); vs.scale.setScalar(1.5); vs.position.set(front + 1.3, 14.5, cm.door + 4); g.add(vs);
+  // 直身大字「重慶坊」（有鐵架連住外牆）
+  const vs = makeNeonSign('重慶坊', '#ffd877', true); vs.scale.setScalar(1.5); vs.position.set(front + 1.3, 14.5, cm.door + 4); g.add(vs);
   boxMesh(poleMat, 1.3, 0.12, 0.12, front + 0.65, 18.5, cm.door + 4, g); boxMesh(poleMat, 1.3, 0.12, 0.12, front + 0.65, 10.5, cm.door + 4, g);
   // —— 塔樓 A–E（中間隔住天井）
   const towers = [], acMats = [shared(new THREE.MeshStandardMaterial({ color: 0xc9ccc4, roughness: 0.7 })), shared(new THREE.MeshStandardMaterial({ color: 0xb0a890, roughness: 0.8 }))];
@@ -4744,7 +4744,7 @@ const SHOPS = {
     ]
   },
   sam: {
-    name: '肥Sam 軍火檔', who: '肥Sam · 重慶大廈後樓梯貨倉', dirty: true,
+    name: '肥Sam 軍火檔', who: '肥Sam · 重慶坊後樓梯貨倉', dirty: true,
     say: () => INV.silenced && INV.c4 >= 2 ? '齊晒喇。記住，你冇見過我。' : '喪彪個細佬？價錢公道，現金交易，<b>黑錢照收</b>。',
     items: () => [
       { name: '消音手槍', desc: '9mm 半自動 + 滅聲器，彈匣 15 發。開槍唔會驚動途人同差佬', price: 3000, can: !INV.silenced, done: INV.silenced, act() { setSilenced(true); } },
@@ -4867,7 +4867,7 @@ function liftPanel(n) {
 
 /* ---------- 室內定義 ---------- */
 INTERIORS.chungking = {
-  name: '重慶大廈', city: '香港 · 尖沙咀 彌敦道', light: '光管冷白 + 舖頭招牌 + 貨倉紅燈',
+  name: '重慶坊（戲仿）', city: '香港 · 尖沙咀 彌敦道', light: '光管冷白 + 舖頭招牌 + 貨倉紅燈',
   desc: '全港最多國籍嘅一棟樓：找換店、咖喱、平價賓館、手機檔。後樓梯布簾後面，肥Sam 乜都有得賣——只要你有黑錢。',
   build(g) {
     const W0 = -9, W1 = 9, Z0 = -7, Z1 = 7, H = 3.0, CZ = 1.6; // 走廊 |z| < 1.6
@@ -8936,7 +8936,11 @@ const SFX10 = {
   crane_servo: () => tone([[180,0,0.35,'sawtooth',0.4],[220,0.15,0.4,'square',0.2],[140,0.4,0.35,'triangle',0.25]],0.12), // 岸吊機械
   port_water: () => tone([[90,0,0.4,'sine',0.3],[110,0.2,0.5,'triangle',0.15]],0.08), // 岸邊水拍薄層
   fender_thud: () => tone([[55,0,0.12,'sine',1],[40,0.08,0.2,'triangle',0.5],[120,0.05,0.08,'square',0.15]],0.16), // 護舷輕撞
-  crane_rail: () => tone([[260,0,0.45,'sawtooth',0.25],[190,0.2,0.5,'triangle',0.2],[320,0.1,0.3,'square',0.08]],0.1) // 吊機軌滑行
+  crane_rail: () => tone([[260,0,0.45,'sawtooth',0.25],[190,0.2,0.5,'triangle',0.2],[320,0.1,0.3,'square',0.08]],0.1), // 吊機軌滑行
+  /* D3 工廈／碼頭疏響——唔旺角霓虹床 */
+  ac_hum: () => tone([[78,0,0.85,'sine',0.55],[95,0.1,0.7,'triangle',0.25],[62,0.35,0.55,'sine',0.35]],0.06), // 窗式／分體冷氣低嗡
+  gate_scrape: () => tone([[180,0,0.18,'sawtooth',0.35],[140,0.08,0.22,'square',0.2],[90,0.15,0.28,'triangle',0.3],[220,0.05,0.12,'sawtooth',0.12]],0.09), // 銹灰摺閘近距輕刮
+  pallet_clack: () => tone([[210,0,0.06,'triangle',0.7],[160,0.05,0.08,'square',0.25],[130,0.1,0.12,'sine',0.4]],0.1) // 卡板／貨台疏木鐵響
 };
 /** 雨夜床聲增益（amb_rain_night_loop placeholder＝既有 audio.rain）*/
 function setRainBed(gain = 0.13) {
@@ -11164,7 +11168,20 @@ const LM_DEFS = [
   { id: 'harbour_skyline', region: 'hk', lat: 22.2875, lon: 114.1605, h: 48, w: 60, d: 20, yaw: 0,
     neon: '維港天際', color: '#6ab0d8', theme: 'hosp', skipDoor: true, pad: 20,
     name: '維港天際線輪廓（戲仿）', city: '香港 · 中西區 · 中環岸', light: '日：玻璃反光／夜：幕牆燈帶',
-    desc: '遠景天際線程序輪廓——只外形，唔貼相、唔印真商標。' }
+    desc: '遠景天際線程序輪廓——只外形，唔貼相、唔印真商標。' },
+  // —— 參考圖：珍寶舫形／寨城公園／吊橋（只外形｜禁真商標 logo）——
+  { id: 'jumbo_ark', region: 'hk', lat: 22.2462, lon: 114.1568, h: 14, w: 36, d: 16, yaw: Math.PI * 0.15,
+    neon: '珍味舫', color: '#f0c419', theme: 'burger', pad: 30,
+    name: '避風塘珍味舫（戲仿）', city: '香港 · 南區 · 香港仔', light: '日：金頂反光／夜：船舷燈籠',
+    desc: '三層舫身泊喺避風塘。海鮮味同麻將聲——外形戲仿「珍味舫／海上酒舫」——禁真店名／logo。' },
+  { id: 'walled_city_park', region: 'hk', lat: 22.3321, lon: 114.1903, h: 10, w: 28, d: 22, yaw: 0,
+    neon: '寨城', color: '#7dff6a', theme: 'cct', pad: 36,
+    name: '寨城公園（戲仿）', city: '香港 · 九龍城區', light: '日：園林樹影／夜：石徑暖燈',
+    desc: '園路同殘牆輪廓。適合匿同交情報——唔好當舊寨城迷宮，而家係公園外形。' },
+  { id: 'tsing_ma_bridge', region: 'hk', lat: 22.3513, lon: 114.0736, h: 36, w: 80, d: 12, yaw: Math.PI / 2,
+    neon: '吊橋', color: '#88c8ff', theme: 'hosp', skipDoor: true, pad: 20,
+    name: '青馬吊橋輪廓（戲仿）', city: '香港 · 葵青／荃灣', light: '日：鋼纜硬光／夜：橋身點燈',
+    desc: '雙塔吊橋遠景輪廓——只外形密度，禁真橋徽／商標。' }
 ];
 
 function lmWorldOf(def) {
@@ -11185,13 +11202,29 @@ function lmWorldOf(def) {
 }
 
 /* ---------- 外牆門面（程序方塊；高度參考公開資料／地政，唔用 Google 網格）---------- */
+function lmFacMat(kind, rx, ry, rough) {
+  // 用葵涌已載入嘅 tex/facade（RepeatWrapping）；缺就返 null
+  if (typeof KWAI === 'undefined' || !KWAI.facTex) return null;
+  const key = kind === 'shop' ? 'shop' : kind === 'estate' ? 'housing' : kind === 'ind' ? 'indCorr' : 'beigeWin';
+  const tex = KWAI.facTex[key];
+  if (!tex) return null;
+  const map = tex.clone();
+  map.wrapS = map.wrapT = THREE.RepeatWrapping;
+  map.repeat.set(rx || 2, ry || 2);
+  map.needsUpdate = true;
+  return new THREE.MeshStandardMaterial({ map, color: 0xffffff, roughness: rough != null ? rough : 0.78, metalness: 0.05 });
+}
 function lmBuildFacade(def, wpos) {
   const G = new THREE.Group(); G.name = 'lm-' + def.id;
   const W = def.w || 10, D = def.d || 8, H = def.h || 12;
   if (!def.noFacade) {
-    const skipMono = def.id === 'harbour_skyline' || def.id === 'big_buddha' || def.id === 'tai_o';
+    const skipMono = def.id === 'harbour_skyline' || def.id === 'big_buddha' || def.id === 'tai_o' || def.id === 'jumbo_ark' || def.id === 'tsing_ma_bridge' || def.id === 'walled_city_park';
     if (!skipMono) {
-      const mat = new THREE.MeshStandardMaterial({ color: 0x2a3036, roughness: 0.75, metalness: 0.15 });
+      const kind = (def.theme === 'store' || def.theme === 'neon') ? 'shop'
+        : (def.id && /estate|pubhouse|corridor/.test(def.id)) ? 'estate'
+        : (def.id && /ind|cargo|factory/.test(def.id)) ? 'ind' : 'beige';
+      const mat = lmFacMat(kind, Math.max(1.5, W / 6), Math.max(2, H / 5), 0.78)
+        || new THREE.MeshStandardMaterial({ color: 0x2a3036, roughness: 0.75, metalness: 0.15 });
       const box = new THREE.Mesh(new THREE.BoxGeometry(W, H, D), mat);
       box.position.set(0, H / 2, 0); box.castShadow = box.receiveShadow = true; G.add(box);
       // 門口凹位
@@ -11209,8 +11242,10 @@ function lmBuildFacade(def, wpos) {
     pl.position.set(0, H + 0.5, D / 2); G.add(pl);
     // 程序窗／碼頭構件（禁 documentary 相板｜1:1 密度｜樓層 ~2.8m｜正＋側）
     if (def.id === 'estate_corridor' || def.id === 'cwb_pubhouse') {
-      const winMat = new THREE.MeshStandardMaterial({ color: 0x1a2830, roughness: 0.35, metalness: 0.25,
+      const winMat = lmFacMat('beige', Math.max(2, W / 4), Math.max(3, H / 4), 0.4)
+        || new THREE.MeshStandardMaterial({ color: 0x1a2830, roughness: 0.35, metalness: 0.25,
         emissive: new THREE.Color(0.35, 0.4, 0.45), emissiveIntensity: 0.22 });
+      if (!winMat.map) { winMat.emissive = new THREE.Color(0.35, 0.4, 0.45); winMat.emissiveIntensity = 0.22; }
       const acMat = new THREE.MeshStandardMaterial({ color: 0x6a7078, roughness: 0.7, metalness: 0.4 });
       const railMat = new THREE.MeshStandardMaterial({ color: 0x8a9098, roughness: 0.55, metalness: 0.5 });
       const pipeMat = new THREE.MeshStandardMaterial({ color: 0x4a5560, roughness: 0.8, metalness: 0.3 });
@@ -11331,6 +11366,77 @@ function lmBuildFacade(def, wpos) {
             G.add(wi);
           }
         }
+      }
+    } else if (def.id === 'jumbo_ark') {
+      // 珍味舫外形：三層船身＋金頂＋船舷燈（禁真店名／logo）
+      const hull = new THREE.MeshStandardMaterial({ color: 0xc45a2a, roughness: 0.55, metalness: 0.2 });
+      const gold = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.35, metalness: 0.7,
+        emissive: new THREE.Color(0.5, 0.35, 0.08), emissiveIntensity: 0.25 });
+      const red = new THREE.MeshStandardMaterial({ color: 0x8b1a1a, roughness: 0.5,
+        emissive: new THREE.Color(0.6, 0.1, 0.05), emissiveIntensity: 0.2 });
+      const base = new THREE.Mesh(new THREE.BoxGeometry(32, 2.4, 12), hull);
+      base.position.set(0, 1.4, 0); G.add(base);
+      for (let deck = 0; deck < 3; deck++) {
+        const d = new THREE.Mesh(new THREE.BoxGeometry(28 - deck * 2, 2.2, 10 - deck * 0.6), red);
+        d.position.set(0, 3.2 + deck * 2.4, 0); G.add(d);
+        const win = new THREE.Mesh(new THREE.BoxGeometry(24 - deck * 2, 0.6, 0.12),
+          new THREE.MeshStandardMaterial({ color: 0xffe8a0, emissive: new THREE.Color(1, 0.85, 0.4), emissiveIntensity: 0.55 }));
+        win.position.set(0, 3.2 + deck * 2.4, 5.2 - deck * 0.3); G.add(win);
+      }
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(18, 0.8, 8), gold);
+      roof.position.set(0, 11.2, 0); G.add(roof);
+      const bow = new THREE.Mesh(new THREE.BoxGeometry(4, 1.5, 6), gold);
+      bow.position.set(16, 2.5, 0); G.add(bow);
+      for (const sx of [-12, -4, 4, 12]) {
+        const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 6),
+          new THREE.MeshStandardMaterial({ color: 0xffcc66, emissive: new THREE.Color(1, 0.7, 0.2), emissiveIntensity: 0.8 }));
+        lamp.position.set(sx, 4.5, 6.2); G.add(lamp);
+      }
+    } else if (def.id === 'walled_city_park') {
+      const stone = new THREE.MeshStandardMaterial({ color: 0x8a8580, roughness: 0.85 });
+      const green = new THREE.MeshStandardMaterial({ color: 0x3a5a3a, roughness: 0.9 });
+      const wood = new THREE.MeshStandardMaterial({ color: 0x6b4a2e, roughness: 0.8 });
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(W * 0.95, 2.8, 0.5), stone);
+      wall.position.set(0, 1.4, -D / 2 + 1); G.add(wall);
+      for (let i = -2; i <= 2; i++) {
+        const ruin = new THREE.Mesh(new THREE.BoxGeometry(2.5 + (i % 2), 3.5 + Math.abs(i), 2.2), stone);
+        ruin.position.set(i * 4.5, (3.5 + Math.abs(i)) / 2, i * 1.2); G.add(ruin);
+      }
+      const pavilion = new THREE.Mesh(new THREE.BoxGeometry(5, 3.2, 5), wood);
+      pavilion.position.set(-6, 2.8, 4); G.add(pavilion);
+      const roof = new THREE.Mesh(new THREE.ConeGeometry(4.2, 1.8, 4),
+        new THREE.MeshStandardMaterial({ color: 0x4a3030, roughness: 0.7 }));
+      roof.position.set(-6, 5.2, 4); roof.rotation.y = Math.PI / 4; G.add(roof);
+      const path = new THREE.Mesh(new THREE.BoxGeometry(4, 0.12, D * 0.8),
+        new THREE.MeshStandardMaterial({ color: 0x6a6860, roughness: 0.9 }));
+      path.position.set(2, 0.08, 0); G.add(path);
+      for (const [x, z] of [[8, 5], [10, -3], [-10, 2], [0, 8]]) {
+        const bush = new THREE.Mesh(new THREE.SphereGeometry(1.4, 8, 6), green);
+        bush.position.set(x, 1.4, z); G.add(bush);
+      }
+    } else if (def.id === 'tsing_ma_bridge') {
+      const steel = new THREE.MeshStandardMaterial({ color: 0x8a9098, roughness: 0.4, metalness: 0.75 });
+      const deckM = new THREE.MeshStandardMaterial({ color: 0x3a4048, roughness: 0.7, metalness: 0.4 });
+      const lit = new THREE.MeshStandardMaterial({ color: 0xffe8a0, emissive: new THREE.Color(1, 0.85, 0.4), emissiveIntensity: 0.5 });
+      for (const sx of [-28, 28]) {
+        const tower = new THREE.Mesh(new THREE.BoxGeometry(2.4, 36, 3.2), steel);
+        tower.position.set(sx, 18, 0); G.add(tower);
+        const cross = new THREE.Mesh(new THREE.BoxGeometry(4, 1.2, 3.5), steel);
+        cross.position.set(sx, 35, 0); G.add(cross);
+      }
+      const roadway = new THREE.Mesh(new THREE.BoxGeometry(78, 0.6, 6), deckM);
+      roadway.position.set(0, 12, 0); G.add(roadway);
+      for (let i = -13; i <= 13; i++) {
+        const t = (i + 13) / 26;
+        const y = 12 + 18 * Math.sin(Math.PI * t);
+        const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 6.2, 5), steel);
+        seg.position.set(i * 3, y, 0);
+        seg.rotation.z = (i < 0 ? 0.35 : -0.35) * (1 - Math.abs(i) / 14);
+        G.add(seg);
+      }
+      for (let i = -10; i <= 10; i++) {
+        const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 0.3), lit);
+        lamp.position.set(i * 3.6, 12.5, 2.8); G.add(lamp);
       }
     } else if (def.id === 'tai_o') {
       // 大澳棚屋：木柱＋鐵皮頂＋棧橋
@@ -11473,9 +11579,15 @@ function lmBuildFacade(def, wpos) {
         new THREE.MeshStandardMaterial({ color: 0x1a4a8a, emissive: new THREE.Color(0.15, 0.35, 0.7), emissiveIntensity: 0.25 }));
       sign.position.set(0, 4.0, D / 2 + 0.15); G.add(sign);
     } else if (def.id === 'tai_o') {
-      // 大澳棚屋：密木樁＋風化木＋浪板（對齊水道 stilts 密度；禁相板）
-      const wood = new THREE.MeshStandardMaterial({ color: 0x6a6460, roughness: 0.92, metalness: 0.05 });
-      const woodFade = new THREE.MeshStandardMaterial({ color: 0x8a8680, roughness: 0.9 });
+      // 大澳棚屋：密木樁＋風化木＋浪板（tex/weather · 禁相板）
+      const woodTex = (typeof KWAI !== 'undefined' && KWAI.facTex && KWAI.facTex.woodTaiO) ? KWAI.facTex.woodTaiO : null;
+      const woodMap = woodTex ? (() => { const m = woodTex.clone(); m.wrapS = m.wrapT = THREE.RepeatWrapping; m.repeat.set(2, 2); return m; })() : null;
+      const wood = woodMap
+        ? new THREE.MeshStandardMaterial({ map: woodMap, color: 0xffffff, roughness: 0.92, metalness: 0.05 })
+        : new THREE.MeshStandardMaterial({ color: 0x6a6460, roughness: 0.92, metalness: 0.05 });
+      const woodFade = woodMap
+        ? new THREE.MeshStandardMaterial({ map: woodMap.clone(), color: 0xffffff, roughness: 0.9, metalness: 0.04 })
+        : new THREE.MeshStandardMaterial({ color: 0x8a8680, roughness: 0.9 });
       const corr = new THREE.MeshStandardMaterial({ color: 0x7a8088, roughness: 0.55, metalness: 0.45 });
       const stilt = new THREE.MeshStandardMaterial({ color: 0x3a342e, roughness: 0.95 });
       // 密樁林
@@ -11969,6 +12081,8 @@ LM.go = function (id) {
   const boot = async () => {
     if (!NT.ready || typeof DOORS === 'undefined' || typeof INTERIORS === 'undefined') return false;
     try { await intLoadThemeTiles(); } catch (e) { console.warn('[int-theme]', e && e.message); }
+    // 等程序門面 tile（tex/facade）——同 KWAI 共用，禁相板
+    try { if (typeof kwLoadFacadeTiles === 'function') await kwLoadFacadeTiles(); } catch (e) { console.warn('[lm-fac]', e && e.message); }
     lmPlaceAll();
     const q = new URLSearchParams(location.search).get('lm');
     if (q) setTimeout(() => LM.go(q), 600);
@@ -15840,6 +15954,13 @@ function scapeMats() {
     rail: new THREE.MeshStandardMaterial({ color: 0x9aa3a8, roughness: 0.4, metalness: 0.75 }),
     binGreen: new THREE.MeshStandardMaterial({ color: 0x2f6b4a, roughness: 0.65, metalness: 0.25 }),
     binGrey: new THREE.MeshStandardMaterial({ color: 0x5a6066, roughness: 0.7, metalness: 0.2 }),
+    binOrange: new THREE.MeshStandardMaterial({ color: 0xe07020, roughness: 0.62, metalness: 0.22 }),
+    canopyGreen: new THREE.MeshStandardMaterial({ color: 0x3a5a28, roughness: 0.85, metalness: 0.05 }),
+    crateWood: new THREE.MeshStandardMaterial({ color: 0x8a6a40, roughness: 0.88 }),
+    crateCard: new THREE.MeshStandardMaterial({ color: 0xc4a870, roughness: 0.9 }),
+    basketRed: new THREE.MeshStandardMaterial({ color: 0xc82828, roughness: 0.55, metalness: 0.1 }),
+    conven: new THREE.MeshStandardMaterial({ color: 0x1a6b3a, roughness: 0.7, metalness: 0.1,
+      emissive: new THREE.Color(0.05, 0.25, 0.08), emissiveIntensity: 0.35 }),
     pole: (typeof poleMat !== 'undefined') ? poleMat : new THREE.MeshStandardMaterial({ color: 0x4a5056, roughness: 0.55, metalness: 0.7 }),
     lightR: new THREE.MeshStandardMaterial({ color: 0x221010, emissive: new THREE.Color(0.55, 0.05, 0.05), emissiveIntensity: 0.8, roughness: 0.4 }),
     lightA: new THREE.MeshStandardMaterial({ color: 0x221a08, emissive: new THREE.Color(0.55, 0.35, 0.05), emissiveIntensity: 0.5, roughness: 0.4 }),
@@ -15907,11 +16028,26 @@ function scapeZebra(parent, x, z, yaw) {
 
 function scapeBin(parent, x, z, style) {
   const M = scapeMats();
-  const mat = style === 'small' || style === 'square' ? M.binGrey : M.binGreen;
-  const w = style === 'small' ? 0.45 : (style === 'square' ? 0.55 : 0.5);
-  const h = style === 'small' ? 0.85 : 1.05;
-  scapeBox(mat, w, h, w, x, h / 2, z, parent);
-  scapeBox(M.pole, w * 1.05, 0.06, w * 1.05, x, h + 0.03, z, parent);
+  const orange = style === 'orange' || style === 'fehd' || style === 'muni';
+  const mat = orange ? M.binOrange
+    : (style === 'small' || style === 'square' ? M.binGrey : M.binGreen);
+  const w = style === 'small' ? 0.45 : (style === 'square' ? 0.55 : (orange ? 0.58 : 0.5));
+  const h = style === 'small' ? 0.85 : (orange ? 1.15 : 1.05);
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.name = orange ? 'scape-bin-orange' : 'scape-bin'; parent.add(g);
+  scapeBox(mat, w, h, w, 0, h / 2, 0, g);
+  scapeBox(M.pole, w * 1.05, 0.06, w * 1.05, 0, h + 0.03, 0, g);
+  if (orange) {
+    try {
+      const c = document.createElement('canvas'); c.width = 128; c.height = 64;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#e07020'; ctx.fillRect(0, 0, 128, 64);
+      ctx.fillStyle = '#1a1a1a'; ctx.font = 'bold 28px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('清潔', 64, 32);
+      const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+      const lab = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.21), new THREE.MeshBasicMaterial({ map: tex }));
+      lab.position.set(0, h * 0.55, w / 2 + 0.02); g.add(lab);
+    } catch (e) { /* */ }
+  }
 }
 
 function scapeManhole(parent, x, z) {
@@ -15978,6 +16114,141 @@ function scapeTramRail(parent, x, z, yaw) {
   scapeBox(M.rail, 0.08, 0.06, 10, 0.55, 0.04, 0, g);
 }
 
+/** core21：橙垃圾桶／巴士站／望左望右／唐樓騎樓／戲仿便利店／街市簷篷堆箱——禁相板 */
+function scapeLookLR(parent, x, z, yaw, which) {
+  const M = scapeMats();
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0; parent.add(g);
+  scapeBox(M.pole, 0.07, 2.2, 0.07, 0, 1.1, 0, g);
+  const bg = new THREE.MeshStandardMaterial({ color: 0xf5f0e6, roughness: 0.65, metalness: 0.05 });
+  scapeBox(bg, 0.85, 0.55, 0.05, 0, 2.15, 0.02, g);
+  // 箭咀色塊（戲仿「望左／望右」）
+  const arrow = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.5 });
+  const dir = which === 'right' ? 1 : -1;
+  scapeBox(arrow, 0.35, 0.08, 0.04, dir * 0.12, 2.15, 0.06, g);
+  scapeBox(arrow, 0.12, 0.12, 0.04, dir * 0.28, 2.15, 0.06, g);
+}
+
+function scapeBusStop(parent, x, z, yaw) {
+  const M = scapeMats();
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0; g.name = 'scape_bus_stop'; parent.add(g);
+  scapeBox(M.pole, 0.1, 2.8, 0.1, -1.4, 1.4, 0, g);
+  scapeBox(M.pole, 0.1, 2.8, 0.1, 1.4, 1.4, 0, g);
+  scapeBox(M.concrete, 3.2, 0.08, 1.4, 0, 2.85, 0, g); // 頂棚
+  scapeBox(M.sign, 0.9, 1.1, 0.06, -1.4, 2.0, 0.2, g); // 站牌
+  scapeBox(M.tileGrey, 3.0, 0.06, 1.2, 0, 0.5, 0.15, g); // 企位
+  if (typeof makeNeonSign === 'function') {
+    try {
+      const sg = makeNeonSign('巴士站（戲仿）', '#1a4a8a', false);
+      sg.scale.setScalar(0.45); sg.position.set(0, 3.1, 0.2); g.add(sg);
+    } catch (e) { /* */ }
+  }
+}
+
+function scapeTongLauArcade(parent, x, z, yaw) {
+  const M = scapeMats();
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0; g.name = 'scape_tonglau'; parent.add(g);
+  // 騎樓柱＋簷；門面用 market／facade tonglau tile（若已載）
+  let faceMat = M.concrete;
+  const tex = SCAPE.marketTex && SCAPE.marketTex.tonglau;
+  if (tex) {
+    const map = tex.clone(); map.wrapS = map.wrapT = THREE.RepeatWrapping; map.repeat.set(2, 3);
+    faceMat = new THREE.MeshStandardMaterial({ map, color: 0xffffff, roughness: 0.82 });
+  }
+  for (let i = 0; i < 4; i++) {
+    scapeBox(M.concrete, 0.4, 3.6, 0.4, i * 4.2, 1.8, 0, g);
+    scapeBox(faceMat, 3.8, 8.5, 5.5, i * 4.2 + 2.0, 4.25, -2.2, g);
+    scapeBox(M.concrete, 4.0, 0.28, 2.2, i * 4.2 + 2.0, 3.5, 0.6, g); // 騎樓簷
+  }
+}
+
+function scapeConvenience(parent, x, z, yaw) {
+  const M = scapeMats();
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0; g.name = 'scape_conven_parody'; parent.add(g);
+  scapeBox(M.conven, 7.5, 4.2, 6.0, 0, 2.1, 0, g);
+  scapeBox(M.concrete, 7.8, 0.2, 1.8, 0, 2.9, 3.2, g); // 簷
+  if (typeof makeNeonSign === 'function') {
+    try {
+      const sg = makeNeonSign('8仔便利（戲仿）', '#2fd060', false);
+      sg.scale.setScalar(0.7); sg.position.set(0, 3.6, 3.15); g.add(sg);
+    } catch (e) { /* */ }
+  }
+}
+
+async function scapeLoadMarketTex() {
+  if (SCAPE.marketTex && SCAPE.marketTex._done) return;
+  SCAPE.marketTex = SCAPE.marketTex || {};
+  if (typeof loadTex !== 'function') { SCAPE.marketTex._done = true; return; }
+  const files = {
+    awning: 'tex/market/awning_canvas_green_brown.jpg',
+    crateW: 'tex/market/crate_wood_veg.jpg',
+    crateC: 'tex/market/crate_cardboard_produce.jpg',
+    basket: 'tex/market/basket_plastic_red.jpg',
+    tonglau: 'tex/market/facade_tonglau_ac_grid.jpg',
+    floor: 'tex/market/floor_wetmarket_concrete.jpg'
+  };
+  await Promise.all(Object.entries(files).map(async ([k, f]) => {
+    try {
+      const t = await loadTex(f, true, true);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      SCAPE.marketTex[k] = t;
+    } catch (e) { console.warn('[scape-market]', f, e && e.message); }
+  }));
+  SCAPE.marketTex._done = true;
+}
+
+function scapeMatFromMarket(key, rx, ry, rough, fallback) {
+  const tex = SCAPE.marketTex && SCAPE.marketTex[key];
+  if (!tex) return fallback;
+  const map = tex.clone();
+  map.wrapS = map.wrapT = THREE.RepeatWrapping;
+  map.repeat.set(rx || 1, ry || 1);
+  return new THREE.MeshStandardMaterial({ map, color: 0xffffff, roughness: rough != null ? rough : 0.85, metalness: 0.03 });
+}
+
+/** 元朗街市密度：擠出簷篷＋堆箱＋紅膠籃＋石屎地；招牌戲仿 emissive——禁真舖 JPG */
+function scapeWetMarket(parent, x, z, yaw) {
+  const M = scapeMats();
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0; g.name = 'scape_wetmarket'; parent.add(g);
+  const floorM = scapeMatFromMarket('floor', 6, 4, 0.9, M.concrete);
+  const awnM = scapeMatFromMarket('awning', 2, 1, 0.88, M.canopyGreen);
+  const woodM = scapeMatFromMarket('crateW', 1, 1, 0.88, M.crateWood);
+  const cardM = scapeMatFromMarket('crateC', 1, 1, 0.9, M.crateCard);
+  const baskM = scapeMatFromMarket('basket', 1, 1, 0.55, M.basketRed);
+  // 巷地
+  scapeBox(floorM, 28, 0.08, 14, 0, 0.04, 0, g);
+  // 兩排檔位
+  for (let row = 0; row < 2; row++) {
+    const zz = row === 0 ? -4.2 : 4.2;
+    for (let i = 0; i < 6; i++) {
+      const xx = -12 + i * 4.2;
+      // 檔台
+      scapeBox(M.concrete, 3.4, 0.9, 2.2, xx, 0.45, zz, g);
+      // 簷篷（微下垂感：兩段）
+      scapeBox(awnM, 3.6, 0.08, 2.6, xx, 2.55, zz + (row === 0 ? 0.3 : -0.3), g);
+      scapeBox(awnM, 3.5, 0.06, 1.2, xx, 2.35, zz + (row === 0 ? 1.2 : -1.2), g);
+      scapeBox(M.pole, 0.08, 2.5, 0.08, xx - 1.5, 1.25, zz + (row === 0 ? 1.0 : -1.0), g);
+      scapeBox(M.pole, 0.08, 2.5, 0.08, xx + 1.5, 1.25, zz + (row === 0 ? 1.0 : -1.0), g);
+      // 堆箱
+      for (let c = 0; c < 3; c++) {
+        const cm = (c + i) % 2 ? woodM : cardM;
+        scapeBox(cm, 0.42, 0.35, 0.32, xx - 1.0 + c * 0.5, 1.05 + (c % 2) * 0.35, zz - 0.6, g);
+      }
+      // 紅膠籃
+      scapeBox(baskM, 0.45, 0.28, 0.35, xx + 1.1, 1.05, zz + 0.5, g);
+      // 戲仿檔名 emissive
+      if (typeof makeNeonSign === 'function' && i % 2 === 0) {
+        try {
+          const names = ['祥記菜檔', '金魚檔', '鮮果欄', '豬肉檔', '豆腐檔', '雜貨檔'];
+          const sg = makeNeonSign(names[i % names.length] + '（戲仿）', '#e8c040', false);
+          sg.scale.setScalar(0.35); sg.position.set(xx, 2.75, zz + (row === 0 ? 1.3 : -1.3)); g.add(sg);
+        } catch (e) { /* */ }
+      }
+    }
+  }
+  // 巷口唐樓密度
+  scapeTongLauArcade(g, -2, -9.5, 0);
+}
+
 function scapeAt(region, lat, lon, local, fn) {
   const w = scapeWorld(region, lat, lon, local);
   if (!w) return;
@@ -16034,6 +16305,21 @@ function scapePlaceP0() {
   scapeAt('tw', null, null, { x: -42, z: 98 }, (p, x, z) => scapeSign(p, x, z, -0.4));
   scapeAt('tw', null, null, { x: -38, z: 102 }, (p, x, z) => scapeScooterBay(p, x, z, 0.2));
 
+  // —— core21 街景優先：橙桶／巴士站／望左望右／便利店／唐樓／元朗街市 ——
+  scapeAt('hk', 22.3193, 114.1695, null, (p, x, z) => scapeBin(p, x + 2.2, z + 1.5, 'orange'));
+  scapeAt('hk', 22.3187, 114.1698, null, (p, x, z) => scapeBin(p, x, z, 'orange'));
+  scapeAt('hk', 22.3200, 114.1692, null, (p, x, z) => scapeBusStop(p, x, z, 0.1));
+  scapeAt('hk', 22.3191, 114.1696, null, (p, x, z) => scapeLookLR(p, x, z, 0, 'left'));
+  scapeAt('hk', 22.3191, 114.16955, null, (p, x, z) => scapeLookLR(p, x + 3.5, z, Math.PI, 'right'));
+  scapeAt('hk', 22.3198, 114.1688, null, (p, x, z) => scapeTongLauArcade(p, x, z, 0.05));
+  scapeAt('hk', 22.3185, 114.1700, null, (p, x, z) => scapeConvenience(p, x, z, -0.2));
+  // 元朗大橋街市一帶（研究比例；戲仿檔名）
+  scapeAt('hk', 22.4445, 114.0228, null, (p, x, z) => scapeWetMarket(p, x, z, 0.3));
+  // 荃灣街密度：唐樓＋橙桶
+  scapeAt('hk', 22.3708, 114.1170, null, (p, x, z) => scapeTongLauArcade(p, x, z, 0.4));
+  scapeAt('hk', 22.3710, 114.1172, null, (p, x, z) => scapeBin(p, x, z, 'orange'));
+  scapeAt('hk', 22.3706, 114.1168, null, (p, x, z) => scapeBusStop(p, x, z, 0.4));
+
   SCAPE.placed = true;
 
   // 跟區域可見性（澳門／台北／高雄）
@@ -16061,14 +16347,15 @@ function scapePlaceP0() {
 }
 
 {
-  const boot = () => {
+  const boot = async () => {
     if (!window.NT || !NT.ready) return false;
     if (typeof hkGeo !== 'function' || typeof scene === 'undefined') return false;
+    try { await scapeLoadMarketTex(); } catch (e) { console.warn('[scape-market]', e); }
     try { scapePlaceP0(); } catch (e) { console.warn('[streetscape]', e); }
     return SCAPE.placed;
   };
-  const t0 = setInterval(() => { if (boot()) clearInterval(t0); }, 250);
-  setTimeout(boot, 0);
+  const t0 = setInterval(() => { boot().then((ok) => { if (ok) clearInterval(t0); }); }, 250);
+  setTimeout(() => boot(), 0);
 }
 
 Object.assign(window.NT || (window.NT = {}), { SCAPE, scapePlaceP0 });
@@ -16087,7 +16374,9 @@ const KWAI = {
   mats: {},
   kenney: { ready: false, buildings: [], extras: [] },
   intTex: {},
-  intMat: {}
+  intMat: {},
+  facTex: {},
+  osmLayout: null
 };
 
 function kwAtlas(mat, col, row, cols, rows) {
@@ -16351,6 +16640,17 @@ function kwProcCrane(parent, x, z, scale, yaw) {
   const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 6), redMat);
   lamp.position.set(-2, 63.2, 0); g.add(lamp);
   if (typeof blinkers !== 'undefined') blinkers.push(lamp);
+  // core21：夜岸吊工作燈（boom／腿；程序 emissive，禁相板）
+  const work = new THREE.MeshBasicMaterial({ color: new THREE.Color(3.2, 2.8, 1.6), fog: false });
+  for (const px of [8, 22, 36, 50]) {
+    const wl = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.35, 0.8), work);
+    wl.position.set(px, 44.2, 0); g.add(wl);
+    if (typeof blinkers !== 'undefined') blinkers.push(wl);
+  }
+  for (const lx of [-8, 8]) {
+    const fl = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.5), work);
+    fl.position.set(lx, 28, 0); g.add(fl);
+  }
   parent.add(g);
   return g;
 }
@@ -16677,8 +16977,11 @@ function kwIndBlock(parent, x, z, w, h, d, tex) {
     if (typeof addCollider === 'function') addCollider(x, z, w / 2, d / 2, h);
     return g;
   }
-  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x5a5e62, roughness: 0.88 });
-  const winMat = new THREE.MeshStandardMaterial({ color: 0x1e2830, roughness: 0.28, metalness: 0.35, emissive: new THREE.Color(0.1, 0.14, 0.18), emissiveIntensity: 0.35 });
+  const bodyMat = kwMatFromFacade('indCorr', Math.max(2, w / 6), Math.max(3, h / 5), 0.9)
+    || new THREE.MeshStandardMaterial({ color: 0x5a5e62, roughness: 0.88 });
+  const winMat = kwMatFromFacade('winAc', Math.max(1, w / 4), Math.max(2, h / 4), 0.3)
+    || new THREE.MeshStandardMaterial({ color: 0x1e2830, roughness: 0.28, metalness: 0.35, emissive: new THREE.Color(0.1, 0.14, 0.18), emissiveIntensity: 0.35 });
+  if (winMat && !winMat.map) { winMat.emissive = new THREE.Color(0.1, 0.14, 0.18); winMat.emissiveIntensity = 0.35; winMat.metalness = 0.35; }
   const acMat = new THREE.MeshStandardMaterial({ color: 0x8a9096, roughness: 0.55, metalness: 0.35 });
   const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bodyMat);
   body.position.y = h / 2; body.castShadow = body.receiveShadow = true; body.userData.noMerge = true;
@@ -16718,14 +17021,29 @@ function kwBillboard(/* parent, tex, ... */) {
 }
 
 function kwAsphaltElbow(parent, x, z, yaw) {
-  const asp = new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.95 });
+  // 雨夜濕瀝青／行人石（tex · 反射靠 game1 REFL）
+  const asp = kwMatFromFacade('wetRoad', 8, 24, 0.18)
+    || new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.95 });
+  if (asp.map) {
+    asp.metalness = 0.18; asp.envMapIntensity = 1.4;
+    if (KWAI.facTex.wetRoadR) {
+      const rm = KWAI.facTex.wetRoadR.clone();
+      rm.wrapS = rm.wrapT = THREE.RepeatWrapping; rm.repeat.set(8, 24);
+      asp.roughnessMap = rm; asp.roughness = 1;
+    }
+  }
   const yel = new THREE.MeshStandardMaterial({ color: 0xc9a000, roughness: 0.55 });
+  const side = kwMatFromFacade('wetSide', 6, 2, 0.35)
+    || new THREE.MeshStandardMaterial({ color: 0x5a5c5e, roughness: 0.7 });
   const g = new THREE.Group(); g.position.set(x, 0.015, z); g.rotation.y = yaw || 0;
   g.userData.kwaichung = true; g.name = 'kt_elbow_trunk';
   // 主幹（南北）
   const a = new THREE.Mesh(new THREE.BoxGeometry(14, 0.05, 48), asp); a.receiveShadow = true; g.add(a);
   // 直角肘（向西入工廈／站）
   const b = new THREE.Mesh(new THREE.BoxGeometry(42, 0.05, 14), asp); b.position.set(-14, 0, 17); g.add(b);
+  // 行人路沿（濕石）
+  const sw1 = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.06, 46), side); sw1.position.set(8.2, 0.02, 0); g.add(sw1);
+  const sw2 = new THREE.Mesh(new THREE.BoxGeometry(40, 0.06, 2.2), side); sw2.position.set(-14, 0.02, 25); g.add(sw2);
   // 黃線彎
   const s1 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.04, 40), yel); s1.position.set(-6.2, 0.03, 0); g.add(s1);
   const s2 = new THREE.Mesh(new THREE.BoxGeometry(36, 0.04, 0.18), yel); s2.position.set(-14, 0.03, 10.5); g.add(s2);
@@ -16841,9 +17159,12 @@ function kwFender(parent, x, z) {
 }
 
 function kwEstateSlab(parent, x, z, w, h, d) {
-  // 真 3D 公屋長條＋窗／晾衫感冷氣——唔貼屋邨相
-  const conc = new THREE.MeshStandardMaterial({ color: 0xb8b0a4, roughness: 0.85 });
-  const winMat = new THREE.MeshStandardMaterial({ color: 0x243040, roughness: 0.32, metalness: 0.2, emissive: new THREE.Color(0.15, 0.18, 0.22), emissiveIntensity: 0.4 });
+  // 真 3D 公屋長條＋窗／冷氣模組 tile（tex/facade · 禁相板）
+  const conc = kwMatFromFacade('housing', Math.max(2, w / 8), Math.max(4, h / 6), 0.88)
+    || new THREE.MeshStandardMaterial({ color: 0xb8b0a4, roughness: 0.85 });
+  const winMat = kwMatFromFacade('winAc', Math.max(1, w / 4), Math.max(2, h / 5), 0.35)
+    || new THREE.MeshStandardMaterial({ color: 0x243040, roughness: 0.32, metalness: 0.2, emissive: new THREE.Color(0.15, 0.18, 0.22), emissiveIntensity: 0.4 });
+  if (winMat && !winMat.map) { winMat.emissive = new THREE.Color(0.15, 0.18, 0.22); winMat.emissiveIntensity = 0.4; winMat.metalness = 0.2; }
   const acMat = new THREE.MeshStandardMaterial({ color: 0x9aa0a6, roughness: 0.6, metalness: 0.25 });
   const g = new THREE.Group(); g.position.set(x, 0, z); g.name = 'kt_estate_skyline'; g.userData.kwaichung = true;
   const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), conc); body.position.y = h / 2; body.castShadow = true; g.add(body);
@@ -18002,6 +18323,178 @@ function kwMatFromTile(key, rx, ry, rough) {
   });
 }
 
+/** 程序門面 tile（美術 tex/facade · RepeatWrapping · 禁相板）*/
+async function kwLoadFacadeTiles() {
+  if (KWAI.facTex._done || typeof loadTex !== 'function') return !!KWAI.facTex._done;
+  const files = {
+    housing: 'tex/facade/facade_public_housing_balcony.jpg',
+    beigeWin: 'tex/facade/facade_residential_beige_windows.jpg',
+    winAc: 'tex/facade/facade_window_ac_module.jpg',
+    indCorr: 'tex/facade/facade_industrial_corrugated.jpg',
+    shop: 'tex/facade/facade_shopfront_mosaic.jpg',
+    tonglau: 'tex/facade/facade_tonglau_ac_grid.jpg',
+    wetSide: 'tex/facade/sidewalk_wet_paving.jpg',
+    wetRoad: 'tex/weather/road_wet_asphalt_albedo.jpg',
+    wetRoadR: 'tex/weather/road_wet_asphalt_roughness.jpg',
+    neonStreak: 'tex/weather/neon_reflect_streaks.jpg',
+    woodTaiO: 'tex/weather/wood_tai_o_weathered.jpg'
+  };
+  await Promise.all(Object.entries(files).map(async ([k, f]) => {
+    try {
+      const tex = await loadTex(f, true, true);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      KWAI.facTex[k] = tex;
+    } catch (e) { console.warn('[kwai-fac]', f, e && e.message); }
+  }));
+  KWAI.facTex._done = true;
+  return true;
+}
+
+function kwMatFromFacade(key, rx, ry, rough) {
+  const tex = KWAI.facTex[key];
+  if (!tex) return null;
+  const map = tex.clone();
+  map.wrapS = map.wrapT = THREE.RepeatWrapping;
+  map.repeat.set(rx || 2, ry || 2);
+  map.needsUpdate = true;
+  return new THREE.MeshStandardMaterial({
+    map, color: 0xffffff, roughness: rough != null ? rough : 0.82, metalness: 0.04
+  });
+}
+
+/** 讀 osm-layout-core20.json（爬蟲正式稿）— highways[].points dx/dz＝hkGeo；禁 Google mesh／相板 */
+async function kwLoadOsmLayoutCore20() {
+  if (KWAI.osmLayout) return KWAI.osmLayout;
+  const tries = [
+    'data/osm-layout-core20.json',
+    '../data/osm-layout-core20.json',
+    './assets/data/osm-layout-core20.json'
+  ];
+  for (const u of tries) {
+    try {
+      const r = await fetch(u, { cache: 'no-store' });
+      if (!r.ok) continue;
+      const j = await r.json();
+      if (j && (j.highways || (j.mongkok && j.mongkok.highways))) {
+        KWAI.osmLayout = j;
+        console.info('[kwai-osm] core20 layout', j.counts || {
+          hw: j.highways && j.highways.length,
+          mk: j.mongkok && j.mongkok.highways && j.mongkok.highways.length
+        });
+        return j;
+      }
+    } catch (e) { /* try next */ }
+  }
+  console.warn('[kwai-osm] osm-layout-core20.json 未到手');
+  return null;
+}
+
+function kwOsmPts(road) {
+  const pts = road.points || road.points_hkGeo || [];
+  return pts.map((p) => ({
+    x: p.dx != null ? p.dx : p.x,
+    z: p.dz != null ? p.dz : p.z
+  })).filter((p) => Number.isFinite(p.x) && Number.isFinite(p.z));
+}
+
+/** 沿 OSM highways 折線掛程序門面（tex/facade）；葵涌＋旺角 */
+function kwApplyOsmFacadeDensity() {
+  if (KWAI.osmFacadeDone || typeof scene === 'undefined') return;
+  const lay = KWAI.osmLayout;
+  if (!lay) return;
+  const root = KWAI.group || new THREE.Group();
+  if (!KWAI.group) { root.name = 'kwaichung-dock'; KWAI.group = root; scene.add(root); }
+  const g = new THREE.Group(); g.name = 'kt_osm_facade_density'; g.userData.kwaichung = true;
+  const shopMat = kwMatFromFacade('shop', 2, 1.2, 0.75)
+    || new THREE.MeshStandardMaterial({ color: 0x6a5040, roughness: 0.8 });
+  const winMat = kwMatFromFacade('beigeWin', 3, 4, 0.7)
+    || new THREE.MeshStandardMaterial({ color: 0xc8b8a0, roughness: 0.85 });
+  const housing = kwMatFromFacade('tonglau', 2.5, 4, 0.85)
+    || kwMatFromFacade('housing', 2.5, 4, 0.85)
+    || winMat;
+  const indMat = kwMatFromFacade('indCorr', 2, 3, 0.9)
+    || new THREE.MeshStandardMaterial({ color: 0x5a5e62, roughness: 0.88 });
+  const lite = typeof NT !== 'undefined' && NT.safariLite;
+  const cap = lite ? 36 : 96;
+  const roads = [];
+  if (Array.isArray(lay.highways)) roads.push(...lay.highways);
+  if (lay.mongkok && Array.isArray(lay.mongkok.highways)) roads.push(...lay.mongkok.highways);
+  // 優先：主幹＋三級／住宅（爬蟲 wire：每 12–18m）
+  const rank = { primary: 0, secondary: 1, tertiary: 2, residential: 3, unclassified: 4 };
+  roads.sort((a, b) => (rank[a.highway] ?? 9) - (rank[b.highway] ?? 9));
+  let n = 0;
+  const STEP = lite ? 18 : 14;
+  for (const road of roads) {
+    if (n >= cap) break;
+    const hw = road.highway || '';
+    if (!/primary|secondary|tertiary|residential|unclassified/.test(hw)) continue;
+    const pts = kwOsmPts(road);
+    for (let i = 0; i + 1 < pts.length && n < cap; i++) {
+      const a = pts[i], b = pts[i + 1];
+      const seg = Math.hypot(b.x - a.x, b.z - a.z);
+      if (seg < 4) continue;
+      const steps = Math.max(1, Math.floor(seg / STEP));
+      for (let s = 0; s < steps && n < cap; s++) {
+        const t = (s + 0.5) / steps;
+        const mx = a.x + (b.x - a.x) * t;
+        const mz = a.z + (b.z - a.z) * t;
+        const yaw = Math.atan2(b.x - a.x, b.z - a.z);
+        // 路側偏移
+        const side = (n % 2 ? 1 : -1) * (7.5 + (n % 3));
+        const px = mx + Math.cos(yaw) * side;
+        const pz = mz - Math.sin(yaw) * side;
+        const isInd = hw === 'secondary' || /葵涌|工業|貨櫃/.test(road.name_zh || road.name || '');
+        const isEstate = hw === 'residential';
+        const mat = isInd ? indMat : (isEstate ? housing : (n % 2 ? shopMat : winMat));
+        const h = isEstate ? (48 + (n % 5) * 8) : (isInd ? (28 + (n % 4) * 6) : (12 + (n % 5) * 3.5));
+        const w = 9 + (n % 3) * 2.2;
+        const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, 6.5), mat);
+        body.position.set(px, h / 2, pz);
+        body.rotation.y = yaw;
+        body.castShadow = body.receiveShadow = true;
+        body.userData.noMerge = true;
+        g.add(body);
+        n++;
+      }
+    }
+  }
+  // 車路折線（濕瀝青）— 葵涌 highways 抽樣
+  const asp = kwMatFromFacade('wetRoad', 4, 16, 0.18)
+    || new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.35, metalness: 0.12 });
+  if (asp.map && KWAI.facTex.wetRoadR) {
+    const rm = KWAI.facTex.wetRoadR.clone();
+    rm.wrapS = rm.wrapT = THREE.RepeatWrapping;
+    rm.repeat.set(4, 16);
+    asp.roughnessMap = rm;
+    asp.roughness = 1;
+  }
+  let segs = 0;
+  const segCap = lite ? 40 : 120;
+  for (const road of (lay.highways || [])) {
+    if (segs >= segCap) break;
+    if (!/primary|secondary|tertiary/.test(road.highway || '')) continue;
+    const pts = kwOsmPts(road);
+    for (let i = 0; i + 1 < pts.length && segs < segCap; i++) {
+      const a = pts[i], b = pts[i + 1];
+      const len = Math.hypot(b.x - a.x, b.z - a.z);
+      if (len < 3) continue;
+      const yaw = Math.atan2(b.x - a.x, b.z - a.z);
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(11, 0.06, len), asp);
+      mesh.position.set((a.x + b.x) * 0.5, 0.02, (a.z + b.z) * 0.5);
+      mesh.rotation.y = yaw;
+      mesh.receiveShadow = true;
+      mesh.userData.noMerge = true;
+      g.add(mesh);
+      segs++;
+    }
+  }
+  root.add(g);
+  KWAI.osmFacadeDone = true;
+  console.info('[kwai-osm] façade+highway', { facades: n, roadSegs: segs });
+}
+
+
+
 /** 閘口／工廈大堂／葵芳站／公屋／食堂／地磅 — 可入（重用 buildRoom）；core20 加細節＋兩間新房 */
 
 /** OSM／公開布局驅動嘅工廈／公屋密度（playable 尺度；禁 Google mesh／相板）*/
@@ -18350,7 +18843,7 @@ function kwRegisterEnterables() {
 
   addDoor('gatehouse', -22, 40.2, Math.PI);
   addDoor('kw_ind_lobby', -36, 65.5, Math.PI);
-  addDoor('kf_concourse', -82, 86.2, Math.PI);
+  addDoor('kf_concourse', -1367.6, 320.9, Math.PI); // 跟站廳 hkGeo
   addDoor('estate_corridor', -100, 98.5, Math.PI);
   addDoor('ind_canteen', -42, 72.5, Math.PI);
   addDoor('weigh_booth', -12, 35.5, Math.PI);
@@ -18447,7 +18940,7 @@ function kwBuildP1Urban() {
   kwEstateSlab(root, -105, 125, 24, 90, 10);
 
   // 葵芳站（戲仿）——肘形盡頭
-  kwStationKwaiFong(root, -82, 78, null); // 禁站相
+  kwStationKwaiFong(root, -1367.6, 312.7, null); // 葵芳站 OSM hkGeo（禁站相／舊 −913 無乘 K）
 
   // 迴旋感 stub（站前）
   kwRoundabout(root, -68, 70, 9);
@@ -18518,6 +19011,9 @@ function kwBuildP1Urban() {
     if (!KWAI.threePart) kwBuildThreePartStub();
     try { await kwLoadP1(); } catch (e) { console.warn('[kwai-p1]', e && e.message); }
     try { await kwLoadKenney(); } catch (e) { console.warn('[kwai-kenney]', e && e.message); }
+    try { await kwLoadFacadeTiles(); } catch (e) { console.warn('[kwai-fac]', e && e.message); }
+    try { await kwLoadInteriorTiles(); } catch (e) { console.warn('[kwai-int]', e && e.message); }
+    try { await kwLoadOsmLayoutCore20(); } catch (e) { console.warn('[kwai-osm]', e && e.message); }
     kwBuildP1Urban();
     kwBuildDensityD1();
     kwBuildDensityD2a();
@@ -18525,10 +19021,10 @@ function kwBuildP1Urban() {
     kwBuildDensityD3();
     if (typeof kwBuildDensityD3Plus === 'function') kwBuildDensityD3Plus();
     kwBuildDensityD4();
-    try { await kwLoadInteriorTiles(); } catch (e) { console.warn('[kwai-int]', e && e.message); }
     kwRegisterEnterables();
     kwQuayEdgeSoft();
     kwBuildDockPlus();
+    try { kwApplyOsmFacadeDensity(); } catch (e) { console.warn('[kwai-osm-fac]', e && e.message); }
     if (typeof kwStripPhotoBoards === 'function') kwStripPhotoBoards();
     if (typeof HOOKS !== 'undefined') {
       HOOKS.tod = HOOKS.tod || [];
@@ -18943,10 +19439,13 @@ Object.assign(window, {
 if (typeof window.NT === 'object') Object.assign(window.NT, { GOV_FEES, FINE_CATALOG, LITTER, issueFine, govBailFee, govBailLabel });
 
 /* =========================================================================
- * 葵青口岸環境音（船笛／岸吊／水拍／護舷／吊機軌）——跟 KWAI.zones kt_part_*
- * D3 碼頭細節落地後加密靠海偶發；戲仿、非真碼頭商標聲。唔郁 Pages。
+ * 葵青口岸環境音（船笛／岸吊／水拍／護舷／吊機軌／D3 工廈）——跟 KWAI.zones kt_part_*
+ * D3 再加密：冷氣低嗡／銹摺閘近刮／卡板疏響；戲仿、非真碼頭商標聲。唔郁 Pages。
  * ========================================================================= */
-const PORTAMB = { cool: 0, craneCool: 0, waterCool: 0, fenderCool: 0, railCool: 0, lastZone: '' };
+const PORTAMB = {
+  cool: 0, craneCool: 0, waterCool: 0, fenderCool: 0, railCool: 0,
+  acCool: 0, gateCool: 0, palletCool: 0, lastZone: ''
+};
 
 function portAmbPlayerXZ() {
   if (typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined' && car.pos)
@@ -18956,12 +19455,14 @@ function portAmbPlayerXZ() {
   return null;
 }
 
-/** 粗分區：靠海／Part B 南／Part C 遠岸／Part A 堆場 */
+/** 粗分區：靠海／Part B 南／Part C 遠岸／工廈帶／Part A 堆場 */
 function portAmbZone(x, z) {
   const bx = (typeof BOUND !== 'undefined') ? BOUND.x : 28.5;
   if (x > bx + 120) return 'kt_part_c_tsingyi_skyline';
   if (z < -180 && x > bx - 10) return 'kt_part_b_ct8_hint';
   if (x > bx - 8) return 'kt_quay_edge';
+  // D3 工廈街：冷氣／摺閘／貨台（跟 kwBuildDensityD3 acFaces／gateSites）
+  if (x > -78 && x < -18 && z > 35 && z < 125) return 'kt_ind_street';
   return 'kt_part_a_yard';
 }
 
@@ -18975,11 +19476,15 @@ function portAmbSim(dt) {
   PORTAMB.waterCool = Math.max(0, PORTAMB.waterCool - dt);
   PORTAMB.fenderCool = Math.max(0, PORTAMB.fenderCool - dt);
   PORTAMB.railCool = Math.max(0, PORTAMB.railCool - dt);
+  PORTAMB.acCool = Math.max(0, PORTAMB.acCool - dt);
+  PORTAMB.gateCool = Math.max(0, PORTAMB.gateCool - dt);
+  PORTAMB.palletCool = Math.max(0, PORTAMB.palletCool - dt);
   const p = portAmbPlayerXZ(); if (!p) return;
   const zone = portAmbZone(p.x, p.z);
   PORTAMB.lastZone = zone;
   const nearSea = zone === 'kt_quay_edge' || zone === 'kt_part_b_ct8_hint' || zone === 'kt_part_c_tsingyi_skyline';
-  if (!nearSea && zone !== 'kt_part_a_yard') return;
+  const ind = zone === 'kt_ind_street';
+  if (!nearSea && zone !== 'kt_part_a_yard' && !ind) return;
   if (typeof sfx !== 'function') return;
   // 船笛：靠海稀疏
   if (nearSea && PORTAMB.cool <= 0 && Math.random() < dt * 0.045) {
@@ -19005,6 +19510,24 @@ function portAmbSim(dt) {
   if (nearSea && PORTAMB.waterCool <= 0 && Math.random() < dt * (zone === 'kt_quay_edge' ? 0.11 : 0.035)) {
     PORTAMB.waterCool = 3.2 + Math.random() * 5;
     sfx('port_water', zone === 'kt_part_c_tsingyi_skyline' ? 0.4 : 0.7);
+  }
+  // —— D3 工廈：冷氣低嗡（疏、唔旺角）——
+  if (ind && PORTAMB.acCool <= 0 && Math.random() < dt * 0.07) {
+    PORTAMB.acCool = 9 + Math.random() * 14;
+    sfx('ac_hum', 0.65);
+  }
+  // —— D3 銹摺閘近距輕刮（貨台口 x≈-54..-46）——
+  if (ind && p.x > -58 && p.x < -42 && PORTAMB.gateCool <= 0 && Math.random() < dt * 0.045) {
+    PORTAMB.gateCool = 12 + Math.random() * 18;
+    sfx('gate_scrape', 0.7);
+  }
+  // —— D3 碼頭側卡板／貨台疏木鐵響（泊位內陸緣；唔塞櫃巷）——
+  const nearPallet = (zone === 'kt_part_a_yard' || zone === 'kt_quay_edge')
+    && p.x > 2 && p.x < (typeof BOUND !== 'undefined' ? BOUND.x : 28.5) + 2
+    && p.z > -30 && p.z < 75;
+  if (nearPallet && PORTAMB.palletCool <= 0 && Math.random() < dt * 0.04) {
+    PORTAMB.palletCool = 10 + Math.random() * 16;
+    sfx('pallet_clack', 0.55);
   }
 }
 
