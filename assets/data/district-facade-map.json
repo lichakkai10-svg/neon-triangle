@@ -1,0 +1,195 @@
+{
+  "updated": "2026-10-17T19:56:00+08:00",
+  "aligns_with": "data/osm-hk18-skeleton-core23.json districts[].id",
+  "labels_doc": "docs/hk-18-districts-labels.md",
+  "path": "m1c/assets/tex/facade/district/",
+  "hook": "世界路網擠出門面：按 player 所在 district id 換 facade_d_* RepeatWrapping；區牌短標用 labels；禁相板",
+  "kwai_tsing": "facade_d_kc + Kenney；可行駛必須掛 elbow arterials points，唔好 kt_straight",
+  "districts": [
+    {
+      "id": "central_west",
+      "name_zh": "中西區",
+      "dx": -6100.0,
+      "dz": -12124.4,
+      "facade_file": "facade_d_cw.jpg",
+      "facade_path": "m1c/assets/tex/facade/district/facade_d_cw.jpg",
+      "accent": "#8A9AA8"
+    },
+    {
+      "id": "wan_chai",
+      "name_zh": "灣仔區",
+      "dx": -8385.6,
+      "dz": -12937.2,
+      "facade_file": "facade_d_cwb.jpg",
+      "facade_path": "m1c/assets/tex/facade/district/facade_d_cwb.jpg",
+      "accent": "#C4A574"
+    },
+    {
+      "id": "eastern",
+      "name_zh": "東區",
+      "dx": -16215.2,
+      "dz": -11776.1,
+      "facade_file": "facade_d_cwb.jpg",
+      "facade_path": "m1c/assets/tex/facade/district/facade_d_cwb.jpg",
+      "accent": "#B8A888"
+    },
+    {
+      "id": "southern",
+      "name_zh": "南區",
+      "dx": -6331.7,
+      "dz": -17913.0,
+      "facade_file": "facade_d_s_wch.jpg",
+      "facade_path": "m1c/assets/tex/facade/district/facade_d_s_wch.jpg",
+      "accent": "#D8D0C4"
+    },
+    {
+      "id": "yau_tsim_mong",
+      "name_zh": "油尖旺區",
+      "dx": -7876.0,
+      "dz": -7297.9,
+      "facade_file": "facade_d_mk.jpg",
+      "facade_path": "m1c/assets/tex/facade/district/facade_d_mk.jpg",
+      "accent": "#3A3E44"
+    },
+    {
+      "id": "sham_shui_po",
+      "name_zh": "深水埗區",
+      "dx": -6640.5,
+      "dz": -4146.5,
+      "facade_file": "facade_d_ssp.jpg",
+      "facade_path": "m1c/assets/tex/facade/district/facade_d_ssp.jpg",
+      "accent": "#C9A84A"
+    },
+    {
+      "id": "kowloon_city",
+      "name_zh": "九龍城區",
+      "dx": -11273.4,
+      "dz": -4478.2,
+      "facade_file": "facade_d_kcw.jpg",
+      "facade_path": "m1c/assets/tex/facade/district/facade_d_kcw.jpg",
+      "accent": "#8B4A3A"
+    },
+    {
+      "id": "wong_tai_sin",
+      "name_zh": "黃大仙區",
+      "dx": -11736.7,
+      "dz": -2156.2,
+      "facade_file": "facade_d_wts.jpg",
+      "facade_path": "m1c/assets/tex/facade/district/facade_d_wts.jpg",
+      "accent": "#D4B8B0"
+    },
+    {
+      "id": "kwun_tong",
+      "name_zh": "觀塘區",
+      "dx": -16524.1,
+      "dz": -6966.2,
+      "facade_file": "facade_d_kt.jpg",
+      "facade_path": "m1c/assets/tex/facade/district/facade_d_kt.jpg",
+      "accent": "#6A7A88"
+    },
+    {
+      "id": "kwai_tsing",
+      "name_zh": "葵青區",
+      "dx": -1389.9,
+      "dz": 331.7,
+      "facade_file": "facade_d_kc.jpg",
+      "facade_path": "m1c/assets/tex/facade/district/facade_d_kc.jpg",
+      "accent": "#7A8088",
+      "note": "葵涌工廈／碼頭；路跟 kwai_chung_elbow.arterials[].points"
+    },
+    {
+      "id": "tsuen_wan",
+      "name_zh": "荃灣區",
+      "dx": 772.2,
+      "dz": 2653.8,
+      "facade_file": "facade_d_tw.jpg",
+      "facade_path": "m1c/assets/tex/facade/district/facade_d_tw.jpg",
+      "accent": "#9AA4AE"
+    },
+    {
+      "id": "tuen_mun",
+      "name_zh": "屯門區",
+      "dx": 21929.1,
+      "dz": 5971.0,
+      "facade_file": "facade_d_tm.jpg",
+      "facade_path": "m1c/assets/tex/facade/district/facade_d_tm.jpg",
+      "accent": "#E8E0D0"
+    },
+    {
+      "id": "yuen_long",
+      "name_zh": "元朗區",
+      "dx": 14207.6,
+      "dz": 14927.5,
+      "facade_file": "facade_d_yl.jpg",
+      "facade_path": "m1c/assets/tex/facade/district/facade_d_yl.jpg",
+      "accent": "#2E8B57",
+      "market": "tex/market/"
+    },
+    {
+      "id": "north",
+      "name_zh": "北區",
+      "dx": -2934.2,
+      "dz": 23220.5,
+      "facade_file": "facade_d_n.jpg",
+      "facade_path": "m1c/assets/tex/facade/district/facade_d_n.jpg",
+      "accent": "#C4B090"
+    },
+    {
+      "id": "tai_po",
+      "name_zh": "大埔區",
+      "dx": -7721.5,
+      "dz": 15756.8,
+      "facade_file": "facade_d_tp.jpg",
+      "facade_path": "m1c/assets/tex/facade/district/facade_d_tp.jpg",
+      "accent": "#7A9A7A"
+    },
+    {
+      "id": "sha_tin",
+      "name_zh": "沙田區",
+      "dx": -10655.7,
+      "dz": 4478.2,
+      "facade_file": "facade_d_st.jpg",
+      "facade_path": "m1c/assets/tex/facade/district/facade_d_st.jpg",
+      "accent": "#6BA88A"
+    },
+    {
+      "id": "sai_kung",
+      "name_zh": "西貢區",
+      "dx": -23627.9,
+      "dz": 4478.2,
+      "facade_file": "facade_d_sk.jpg",
+      "facade_path": "m1c/assets/tex/facade/district/facade_d_sk.jpg",
+      "accent": "#F0F4F8"
+    },
+    {
+      "id": "islands",
+      "name_zh": "離島區",
+      "dx": 27179.8,
+      "dz": -11444.4,
+      "facade_file": "facade_d_is_taio.jpg",
+      "facade_path": "m1c/assets/tex/facade/district/facade_d_is_taio.jpg",
+      "accent": "#6B5A48",
+      "facade_alt": "m1c/assets/tex/facade/district/facade_d_is_lantau.jpg"
+    }
+  ],
+  "files": [
+    "facade_d_cw.jpg",
+    "facade_d_cwb.jpg",
+    "facade_d_is_lantau.jpg",
+    "facade_d_is_taio.jpg",
+    "facade_d_kc.jpg",
+    "facade_d_kcw.jpg",
+    "facade_d_kt.jpg",
+    "facade_d_mk.jpg",
+    "facade_d_n.jpg",
+    "facade_d_s_wch.jpg",
+    "facade_d_sk.jpg",
+    "facade_d_ssp.jpg",
+    "facade_d_st.jpg",
+    "facade_d_tm.jpg",
+    "facade_d_tp.jpg",
+    "facade_d_tw.jpg",
+    "facade_d_wts.jpg",
+    "facade_d_yl.jpg"
+  ]
+}

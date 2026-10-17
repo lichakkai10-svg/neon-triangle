@@ -274,7 +274,7 @@ body.aim #cross{transform:scale(.45)}
     if(b && cur < n) b.style.width=n+'%';
     if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
-  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core22。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core23。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
   var tipEl=document.getElementById("loadTips"); var ti=0;
   if(tipEl) tipEl.textContent=tips[0];
   var tipTimer=setInterval(function(){
@@ -284,7 +284,7 @@ body.aim #cross{transform:scale(.45)}
   setTimeout(function(){
     if(done) return;
     var t=document.getElementById('loadTxt');
-    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core22';
+    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core23';
   },45000);
 })();
 </script>
@@ -8825,51 +8825,88 @@ Object.assign(window.NT, { mbBuild, MB_ROOM, HUMAN, OUTFITS, startHideout });
  *  · 繼續：還原兩位主角（地區、位置、乾淨錢、黑錢、物品、生命、護甲、解鎖）、劇情旗標；有進行中任務就重新開始嗰個任務
  *  · ?nosave 停用存檔；?new 忽略存檔（開新遊戲時先清）
  * ========================================================================= */
-const SAVE_KEY = 'neonTriangle.save.v1';
-const SAVE = { on: !URLQ.has('nosave'), resume: null, decided: false, lastT: 0, data: null };
-function saveRead() { try { const s = localStorage.getItem(SAVE_KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
-function saveClear() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* 私隱模式 */ } }
+const SAVE_KEY = 'neonTriangle.save.v2';
+const SAVE_KEY_LEGACY = 'neonTriangle.save.v1';
+const SAVE = { on: !URLQ.has('nosave'), resume: null, decided: false, lastT: 0, data: null, pendingBoot: false };
+function saveRead() {
+  try {
+    let s = localStorage.getItem(SAVE_KEY);
+    if (!s) {
+      const leg = localStorage.getItem(SAVE_KEY_LEGACY);
+      if (leg) { try { localStorage.setItem(SAVE_KEY, leg); } catch (e) {} s = leg; }
+    }
+    if (!s) return null;
+    const d = JSON.parse(s);
+    if (d && (d.v === 1 || d.v === 2)) return d;
+    return null;
+  } catch (e) { return null; }
+}
+function saveClear() {
+  try { localStorage.removeItem(SAVE_KEY); localStorage.removeItem(SAVE_KEY_LEGACY); } catch (e) { /* 私隱模式 */ }
+}
 function saveCollect() {
   if (typeof saveHero === 'function' && HERO.cur) saveHero();
-  const heroes = {}; for (const [id, h] of Object.entries(HEROES)) heroes[id] = { area: h.area, pos: h.pos, yaw: h.yaw, cash: h.cash, dirty: h.dirty, inv: h.inv, hp: h.hp, armour: h.armour, unlocked: h.unlocked };
-  return { v: 1, t: Date.now(), resume: SAVE.resume, cur: HERO.cur, heroes, flags: { ...FLAGS }, side: { robCount: SIDE9.robCount || 0 } };
+  const heroes = {};
+  for (const [id, h] of Object.entries(HEROES)) {
+    heroes[id] = { area: h.area, pos: h.pos ? { x: h.pos.x, z: h.pos.z } : null, yaw: h.yaw, cash: h.cash, dirty: h.dirty, inv: h.inv ? { ...h.inv } : null, hp: h.hp, armour: h.armour, unlocked: h.unlocked };
+  }
+  return { v: 2, t: Date.now(), resume: SAVE.resume, cur: HERO.cur, heroes, flags: { ...FLAGS }, side: { robCount: SIDE9.robCount || 0 }, mode: state.mode || 'foot' };
 }
 function saveNow(why = '') {
   if (!SAVE.on || !state.started || !SAVE.decided) return false;
   if (player.dead || (typeof CINE !== 'undefined' && CINE.on) || SIDE9.sit) return false;
-  try { const d = saveCollect(); localStorage.setItem(SAVE_KEY, JSON.stringify(d)); SAVE.data = d; SAVE.lastT = state.time; SAVE.why = why; return true; } catch (e) { return false; }
+  try {
+    const d = saveCollect();
+    localStorage.setItem(SAVE_KEY, JSON.stringify(d));
+    try { localStorage.setItem(SAVE_KEY_LEGACY, JSON.stringify(d)); } catch (e) {}
+    SAVE.data = d; SAVE.lastT = state.time; SAVE.why = why;
+    return true;
+  } catch (e) { return false; }
 }
 function saveApply(d) {
   for (const [id, s] of Object.entries(d.heroes || {})) if (HEROES[id]) Object.assign(HEROES[id], s);
   Object.assign(FLAGS, d.flags || {}); SIDE9.robCount = d.side?.robCount || 0; SAVE.resume = d.resume || null;
   loadHero(HEROES[d.cur] ? d.cur : 'kit');
+  if (typeof toast === 'function') toast('已讀取存檔 · 進度保留', 2200);
 }
 /* 任務開始前存檔（記住進行中任務；任務期間唔再自動存，避免「帶住戰利品重玩」）*/
 { const _st = startMission; startMission = function (id, retry) {
-  if (!SAVE.decided && id === 'manifest' && !URLQ.has('m') && !URLQ.has('new') && SAVE.on) { const d = saveRead(); if (d && d.v === 1) { showSaveMenu(d); return; } }
+  if (!SAVE.decided && !URLQ.has('m') && !URLQ.has('new') && SAVE.on) {
+    const d = saveRead();
+    if (d && (d.v === 1 || d.v === 2)) { showSaveMenu(d); return; }
+  }
   SAVE.decided = true;
   if (!retry) { SAVE.resume = id; saveNow('mission:' + id); }
   return _st(id, retry);
 }; }
 if (URLQ.has('new')) saveClear();
-if (URLQ.has('m') || URLQ.has('free')) SAVE.decided = true;
+if (URLQ.has('m')) SAVE.decided = true;
+/* ?free：仍可繼續舊檔；唔再強制跳過存檔選單 */
 HOOKS.purchase.push(() => { if (!MS.id) saveNow('purchase'); });
 HOOKS.finalePassed.push(() => { SAVE.resume = null; FLAGS.gameDone = true; setTimeout(() => saveNow('finale'), 200); });
 HOOKS.sim.push(() => {
-  if (!SAVE.decided || MS.id || state.locked || WANTED.stars || INT.busy) return;
-  if (state.time - SAVE.lastT > 15) saveNow('auto');
+  if (!SAVE.decided || state.locked || INT.busy) return;
+  /* core23：自由活動 8 秒一存；任務中只記位置唔改 resume */
+  if (MS.id) {
+    if (state.time - SAVE.lastT > 20) { const r = SAVE.resume; saveNow('mission-pos'); SAVE.resume = r; }
+    return;
+  }
+  if (WANTED.stars) return;
+  if (state.time - SAVE.lastT > 8) saveNow('auto');
 });
-const saveBg = () => { if (!MS.id && !WANTED.stars) saveNow('background'); };
-window.addEventListener('pagehide', saveBg); document.addEventListener('visibilitychange', () => { if (document.hidden) saveBg(); });
+const saveBg = () => { if (SAVE.decided) saveNow('background'); };
+window.addEventListener('pagehide', saveBg);
+window.addEventListener('beforeunload', saveBg);
+document.addEventListener('visibilitychange', () => { if (document.hidden) saveBg(); });
 { const _sw = sideWantedGone; sideWantedGone = function (how) { const had = !!ROB.job; _sw(how); if (had) setTimeout(() => saveNow('side'), 100); }; }
 
 /* ---------- 「繼續／新遊戲」畫面 ---------- */
-{ const st = document.createElement('style'); st.textContent = `#saveMenu{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:radial-gradient(ellipse at center,rgba(10,12,16,.82),rgba(0,0,0,.95));pointer-events:auto;font-family:"PingFang HK","Noto Sans TC",sans-serif}
+{ const st = document.createElement('style'); st.textContent = `#saveMenu{position:fixed;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:radial-gradient(ellipse at center,rgba(10,12,16,.82),rgba(0,0,0,.95));pointer-events:auto;font-family:"PingFang HK","Noto Sans TC",sans-serif}
 #saveMenu.show{display:flex}#saveMenu h1{margin:0;font:900 italic 34px "PingFang HK",sans-serif;color:#f0c419;letter-spacing:.12em;text-shadow:0 0 18px rgba(240,196,25,.5)}
 #saveMenu .info{font-size:13px;color:#cfd8de;text-align:center;line-height:1.7}#saveMenu .info b{color:#fff}
 #saveMenu .btns{display:flex;gap:14px;margin-top:10px}#saveMenu .btns div{min-width:130px;padding:11px 18px;text-align:center;font-size:16px;font-weight:800;letter-spacing:.2em;color:#eee;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.5)}
 #saveMenu .btns div.pri{border-color:rgba(240,196,25,.85);color:#f0c419}#saveMenu .sm{font-size:10px;color:#7d8a92;margin-top:6px}`; document.head.appendChild(st);
-  const m = document.createElement('div'); m.id = 'saveMenu'; m.innerHTML = '<h1>霓虹三角</h1><div class="info" id="saveInfo"></div><div class="btns"><div class="pri" id="saveCont">繼續</div><div id="saveNew">新遊戲</div></div><div class="sm">自動存檔 · 任務開始、買嘢、自由活動每 15 秒</div>'; document.body.appendChild(m);
+  const m = document.createElement('div'); m.id = 'saveMenu'; m.innerHTML = '<h1>霓虹三角</h1><div class="info" id="saveInfo"></div><div class="btns"><div class="pri" id="saveCont">繼續</div><div id="saveNew">新遊戲</div></div><div class="sm">自動存檔 · 任務／買嘢／自由活動每 8 秒 · 刷新可繼續</div>'; document.body.appendChild(m);
   const go = (cont) => { if (!m.classList.contains('show')) return; m.classList.remove('show'); state.locked = false; SAVE.decided = true;
     if (cont && SAVE.menuData) { const d = SAVE.menuData; withFade(() => { saveApply(d); if (d.resume && MISSIONS[d.resume] && !d.flags?.gameDone) startMission(d.resume); else { toast('繼續自由活動', 2000); saveNow('continue'); } }); }
     else { saveClear(); startMission('manifest'); } };
@@ -16551,6 +16588,7 @@ function scapePlaceP0() {
 
   // —— gov §6 市政補丁（稀疏；禁相板；唔塞葵涌 D3）——
   scapePlaceMuniS6();
+  try { scapePlaceSpawnYard(); } catch (e) { /* */ }
 
   // 唐樓／便利店／元朗街市（街景清單·非市政牌；維持戲仿）
   scapeAt('hk', 22.3198, 114.1688, null, (p, x, z) => scapeTongLauArcade(p, x, z, 0.05));
@@ -16597,7 +16635,7 @@ function scapePlaceP0() {
   setTimeout(() => boot(), 0);
 }
 
-Object.assign(window.NT || (window.NT = {}), { SCAPE, scapePlaceP0, scapePlaceMuniS6, scapeLookLR, scapeBusWait, scapeHospitalExt });
+Object.assign(window.NT || (window.NT = {}), { SCAPE, scapePlaceP0, scapePlaceMuniS6, scapePlaceSpawnYard, scapeLookLR, scapeBusWait, scapeHospitalExt });
 /* =========================================================================
  * M1c · 葵涌貨櫃碼頭真實化（寫實比例）
  *  · 禁 documentary 相板（docs/kwai-no-photo-boards.md）：overview／公屋／站／街景大 Plane
@@ -18786,6 +18824,409 @@ function kwApplyOsmFacadeDensity() {
   console.info('[kwai-osm] façade+highway', { facades: n, roadSegs: segs });
 }
 
+/** core23：讀元朗街市＋尖沙咀海岸 OSM */
+async function kwLoadOsmNextYlHarbour() {
+  if (KWAI.osmNext) return KWAI.osmNext;
+  const tries = [
+    'data/osm-layout-next-yl-harbour.json',
+    '../data/osm-layout-next-yl-harbour.json',
+    './assets/data/osm-layout-next-yl-harbour.json'
+  ];
+  for (const u of tries) {
+    try {
+      const r = await fetch(u, { cache: 'no-store' });
+      if (!r.ok) continue;
+      const j = await r.json();
+      if (j && (j.yuen_long_market || j.harbour_day)) {
+        KWAI.osmNext = j;
+        console.info('[kwai-osm] next yl-harbour', {
+          yl: j.yuen_long_market && j.yuen_long_market.counts,
+          hb: j.harbour_day && j.harbour_day.counts
+        });
+        return j;
+      }
+    } catch (e) { /* */ }
+  }
+  console.warn('[kwai-osm] osm-layout-next-yl-harbour.json 未到手');
+  return null;
+}
+
+/** 沿區塊 highways／buildings 掛程序密度（禁相板）*/
+function kwApplyRegionOsmDensity(tag, block, opts) {
+  if (!block || KWAI['osmDens_' + tag]) return;
+  opts = opts || {};
+  const root = KWAI.group || new THREE.Group();
+  if (!KWAI.group) { root.name = 'kwaichung-dock'; KWAI.group = root; scene.add(root); }
+  const g = new THREE.Group(); g.name = 'kt_osm_' + tag; g.userData.kwaichung = true;
+  const lite = typeof NT !== 'undefined' && NT.safariLite;
+  const shopMat = kwMatFromFacade('shop', 2, 1.2, 0.75) || new THREE.MeshStandardMaterial({ color: 0x6a5040, roughness: 0.8 });
+  const winMat = kwMatFromFacade('beigeWin', 3, 4, 0.7) || new THREE.MeshStandardMaterial({ color: 0xc8b8a0, roughness: 0.85 });
+  const housing = kwMatFromFacade('tonglau', 2.5, 4, 0.85) || kwMatFromFacade('housing', 2.5, 4, 0.85) || winMat;
+  const indMat = kwMatFromFacade('indCorr', 2, 3, 0.9) || new THREE.MeshStandardMaterial({ color: 0x5a5e62, roughness: 0.88 });
+  const asp = kwMatFromFacade('wetRoad', 4, 12, 0.2) || new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.4, metalness: 0.1 });
+  let nFac = 0, nRoad = 0, nBld = 0;
+  const facCap = lite ? (opts.facCapLite || 40) : (opts.facCap || 90);
+  const roadCap = lite ? (opts.roadCapLite || 50) : (opts.roadCap || 140);
+  const bldCap = lite ? (opts.bldCapLite || 30) : (opts.bldCap || 80);
+  const STEP = lite ? 16 : 12;
+
+  const roads = block.highways || [];
+  for (const road of roads) {
+    if (nRoad >= roadCap && nFac >= facCap) break;
+    const hw = road.highway || '';
+    if (!/primary|secondary|tertiary|residential|unclassified|pedestrian|service/.test(hw)) continue;
+    // core23：過長 primary 直段拆短，唔畫成「直高速」
+    const pts = kwOsmPts(road);
+    for (let i = 0; i + 1 < pts.length; i++) {
+      let a = pts[i], b = pts[i + 1];
+      let len = Math.hypot(b.x - a.x, b.z - a.z);
+      if (len < 3) continue;
+      const yaw = Math.atan2(b.x - a.x, b.z - a.z);
+      const maxSeg = (hw === 'primary') ? 48 : 90;
+      const pieces = Math.max(1, Math.ceil(len / maxSeg));
+      for (let p = 0; p < pieces && nRoad < roadCap; p++) {
+        const t0 = p / pieces, t1 = (p + 1) / pieces;
+        const ax = a.x + (b.x - a.x) * t0, az = a.z + (b.z - a.z) * t0;
+        const bx = a.x + (b.x - a.x) * t1, bz = a.z + (b.z - a.z) * t1;
+        const plen = Math.hypot(bx - ax, bz - az);
+        const w = hw === 'primary' ? 12 : (hw === 'secondary' ? 10 : 8);
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, 0.06, plen), asp);
+        mesh.position.set((ax + bx) * 0.5, 0.02, (az + bz) * 0.5);
+        mesh.rotation.y = yaw;
+        mesh.receiveShadow = true; mesh.userData.noMerge = true;
+        g.add(mesh); nRoad++;
+      }
+      // 門面沿路
+      if (/primary|secondary|tertiary|residential|pedestrian/.test(hw)) {
+        const steps = Math.max(1, Math.floor(len / STEP));
+        for (let s = 0; s < steps && nFac < facCap; s++) {
+          const t = (s + 0.5) / steps;
+          const mx = a.x + (b.x - a.x) * t, mz = a.z + (b.z - a.z) * t;
+          const side = (nFac % 2 ? 1 : -1) * (6.5 + (nFac % 3));
+          const px = mx + Math.cos(yaw) * side, pz = mz - Math.sin(yaw) * side;
+          const isRes = hw === 'residential' || hw === 'pedestrian';
+          const mat = isRes ? housing : (opts.preferShop ? shopMat : (nFac % 2 ? shopMat : winMat));
+          const h = isRes ? (28 + (nFac % 6) * 6) : (10 + (nFac % 5) * 3);
+          const body = new THREE.Mesh(new THREE.BoxGeometry(8 + (nFac % 3), h, 6), mat);
+          body.position.set(px, h / 2, pz); body.rotation.y = yaw;
+          body.castShadow = true; body.userData.noMerge = true;
+          g.add(body); nFac++;
+        }
+      }
+    }
+  }
+
+  // 樓腳擠出（抽樣）
+  const blds = block.buildings || [];
+  const stride = Math.max(1, Math.floor(blds.length / Math.max(1, bldCap)));
+  for (let i = 0; i < blds.length && nBld < bldCap; i += stride) {
+    const b = blds[i];
+    const c = b.centroid || {};
+    const x = c.dx != null ? c.dx : (c.x);
+    const z = c.dz != null ? c.dz : (c.z);
+    if (!Number.isFinite(x) || !Number.isFinite(z)) continue;
+    const aabb = b.aabb || {};
+    const w = Math.min(28, Math.max(6, ((aabb.max_dx || aabb.max_x || x + 5) - (aabb.min_dx || aabb.min_x || x - 5))));
+    const d = Math.min(22, Math.max(5, ((aabb.max_dz || aabb.max_z || z + 5) - (aabb.min_dz || aabb.min_z || z - 5))));
+    const levels = b.levels || (2 + (i % 5));
+    const h = Math.min(90, Math.max(8, levels * 3.0));
+    const mat = /industrial|warehouse/.test(b.building || '') ? indMat : housing;
+    const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    body.position.set(x, h / 2, z); body.castShadow = true; body.userData.noMerge = true;
+    g.add(body); nBld++;
+  }
+
+  root.add(g);
+  KWAI['osmDens_' + tag] = true;
+  console.info('[kwai-osm]', tag, { roads: nRoad, facades: nFac, bld: nBld });
+}
+
+function kwApplyOsmNextDensity() {
+  const j = KWAI.osmNext;
+  if (!j) return;
+  if (j.yuen_long_market) {
+    kwApplyRegionOsmDensity('yl', j.yuen_long_market, { preferShop: true, facCap: 70, bldCap: 60 });
+    // 街市錨：加強濕街市 props
+    const a = (j.yuen_long_market.anchors || [])[0];
+    if (a && typeof scapeWetMarket === 'function' && typeof scene !== 'undefined') {
+      const parent = KWAI.group || scene;
+      try { scapeWetMarket(parent, a.dx, a.dz, 0.25); } catch (e) { /* */ }
+    }
+  }
+  if (j.harbour_day) {
+    kwApplyRegionOsmDensity('harbour', j.harbour_day, { preferShop: false, facCap: 55, bldCap: 45, roadCap: 100 });
+  }
+}
+
+/** core23：讀十八區骨架 JSON（districts／spines／kwai elbow arterials）*/
+async function kwLoadHk18Skeleton() {
+  if (KWAI.hk18Skel) return KWAI.hk18Skel;
+  const tries = [
+    'data/osm-hk18-skeleton-core23.json',
+    '../data/osm-hk18-skeleton-core23.json',
+    './assets/data/osm-hk18-skeleton-core23.json'
+  ];
+  for (const u of tries) {
+    try {
+      const r = await fetch(u, { cache: 'no-store' });
+      if (!r.ok) continue;
+      const j = await r.json();
+      if (j && Array.isArray(j.districts) && j.districts.length >= 18) {
+        KWAI.hk18Skel = j;
+        console.info('[kwai-hk18] skeleton', j.counts || { d: j.districts.length, s: (j.spines || []).length, a: (j.kwai_chung_elbow && j.kwai_chung_elbow.arterials || []).length });
+        return j;
+      }
+    } catch (e) { /* */ }
+  }
+  console.warn('[kwai-hk18] osm-hk18-skeleton-core23.json 未到手');
+  return null;
+}
+
+function kwAspMat() {
+  const asp = (typeof kwMatFromFacade === 'function' && kwMatFromFacade('wetRoad', 4, 14, 0.2))
+    || new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.42, metalness: 0.1 });
+  return asp;
+}
+
+/** 折線 → 可駛瀝青段（世界 dx/dz）；禁直線高速長 primary */
+function kwPaintPolyline(parent, pts, opts) {
+  opts = opts || {};
+  const asp = opts.mat || kwAspMat();
+  const width = opts.width || 10;
+  const y = opts.y != null ? opts.y : 0.028;
+  const maxSeg = opts.maxSeg || 56;
+  const lite = typeof NT !== 'undefined' && NT.safariLite;
+  let n = 0;
+  const cap = opts.cap != null ? opts.cap : (lite ? 40 : 120);
+  for (let i = 0; i + 1 < pts.length && n < cap; i++) {
+    const a = pts[i], b = pts[i + 1];
+    const ax = a.x != null ? a.x : a.dx, az = a.z != null ? a.z : a.dz;
+    const bx = b.x != null ? b.x : b.dx, bz = b.z != null ? b.z : b.dz;
+    if (![ax, az, bx, bz].every(Number.isFinite)) continue;
+    let len = Math.hypot(bx - ax, bz - az);
+    if (len < 3) continue;
+    const yaw = Math.atan2(bx - ax, bz - az);
+    const pieces = Math.max(1, Math.ceil(len / maxSeg));
+    for (let p = 0; p < pieces && n < cap; p++) {
+      const t0 = p / pieces, t1 = (p + 1) / pieces;
+      const x0 = ax + (bx - ax) * t0, z0 = az + (bz - az) * t0;
+      const x1 = ax + (bx - ax) * t1, z1 = az + (bz - az) * t1;
+      const plen = Math.hypot(x1 - x0, z1 - z0);
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, 0.07, plen), asp);
+      mesh.position.set((x0 + x1) * 0.5, y, (z0 + z1) * 0.5);
+      mesh.rotation.y = yaw + (opts.wiggle ? ((n % 2) ? 0.015 : -0.015) : 0);
+      mesh.receiveShadow = true; mesh.userData.noMerge = true;
+      mesh.name = opts.name || 'kt_skel_road';
+      parent.add(mesh); n++;
+    }
+  }
+  return n;
+}
+
+/** core23：葵涌肘形 arterials（OSM 折線）——唔用直線高速 */
+function kwApplyElbowArterialsFromSkel() {
+  if (KWAI.elbowArts || typeof scene === 'undefined') return;
+  const sk = KWAI.hk18Skel;
+  const arts = sk && sk.kwai_chung_elbow && sk.kwai_chung_elbow.arterials;
+  if (!arts || !arts.length) return;
+  const root = KWAI.group || new THREE.Group();
+  if (!KWAI.group) { root.name = 'kwaichung-dock'; KWAI.group = root; scene.add(root); }
+  const g = new THREE.Group(); g.name = 'kt_elbow_arterials_osm'; g.userData.kwaichung = true;
+  const asp = kwAspMat();
+  const lite = typeof NT !== 'undefined' && NT.safariLite;
+  let total = 0;
+  // 優先：貨櫃碼頭路／葵涌道／葵福／興芳系
+  const rank = (a) => {
+    const n = a.name_zh || a.id || '';
+    if (/貨櫃碼頭/.test(n)) return 0;
+    if (/葵涌道/.test(n)) return 1;
+    if (/葵福|葵富|葵泰|興芳|荔景/.test(n)) return 2;
+    return 3;
+  };
+  const ordered = arts.slice().sort((a, b) => rank(a) - rank(b));
+  for (const road of ordered) {
+    if (total >= (lite ? 70 : 160)) break;
+    const pts = (road.points || []).map((p) => ({ x: p.dx, z: p.dz }));
+    total += kwPaintPolyline(g, pts, {
+      mat: asp, width: /貨櫃碼頭|葵涌道/.test(road.name_zh || '') ? 12 : 9,
+      maxSeg: 44, wiggle: true, cap: lite ? 18 : 36, name: 'kt_art_' + (road.id || 'r')
+    });
+  }
+  root.add(g);
+  KWAI.elbowArts = true;
+  // 禁直軸：再蓋／藏舊中軸高速視覺
+  try {
+    scene.traverse((o) => {
+      if (!o.isMesh || o.userData.kwaichung) return;
+      const p = o.position; if (!p) return;
+      if (Math.abs(p.x) < 6 && Math.abs(p.z) > 60) {
+        const gdim = o.geometry && o.geometry.parameters;
+        if (gdim && gdim.depth > 40 && gdim.width < 16) o.visible = false;
+      }
+    });
+  } catch (e) { /* */ }
+  console.info('[kwai-hk18] elbow arterials painted', total);
+}
+
+/** core23：十八區骨架——區心柱＋可駛區間 spine（世界可見，唔只小地圖）*/
+function kwBuildHk18Skeleton() {
+  if (KWAI.hk18 || typeof scene === 'undefined') return;
+  const root = KWAI.group || new THREE.Group();
+  if (!KWAI.group) { root.name = 'kwaichung-dock'; KWAI.group = root; scene.add(root); }
+  const g = new THREE.Group(); g.name = 'kt_hk18_skeleton'; g.userData.kwaichung = true;
+  const lite = typeof NT !== 'undefined' && NT.safariLite;
+  const sk = KWAI.hk18Skel;
+  const D18 = (sk && sk.districts) ? sk.districts : null;
+  const totem = new THREE.MeshStandardMaterial({ color: 0x3a4550, roughness: 0.7, metalness: 0.15,
+    emissive: new THREE.Color(0.08, 0.12, 0.18), emissiveIntensity: 0.25 });
+  const mass = (typeof kwMatFromFacade === 'function' && (kwMatFromFacade('beigeWin', 2, 4, 0.85) || kwMatFromFacade('tonglau', 2, 4, 0.85)))
+    || new THREE.MeshStandardMaterial({ color: 0x6a7078, roughness: 0.88 });
+  const asp = kwAspMat();
+
+  if (D18) {
+    for (let i = 0; i < D18.length; i++) {
+      const d = D18[i];
+      const x = d.dx, z = d.dz;
+      if (!Number.isFinite(x) || !Number.isFinite(z)) continue;
+      const h = 55 + (i % 5) * 12;
+      const pillar = new THREE.Mesh(new THREE.BoxGeometry(6, h, 6), totem);
+      pillar.position.set(x, h / 2, z); pillar.userData.noMerge = true; pillar.name = 'kt_hk18_' + (d.id || i);
+      g.add(pillar);
+      if (!lite) {
+        for (let k = 0; k < 3; k++) {
+          const ang = (k / 3) * Math.PI * 2 + i * 0.2;
+          const r = 28 + k * 12;
+          const bh = 35 + ((i + k) % 4) * 18;
+          const b = new THREE.Mesh(new THREE.BoxGeometry(14 + k * 2, bh, 12), mass);
+          b.position.set(x + Math.cos(ang) * r, bh / 2, z + Math.sin(ang) * r);
+          b.userData.noMerge = true; g.add(b);
+        }
+      }
+      if (typeof makeNeonSign === 'function') {
+        try {
+          const sg = makeNeonSign((d.name_zh || d.id) + '（骨架）', '#f0c419', false);
+          sg.scale.setScalar(1.1); sg.position.set(x, h + 4, z); g.add(sg);
+        } catch (e) { /* */ }
+      }
+    }
+  } else {
+    // fallback lat/lon
+    const fb = [
+      ['cw', '中西區', 22.2810, 114.1550], ['wc', '灣仔', 22.2770, 114.1730],
+      ['east', '東區', 22.2840, 114.2240], ['south', '南區', 22.2470, 114.1600],
+      ['ytm', '油尖旺', 22.3080, 114.1720], ['ssp', '深水埗', 22.3310, 114.1630],
+      ['kc', '九龍城', 22.3280, 114.1920], ['wts', '黃大仙', 22.3430, 114.1950],
+      ['kt', '觀塘', 22.3120, 114.2250], ['kwt', '葵青', 22.3570, 114.1280],
+      ['tw', '荃灣', 22.3710, 114.1140], ['tm', '屯門', 22.3910, 113.9760],
+      ['yl', '元朗', 22.4450, 114.0270], ['north', '北區', 22.4950, 114.1380],
+      ['tp', '大埔', 22.4500, 114.1690], ['st', '沙田', 22.3820, 114.1880],
+      ['sk', '西貢', 22.3820, 114.2740], ['islands', '離島', 22.2860, 113.9430]
+    ];
+    for (let i = 0; i < fb.length; i++) {
+      const [id, name, lat, lon] = fb[i];
+      if (typeof hkGeo !== 'function') continue;
+      const p = hkGeo(lat, lon);
+      const h = 55 + (i % 5) * 12;
+      const pillar = new THREE.Mesh(new THREE.BoxGeometry(6, h, 6), totem);
+      pillar.position.set(p.x, h / 2, p.z); pillar.userData.noMerge = true; g.add(pillar);
+      if (typeof makeNeonSign === 'function') {
+        try { const sg = makeNeonSign(name + '（骨架）', '#f0c419', false); sg.scale.setScalar(1.1); sg.position.set(p.x, h + 4, p.z); g.add(sg); } catch (e) {}
+      }
+    }
+  }
+
+  // —— 可駛區間 spine（半載；禁只用 pier ±Z）——
+  const spines = (sk && sk.spines) || [];
+  let spineSegs = 0;
+  for (const sp of spines) {
+    const pts = (sp.points || []).map((p) => ({ x: p.dx, z: p.dz }));
+    spineSegs += kwPaintPolyline(g, pts, {
+      mat: asp, width: 11, maxSeg: 70, cap: lite ? 12 : 28, name: 'kt_spine_' + (sp.id || 's')
+    });
+  }
+
+  root.add(g);
+  KWAI.hk18 = true;
+  console.info('[kwai] HK18 skeleton', { districts: D18 ? D18.length : 0, spineSegs });
+}
+
+/** core23：spawn 附近街景 props 落實可見（橙桶／望左望右／巴士站／騎樓感）*/
+function scapePlaceSpawnYard() {
+  if (SCAPE.spawnYard || typeof scene === 'undefined') return;
+  const parent = (SCAPE.group) || scene;
+  const spots = [
+    [5.5, -8], [-6.2, -6], [6.8, 18], [-7.0, 22], [5.2, 36], [-6.5, 42],
+    [7.2, 55], [-8.0, 58], [-18, 40], [-24, 48]
+  ];
+  try {
+    if (typeof scapeBin === 'function') {
+      scapeBin(parent, spots[0][0], spots[0][1], 'orange');
+      scapeBin(parent, spots[1][0], spots[1][1], 'orange');
+      scapeBin(parent, spots[4][0], spots[4][1], 'orange');
+    }
+    if (typeof scapeLookLR === 'function') {
+      scapeLookLR(parent, -5.5, 8, 0, 'left');
+      scapeLookLR(parent, 5.2, 28, 0, 'right');
+    }
+    if (typeof scapeZebra === 'function') scapeZebra(parent, 0, 10, 0);
+    if (typeof scapeBusWait === 'function') scapeBusWait(parent, 7.5, -4, 0.1, '38（戲仿）');
+    else if (typeof scapeBusStop === 'function') scapeBusStop(parent, 7.5, -4, 0.1);
+    if (typeof scapeTrafficLight === 'function') scapeTrafficLight(parent, -7.2, 10, 0);
+    if (typeof scapeTongLauArcade === 'function') scapeTongLauArcade(parent, -22, 52, 0.2);
+    if (typeof scapeConvenience === 'function') scapeConvenience(parent, -20, 44, -0.3);
+  } catch (e) { console.warn('[streetscape-spawn]', e); }
+  SCAPE.spawnYard = true;
+  console.info('[streetscape] spawn yard props');
+}
+
+/** core23：葵涌 OSM 路網——優先 secondary／tertiary／貨櫃碼頭路，primary 拆短，唔畫直高速 */
+function kwApplyKwaiBranchingRoads() {
+  if (KWAI.kwaiBranch || !KWAI.osmLayout) return;
+  const lay = KWAI.osmLayout;
+  const root = KWAI.group || new THREE.Group();
+  if (!KWAI.group) { root.name = 'kwaichung-dock'; KWAI.group = root; scene.add(root); }
+  const g = new THREE.Group(); g.name = 'kt_kwai_osm_branch'; g.userData.kwaichung = true;
+  const asp = kwMatFromFacade('wetRoad', 3, 10, 0.22)
+    || new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.45, metalness: 0.1 });
+  const lite = typeof NT !== 'undefined' && NT.safariLite;
+  let n = 0;
+  const cap = lite ? 55 : 130;
+  // 只取葵涌一帶：dx -2500..200、dz -400..900（碼頭＋站＋工廈）
+  const want = /葵涌|貨櫃|貨櫃碼頭|大連排|興芳|葵福|荔景|葵芳|Container|Kwai|Hing Fong|Tai Lin Pai/;
+  for (const road of (lay.highways || [])) {
+    if (n >= cap) break;
+    const hw = road.highway || '';
+    if (!/secondary|tertiary|residential|unclassified|service/.test(hw) && !want.test(road.name_zh || '')) continue;
+    if (hw === 'primary' && !want.test(road.name_zh || '')) continue;
+    const pts = kwOsmPts(road);
+    for (let i = 0; i + 1 < pts.length && n < cap; i++) {
+      const a = pts[i], b = pts[i + 1];
+      if (a.x < -2500 || a.x > 200 || a.z < -400 || a.z > 900) continue;
+      if (b.x < -2500 || b.x > 200 || b.z < -400 || b.z > 900) continue;
+      let len = Math.hypot(b.x - a.x, b.z - a.z);
+      if (len < 4) continue;
+      const yaw = Math.atan2(b.x - a.x, b.z - a.z);
+      const maxSeg = 42;
+      const pieces = Math.max(1, Math.ceil(len / maxSeg));
+      for (let p = 0; p < pieces && n < cap; p++) {
+        const t0 = p / pieces, t1 = (p + 1) / pieces;
+        const ax = a.x + (b.x - a.x) * t0, az = a.z + (b.z - a.z) * t0;
+        const bx = a.x + (b.x - a.x) * t1, bz = a.z + (b.z - a.z) * t1;
+        const plen = Math.hypot(bx - ax, bz - az);
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(9, 0.07, plen), asp);
+        mesh.position.set((ax + bx) * 0.5, 0.025, (az + bz) * 0.5);
+        mesh.rotation.y = yaw + (p % 2 ? 0.02 : -0.02); // 微折，破直線感
+        mesh.receiveShadow = true; mesh.userData.noMerge = true;
+        g.add(mesh); n++;
+      }
+    }
+  }
+  root.add(g);
+  KWAI.kwaiBranch = true;
+  console.info('[kwai-osm] branching roads', n);
+}
+
+
 
 
 /** 閘口／工廈大堂／葵芳站／公屋／食堂／地磅 — 可入（重用 buildRoom）；core20 加細節＋兩間新房 */
@@ -19182,8 +19623,8 @@ function kwBuildP1Urban() {
   // 轉彎後再加一段內陸延伸（加闊可駛帶）
   {
     const asp = new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.95 });
-    const arm = new THREE.Mesh(new THREE.BoxGeometry(70, 0.07, 16), asp);
-    arm.position.set(-38, 0.022, 48);
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(36, 0.07, 14), asp);
+    arm.position.set(-28, 0.022, 48);
     arm.userData.kwaichung = true; arm.name = 'kt_elbow_inland_arm';
     arm.receiveShadow = true; root.add(arm);
     if (false && KWAI.tex.roadStreet) { // 禁街景 documentary 相板
@@ -19197,10 +19638,14 @@ function kwBuildP1Urban() {
     }
     // 黃邊線
     const yel = new THREE.MeshStandardMaterial({ color: 0xc9a000, roughness: 0.55 });
-    for (const zz of [40.5, 55.5]) {
-      const s = new THREE.Mesh(new THREE.BoxGeometry(62, 0.04, 0.2), yel);
-      s.position.set(-38, 0.06, zz); root.add(s);
+    for (const zz of [41.5, 54.5]) {
+      const yelStrip = new THREE.Mesh(new THREE.BoxGeometry(32, 0.04, 0.2), yel);
+      yelStrip.position.set(-28, 0.06, zz); root.add(yelStrip);
     }
+    // core23：再加一條斜交支路，打破直高速感
+    const spur = new THREE.Mesh(new THREE.BoxGeometry(12, 0.07, 28), asp);
+    spur.position.set(-48, 0.022, 62); spur.rotation.y = 0.55;
+    spur.userData.kwaichung = true; spur.name = 'kt_elbow_spur'; spur.receiveShadow = true; root.add(spur);
   }
 
   // 閘口接到肘形入口（轉彎西側）
@@ -19307,6 +19752,8 @@ function kwBuildP1Urban() {
     try { await kwLoadFacadeTiles(); } catch (e) { console.warn('[kwai-fac]', e && e.message); }
     try { await kwLoadInteriorTiles(); } catch (e) { console.warn('[kwai-int]', e && e.message); }
     try { await kwLoadOsmLayoutCore20(); } catch (e) { console.warn('[kwai-osm]', e && e.message); }
+    try { await kwLoadOsmNextYlHarbour(); } catch (e) { console.warn('[kwai-osm-next]', e && e.message); }
+    try { await kwLoadHk18Skeleton(); } catch (e) { console.warn('[kwai-hk18-load]', e && e.message); }
     kwBuildP1Urban();
     kwBuildDensityD1();
     kwBuildDensityD2a();
@@ -19318,6 +19765,11 @@ function kwBuildP1Urban() {
     kwQuayEdgeSoft();
     kwBuildDockPlus();
     try { kwApplyOsmFacadeDensity(); } catch (e) { console.warn('[kwai-osm-fac]', e && e.message); }
+    try { kwApplyKwaiBranchingRoads(); } catch (e) { console.warn('[kwai-branch]', e && e.message); }
+    try { kwApplyElbowArterialsFromSkel(); } catch (e) { console.warn('[kwai-elbow-art]', e && e.message); }
+    try { kwApplyOsmNextDensity(); } catch (e) { console.warn('[kwai-osm-next-dens]', e && e.message); }
+    try { kwBuildHk18Skeleton(); } catch (e) { console.warn('[kwai-hk18]', e && e.message); }
+    try { if (typeof scapePlaceSpawnYard === 'function') scapePlaceSpawnYard(); } catch (e) { console.warn('[scape-spawn]', e && e.message); }
     if (typeof kwStripPhotoBoards === 'function') kwStripPhotoBoards();
     if (typeof HOOKS !== 'undefined') {
       HOOKS.tod = HOOKS.tod || [];
@@ -20485,7 +20937,15 @@ Promise.race([
   updateCashHUD(0);
   const mq = URLQ.get('m');
   try {
-    if (mq && MISSIONS[mq]) startMission(mq); else if (!URLQ.has('free')) startMission('manifest');
+    /* core23：有存檔先出繼續／新遊戲，唔好每次當新開 */
+    if (!URLQ.has('m') && !URLQ.has('new') && SAVE.on) {
+      const d = saveRead();
+      if (d && (d.v === 1 || d.v === 2)) { showSaveMenu(d); return; }
+    }
+    SAVE.decided = true;
+    if (mq && MISSIONS[mq]) startMission(mq);
+    else if (URLQ.has('free')) { toast('自由活動 · 進度會自動存', 2200); saveNow('free'); }
+    else startMission('manifest');
   } catch (e) { console.warn('startMission', e); }
 }).catch((e) => {
   console.warn('boot fatal', e);
