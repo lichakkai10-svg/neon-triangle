@@ -44,7 +44,8 @@
       "modules": "facade/ytm/"
     },
     "central_west": {
-      "district_facade": "facade/district/facade_d_cw.jpg"
+      "district_facade": "facade/district/facade_d_cw.jpg",
+      "modules": "facade/cw/"
     },
     "kwai_tsing": {
       "district_facade": "facade/district/facade_d_kc.jpg",

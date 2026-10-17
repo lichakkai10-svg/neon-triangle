@@ -274,7 +274,7 @@ body.aim #cross{transform:scale(.45)}
     if(b && cur < n) b.style.width=n+'%';
     if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
-  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core24。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core25。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
   var tipEl=document.getElementById("loadTips"); var ti=0;
   if(tipEl) tipEl.textContent=tips[0];
   var tipTimer=setInterval(function(){
@@ -284,7 +284,7 @@ body.aim #cross{transform:scale(.45)}
   setTimeout(function(){
     if(done) return;
     var t=document.getElementById('loadTxt');
-    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core24';
+    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core25';
   },45000);
 })();
 </script>
@@ -21427,6 +21427,372 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
 
   Object.assign(window.NT = window.NT || {}, { YTM });
 })();
+/* =========================================================================
+ * core25 · 中西區可駛彎道＋樓腳 Extrude
+ *  · data/osm-cw-drive-extrude-core25.json
+ *  · 可駛：drive_trunk（path÷chord≤4）— 皇后／德輔／干諾／荷李活／堅道等
+ *  · 樓腳：buildings[].footprint_ring → Shape 牆身＋頂；高度 levels*3.1／height_m／csdi
+ *  · tex/facade/cw/ RepeatWrapping；禁直軸／相板／Google mesh
+ *  · 保留 ytmBuild；本檔唔載入葵青 KT pack
+ * ========================================================================= */
+(function () {
+  const CW = {
+    ready: false,
+    group: null,
+    data: null,
+    tex: {},
+    mats: {}
+  };
+
+  async function cwFetch(paths) {
+    for (const u of paths) {
+      try {
+        const r = await fetch(u, { cache: 'no-store' });
+        if (r && r.ok) return await r.json();
+      } catch (e) { /* */ }
+    }
+    return null;
+  }
+
+  async function cwLoadTex() {
+    if (typeof loadTex !== 'function') return;
+    const files = {
+      shop: 'tex/facade/cw/cw_sw_shop_mosaic.jpg',
+      winAc: 'tex/facade/cw/cw_midlevels_window_ac.jpg',
+      glass: 'tex/facade/cw/cw_central_glass_podium.jpg',
+      arcade: 'tex/facade/cw/cw_arcade_colonnade.jpg',
+      neon: 'tex/facade/cw/cw_neon_box_blank.jpg',
+      sidewalk: 'tex/facade/cw/cw_sidewalk_granite.jpg',
+      district: 'tex/facade/district/facade_d_cw.jpg'
+    };
+    for (const [k, f] of Object.entries(files)) {
+      try {
+        const t = await loadTex(f, true, true);
+        if (t) {
+          t.wrapS = t.wrapT = THREE.RepeatWrapping;
+          t.repeat.set(k === 'sidewalk' ? 4 : 2, k === 'sidewalk' ? 4 : 3);
+          CW.tex[k] = t;
+        }
+      } catch (e) { /* */ }
+    }
+    const mk = (map, rough, metal, color) => new THREE.MeshStandardMaterial({
+      map: map || null,
+      color: map ? 0xffffff : (color || 0x6a7078),
+      roughness: rough == null ? 0.88 : rough,
+      metalness: metal == null ? 0.04 : metal
+    });
+    CW.mats.shop = mk(CW.tex.shop, 0.9, 0.02);
+    CW.mats.winAc = mk(CW.tex.winAc || CW.tex.district, 0.86, 0.03);
+    CW.mats.glass = mk(CW.tex.glass, 0.32, 0.5);
+    CW.mats.arcade = mk(CW.tex.arcade, 0.8, 0.05);
+    CW.mats.road = new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.5, metalness: 0.08 });
+    CW.mats.sidewalk = mk(CW.tex.sidewalk, 0.92, 0.02, 0x8a8e92);
+    CW.mats.yel = new THREE.MeshStandardMaterial({ color: 0xc9a000, roughness: 0.55 });
+  }
+
+  function cwPickMat(b) {
+    const kind = (b.building || b.block_type || '').toLowerCase();
+    const name = (b.name || b.name_zh || '').toLowerCase();
+    if (/podium|commercial|retail|mall|商場|玻璃|office|tower|bank|ifc|exchange/.test(kind + name)) return CW.mats.glass || CW.mats.winAc;
+    if (/yes|apartments|residential|house|tong/.test(kind)) return CW.mats.winAc;
+    if (/retail|shop|commercial/.test(kind)) return CW.mats.shop || CW.mats.winAc;
+    return CW.mats.winAc || CW.mats.shop;
+  }
+
+  function cwHeight(b, csdiNear) {
+    if (b.levels && b.levels > 0) return Math.min(220, b.levels * 3.1);
+    if (b.height_m && b.height_m > 2) return Math.min(220, b.height_m);
+    if (b.storeys && b.storeys > 0) return Math.min(220, b.storeys * 3.1);
+    if (b.top_height_m != null && b.base_height_m != null) {
+      const h = b.top_height_m - b.base_height_m;
+      if (h > 2) return Math.min(220, h);
+    }
+    if (csdiNear) {
+      if (csdiNear.height_m > 2) return Math.min(220, csdiNear.height_m);
+      if (csdiNear.storeys > 0) return Math.min(220, csdiNear.storeys * 3.1);
+      if (csdiNear.top_height_m != null && csdiNear.base_height_m != null) {
+        const h = csdiNear.top_height_m - csdiNear.base_height_m;
+        if (h > 2) return Math.min(220, h);
+      }
+    }
+    const kind = ((b.building || b.block_type || '') + ' ' + (b.name || b.name_zh || '')).toLowerCase();
+    if (/tower|skyscraper|hotel|office|bank|ifc/.test(kind)) return 96;
+    if (/apartments|residential|yes/.test(kind)) return 32;
+    if (/retail|commercial|shop|mall|商場|podium/.test(kind)) return 18;
+    if (/industrial|warehouse/.test(kind)) return 14;
+    return 26; // 中西唐樓／商廈常見預設
+  }
+
+  function cwExtrudeOne(ring, h, mat, parent, name) {
+    if (!ring || ring.length < 3 || h < 2) return false;
+    let pts = ring.map((p) => new THREE.Vector2(p.dx, p.dz));
+    if (pts.length > 2) {
+      const a = pts[0], b = pts[pts.length - 1];
+      if (Math.hypot(a.x - b.x, a.y - b.y) < 0.05) pts = pts.slice(0, -1);
+    }
+    if (pts.length < 3) return false;
+    let cx = 0, cz = 0;
+    for (const p of pts) { cx += p.x; cz += p.y; }
+    cx /= pts.length; cz /= pts.length;
+    const ins = 0.06;
+    pts = pts.map((p) => {
+      const dx = cx - p.x, dz = cz - p.y, L = Math.hypot(dx, dz) || 1;
+      return new THREE.Vector2(p.x + dx / L * Math.min(ins, L * 0.15), p.y + dz / L * Math.min(ins, L * 0.15));
+    });
+    if (THREE.ShapeUtils.isClockWise(pts)) pts.reverse();
+
+    const pos = [], uv = [], idx = [];
+    const n = pts.length;
+    let acc = 0;
+    for (let k = 0; k < n; k++) {
+      const p0 = pts[k], p1 = pts[(k + 1) % n];
+      const L = p0.distanceTo(p1);
+      if (L < 0.3) continue;
+      const vi = pos.length / 3;
+      const u0 = acc / 4.2, u1 = (acc + L) / 4.2, v1 = h / 3.2;
+      acc += L;
+      pos.push(p0.x, 0, p0.y, p1.x, 0, p1.y, p1.x, h, p1.y, p0.x, h, p0.y);
+      uv.push(u0, 0, u1, 0, u1, v1, u0, v1);
+      idx.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3);
+    }
+    if (pos.length < 12) return false;
+    try {
+      const tris = THREE.ShapeUtils.triangulateShape(pts, []);
+      const ri = pos.length / 3;
+      for (const p of pts) { pos.push(p.x, h, p.y); uv.push(p.x / 40, p.y / 40); }
+      for (const t of tris) idx.push(ri + t[0], ri + t[1], ri + t[2]);
+    } catch (e) { /* skip roof */ }
+
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    const mesh = new THREE.Mesh(g, mat);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.userData.noMerge = true;
+    mesh.userData.cw = true;
+    mesh.name = name || 'cw_extrude';
+    parent.add(mesh);
+    if (typeof addCollider === 'function') {
+      let minx = Infinity, maxx = -Infinity, minz = Infinity, maxz = -Infinity;
+      for (const p of pts) {
+        if (p.x < minx) minx = p.x; if (p.x > maxx) maxx = p.x;
+        if (p.y < minz) minz = p.y; if (p.y > maxz) maxz = p.y;
+      }
+      const hx = (maxx - minx) * 0.5, hz = (maxz - minz) * 0.5;
+      if (hx > 1 && hz > 1) addCollider((minx + maxx) * 0.5, (minz + maxz) * 0.5, hx, hz, Math.min(h, 40));
+    }
+    return true;
+  }
+
+  function cwRoadRibbon(parent, pts, width, mat) {
+    if (!pts || pts.length < 2) return 0;
+    let n = 0;
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const a = pts[i], b = pts[i + 1];
+      const len = Math.hypot(b.dx - a.dx, b.dz - a.dz);
+      if (len < 4) continue;
+      const yaw = Math.atan2(b.dx - a.dx, b.dz - a.dz);
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, 0.08, len), mat);
+      mesh.position.set((a.dx + b.dx) * 0.5, 0.03, (a.dz + b.dz) * 0.5);
+      mesh.rotation.y = yaw;
+      mesh.receiveShadow = true;
+      mesh.userData.noMerge = true;
+      mesh.userData.cw = true;
+      mesh.name = 'cw_drive_trunk';
+      parent.add(mesh);
+      if (n % 2 === 0 && CW.mats.yel) {
+        for (const side of [-width * 0.42, width * 0.42]) {
+          const edge = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.03, Math.min(len, 48)), CW.mats.yel);
+          edge.position.set(mesh.position.x + Math.cos(yaw) * side, 0.07, mesh.position.z - Math.sin(yaw) * side);
+          edge.rotation.y = yaw;
+          parent.add(edge);
+        }
+      }
+      if (CW.mats.sidewalk && n % 3 === 0) {
+        for (const side of [-width * 0.72, width * 0.72]) {
+          const sw = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.05, Math.min(len, 36)), CW.mats.sidewalk);
+          sw.position.set(mesh.position.x + Math.cos(yaw) * side, 0.04, mesh.position.z - Math.sin(yaw) * side);
+          sw.rotation.y = yaw;
+          sw.receiveShadow = true;
+          sw.userData.cw = true;
+          parent.add(sw);
+        }
+      }
+      n++;
+    }
+    return n;
+  }
+
+  function cwNearestCsdi(cx, cz, list) {
+    let best = null, bd = 140;
+    for (const c of list) {
+      const p = c.centroid; if (!p) continue;
+      const d = Math.hypot(p.dx - cx, p.dz - cz);
+      if (d < bd) { bd = d; best = c; }
+    }
+    return best;
+  }
+
+  async function cwBuild() {
+    if (CW.ready || typeof scene === 'undefined') return;
+    const data = await cwFetch([
+      'data/osm-cw-drive-extrude-core25.json',
+      '../data/osm-cw-drive-extrude-core25.json',
+      './assets/data/osm-cw-drive-extrude-core25.json'
+    ]);
+    if (!data) {
+      console.warn('[cw] osm-cw-drive-extrude-core25.json 未到手');
+      return;
+    }
+    CW.data = data;
+    await cwLoadTex();
+
+    const root = new THREE.Group();
+    root.name = 'cw-core25';
+    scene.add(root);
+    CW.group = root;
+
+    const lite = typeof NT !== 'undefined' && NT.safariLite;
+    const gRoad = new THREE.Group();
+    gRoad.name = 'cw_drive_trunks';
+    gRoad.userData.noMerge = true;
+    let roadSegs = 0;
+    const roadnetPts = [];
+    for (const trunk of (data.drive_trunk || [])) {
+      const ratio = trunk.path_chord_ratio || 1;
+      if (ratio > 4) continue;
+      const pts = trunk.points || [];
+      if (pts.length < 2) continue;
+      const nm = trunk.name_zh || '';
+      const w = /干諾|德輔|皇后大道中|繞道/.test(nm) ? 14 : 11;
+      roadSegs += cwRoadRibbon(gRoad, pts, w, CW.mats.road);
+      for (const p of pts) roadnetPts.push({ x: p.dx, z: p.dz });
+    }
+    root.add(gRoad);
+
+    try {
+      if (typeof ROADNET !== 'undefined' && Array.isArray(ROADNET) && roadnetPts.length > 1) {
+        const base = ROADNET.length;
+        const step = Math.max(1, Math.floor(roadnetPts.length / (lite ? 40 : 120)));
+        const sampled = [];
+        for (let i = 0; i < roadnetPts.length; i += step) sampled.push(roadnetPts[i]);
+        if (sampled[sampled.length - 1] !== roadnetPts[roadnetPts.length - 1]) sampled.push(roadnetPts[roadnetPts.length - 1]);
+        for (const p of sampled) ROADNET.push({ x: p.x, z: p.z, nb: [] });
+        const link = (a, b) => {
+          if (a < 0 || b < 0 || a >= ROADNET.length || b >= ROADNET.length) return;
+          if (!ROADNET[a].nb.includes(b)) ROADNET[a].nb.push(b);
+          if (!ROADNET[b].nb.includes(a)) ROADNET[b].nb.push(a);
+        };
+        for (let i = 0; i + 1 < sampled.length; i++) link(base + i, base + i + 1);
+      }
+    } catch (e) { console.warn('[cw-roadnet]', e && e.message); }
+
+    const gBld = new THREE.Group();
+    gBld.name = 'cw_extrude_buildings';
+    gBld.userData.noMerge = true;
+    const csdi = data.csdi_buildings || [];
+    const blds = data.buildings || [];
+    const cap = lite ? 220 : 520;
+    let nBld = 0;
+    const ranked = blds.slice().sort((a, b) => {
+      const ha = a.height_m || (a.levels || 0) * 3.1;
+      const hb = b.height_m || (b.levels || 0) * 3.1;
+      return hb - ha;
+    });
+    for (const b of ranked) {
+      if (nBld >= cap) break;
+      const ring = b.footprint_ring;
+      if (!ring || ring.length < 3) continue;
+      const c = b.centroid || {};
+      const near = cwNearestCsdi(c.dx || ring[0].dx, c.dz || ring[0].dz, csdi);
+      const h = cwHeight(b, near);
+      const mat = cwPickMat(b);
+      if (cwExtrudeOne(ring, h, mat, gBld, 'cw_bld_' + (b.osm_id || nBld))) nBld++;
+    }
+    const csdiCap = lite ? 80 : 180;
+    let nCsdi = 0;
+    for (const c of csdi) {
+      if (nCsdi >= csdiCap || nBld + nCsdi >= cap + 80) break;
+      const ring = c.footprint_ring;
+      if (!ring || ring.length < 3) continue;
+      const cen = c.centroid; if (!cen) continue;
+      let nearOsm = false;
+      for (const b of ranked.slice(0, Math.min(nBld, 200))) {
+        const bc = b.centroid; if (!bc) continue;
+        if (Math.hypot(bc.dx - cen.dx, bc.dz - cen.dz) < 25) { nearOsm = true; break; }
+      }
+      if (nearOsm) continue;
+      const h = cwHeight(c, null);
+      const mat = /podium|glass|arcade|商場|office|bank/i.test((c.block_type || '') + (c.name_zh || ''))
+        ? (CW.mats.glass || CW.mats.winAc)
+        : (CW.mats.winAc || CW.mats.shop);
+      if (cwExtrudeOne(ring, h, mat, gBld, 'cw_csdi_' + (c.csdi_objectid || nCsdi))) nCsdi++;
+    }
+    root.add(gBld);
+
+    if (typeof HOOKS !== 'undefined') {
+      HOOKS.minimap = HOOKS.minimap || [];
+      HOOKS.minimap.push(function cwMinimap(c) {
+        const p = (typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined')
+          ? car.pos : (typeof player !== 'undefined' ? player.pos : null);
+        if (!p || !CW.data) return;
+        c.strokeStyle = '#c8b090';
+        c.lineWidth = 4;
+        for (const trunk of (CW.data.drive_trunk || [])) {
+          if ((trunk.path_chord_ratio || 1) > 4) continue;
+          const pts = trunk.points || [];
+          if (pts.length < 2) continue;
+          c.beginPath();
+          let started = false;
+          for (const q of pts) {
+            if (Math.abs(q.dx - p.x) > 700 || Math.abs(q.dz - p.z) > 700) { started = false; continue; }
+            if (!started) { c.moveTo(q.dx, q.dz); started = true; }
+            else c.lineTo(q.dx, q.dz);
+          }
+          if (started) c.stroke();
+        }
+      });
+      HOOKS.frame = HOOKS.frame || [];
+      HOOKS.frame.push(function cwStream() {
+        if (!CW.group) return;
+        const p = (typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined')
+          ? car.pos : (typeof player !== 'undefined' ? player.pos : null);
+        if (!p) return;
+        // 中西中心約干諾／德輔
+        const cx = -5860, cz = -11750;
+        const d = Math.hypot(p.x - cx, p.z - cz);
+        const v = d < 4500;
+        if (CW.group.visible !== v) CW.group.visible = v;
+      });
+    }
+
+    if (typeof ZONES !== 'undefined') {
+      ZONES['cw:core25'] = ['中西區', '進入：中西區'];
+    }
+
+    CW.ready = true;
+    console.info('[cw] core25 drive+extrude', {
+      roadSegs,
+      buildings: nBld,
+      csdi: nCsdi,
+      trunks: (data.drive_trunk || []).length,
+      tex: Object.keys(CW.tex)
+    });
+  }
+
+  const t0 = setInterval(() => {
+    if (typeof scene === 'undefined' || typeof THREE === 'undefined') return;
+    clearInterval(t0);
+    cwBuild().catch((e) => console.warn('[cw]', e && e.message));
+  }, 480);
+
+  Object.assign(window.NT = window.NT || {}, { CW, cwBuild });
+})();
+
+
 /* =========================================================================
  * 港九新界十八區骨架（core23）— 跟 data/osm-hk18-skeleton-core23.json
  *  · districts[] hub dx/dz → 區牌短標＋入區 toast＋區 facade

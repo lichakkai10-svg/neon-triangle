@@ -1,0 +1,58 @@
+{
+  "updated": "2026-10-17T20:24:08+08:00",
+  "for_version": "core25",
+  "district": "central_west",
+  "priority": [
+    "yau_tsim_mong",
+    "central_west",
+    "kwai_tsing"
+  ],
+  "stack": "CSDI Building FSDT footprints + OSM drive_trunk + Three.js extrude — pure Three.js, no Unity",
+  "ban": [
+    "photo billboards",
+    "Google Earth mesh",
+    "documentary facade plates"
+  ],
+  "path": "m1c/assets/tex/facade/cw/",
+  "modules": [
+    {
+      "file": "cw_central_glass_podium.jpg",
+      "use": "Central / Admiralty commercial podium glass RepeatWrapping"
+    },
+    {
+      "file": "cw_sw_shop_mosaic.jpg",
+      "use": "Sheung Wan G/F shop mosaic + shutter band"
+    },
+    {
+      "file": "cw_midlevels_window_ac.jpg",
+      "use": "Mid-Levels residential window+AC grid by storey"
+    },
+    {
+      "file": "cw_arcade_colonnade.jpg",
+      "use": "Colonnade / 騎樓 underside"
+    },
+    {
+      "file": "cw_neon_box_blank.jpg",
+      "use": "emissive Box sign — parody text only"
+    },
+    {
+      "file": "cw_sidewalk_granite.jpg",
+      "use": "footpath along CW driveable spines"
+    }
+  ],
+  "district_defaults": {
+    "yau_tsim_mong": {
+      "district_facade": "facade/district/facade_d_mk.jpg",
+      "modules": "facade/ytm/"
+    },
+    "central_west": {
+      "district_facade": "facade/district/facade_d_cw.jpg",
+      "modules": "facade/cw/"
+    },
+    "kwai_tsing": {
+      "district_facade": "facade/district/facade_d_kc.jpg",
+      "road": "elbow_trunk"
+    }
+  },
+  "note_zh": "core25 只掛中西 cwBuild；葵青 KT pack 已備但本 commit 唔入 runtime。"
+}
