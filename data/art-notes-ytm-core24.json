@@ -1,0 +1,54 @@
+{
+  "updated": "2026-10-17T20:15:00+08:00",
+  "priority": [
+    "yau_tsim_mong",
+    "central_west",
+    "kwai_tsing"
+  ],
+  "stack": "CSDI iB1000 footprints + OSM Overpass roads + Three.js ExtrudeGeometry — pure Three.js, no Unity",
+  "ban": [
+    "photo billboards",
+    "Google Earth mesh",
+    "documentary facade plates"
+  ],
+  "path": "m1c/assets/tex/facade/ytm/",
+  "modules": [
+    {
+      "file": "ytm_gf_shop_mosaic.jpg",
+      "use": "G/F extrude band on Nathan/Argyle tong lau"
+    },
+    {
+      "file": "ytm_mk_window_ac.jpg",
+      "use": "upper floors RepeatWrapping by storey height"
+    },
+    {
+      "file": "ytm_tst_glass_podium.jpg",
+      "use": "TST commercial podium strip"
+    },
+    {
+      "file": "ytm_arcade_teal.jpg",
+      "use": "騎樓 underside / pillar"
+    },
+    {
+      "file": "ytm_neon_box_blank.jpg",
+      "use": "emissive Box sign — parody text from docs/street-signage-parody.md"
+    },
+    {
+      "file": "ytm_sidewalk_granite.jpg",
+      "use": "footpath along driveable spines"
+    }
+  ],
+  "district_defaults": {
+    "yau_tsim_mong": {
+      "district_facade": "facade/district/facade_d_mk.jpg",
+      "modules": "facade/ytm/"
+    },
+    "central_west": {
+      "district_facade": "facade/district/facade_d_cw.jpg"
+    },
+    "kwai_tsing": {
+      "district_facade": "facade/district/facade_d_kc.jpg",
+      "road": "elbow_trunk"
+    }
+  }
+}
