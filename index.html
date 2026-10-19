@@ -274,7 +274,7 @@ body.aim #cross{transform:scale(.45)}
     if(b && cur < n) b.style.width=n+'%';
     if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
-  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core27d。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core27e。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
   var tipEl=document.getElementById("loadTips"); var ti=0;
   if(tipEl) tipEl.textContent=tips[0];
   var tipTimer=setInterval(function(){
@@ -284,7 +284,7 @@ body.aim #cross{transform:scale(.45)}
   setTimeout(function(){
     if(done) return;
     var t=document.getElementById('loadTxt');
-    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core27d';
+    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core27e';
   },45000);
 })();
 </script>
@@ -23836,12 +23836,12 @@ body.cine #h2Top,body.cine #h2Btns,body.cine #h2N{visibility:hidden}`;
   if (HUD2_ON) {
     const st2 = document.createElement('style');
     st2.textContent = `
-#h2Left{position:absolute;left:calc(env(safe-area-inset-left,0px) + 12px);top:calc(env(safe-area-inset-top,0px) + 8px);display:flex;flex-direction:column;gap:6px;z-index:8;pointer-events:none;max-width:46vw}
+#h2Left{position:absolute;left:calc(env(safe-area-inset-left,0px) + 12px);top:calc(env(safe-area-inset-top,0px) + 14px);display:flex;flex-direction:column;gap:6px;z-index:8;pointer-events:none;max-width:46vw}
 #h2Chips{display:flex;flex-wrap:wrap;gap:6px;pointer-events:auto}
 body.hud2 #h2Chips > button{position:static !important;left:auto !important;top:auto !important;bottom:auto !important;right:auto !important;
   width:auto !important;min-width:48px;height:44px !important;padding:0 10px;border-radius:10px !important;font:700 13px "Noto Sans TC","PingFang HK",sans-serif !important;
   color:#f4f1ea !important;background:rgba(14,22,32,.55) !important;border:1.5px solid rgba(236,230,216,.6) !important;letter-spacing:.08em}
-body.hud2 #h2Left #repToast{position:static !important;font:500 11px "Noto Sans TC","PingFang HK",sans-serif !important;color:#ece6d8 !important;opacity:.9}
+body.hud2 #h2Left #repToast{position:static !important;left:auto !important;top:auto !important;line-height:16px;min-height:16px;font:500 11px "Noto Sans TC","PingFang HK",sans-serif !important;color:#ece6d8 !important;opacity:.9}
 body.hud2 #h2Left #abil{position:static !important;width:150px !important;font:600 11px "Noto Sans TC","PingFang HK",sans-serif !important;color:#ece6d8 !important}
 body.cine #h2Left{visibility:hidden}`;
     document.head.appendChild(st2);
@@ -23926,7 +23926,29 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
 
   // core27d：真品牌過濾（OSM 建築／店名入遊戲前剷走真品牌字，唔出字）
   const C27D_BRAND = /九龍巴士|九巴|KMB|城巴|Citybus|新巴|NWFB|龍運|嶺南|港鐵|MTR|地鐵|八達通|Octopus|7-?Eleven|7-?11|OK便利店|Circle ?K|百佳|PARKnSHOP|Park ?n ?Shop|惠康|Wellcome|屈臣氏|Watsons|萬寧|Mannings|麥當勞|McDonald'?s?|肯德基|KFC|星巴克|Starbucks|大家樂|Caf[eé] de Coral|美心|Maxim'?s?|大快活|Fairwood|吉野家|Yoshinoya|譚仔|匯豐|HSBC|中銀|中國銀行|BOC|恒生|Hang ?Seng|渣打|Standard Chartered|東亞銀行|莎莎|Sasa|優品360|周大福|Chow Tai Fook|六福|豐澤|Fortress|百老匯|Broadway|崇光|SOGO|海港城|Harbour City|朗豪坊|Langham|領展|Link ?REIT|太古|Swire|新鴻基|SHKP|中電|CLP|港燈|煤氣|Towngas|HKTVmall|Pizza ?Hut|必勝客|Uniqlo|H&M|IKEA|宜家/gi;
-  const c27dBrandSafe = (t) => (typeof t === 'string' && C27D_BRAND.test(t)) ? (C27D_BRAND.lastIndex = 0, t.replace(C27D_BRAND, '').replace(/\s{2,}/g, ' ').trim()) : (C27D_BRAND.lastIndex = 0, t);
+  // 劇本：剷走真名唔留空，換戲仿名／通稱（legal-core27-ssp-klc-parody-names）
+  const C27D_SWAP = [
+    [/7-?Eleven|7-?11|OK便利店|Circle ?K/gi, '8仔'],
+    [/九龍巴士|九巴|KMB|城巴|Citybus|新巴|NWFB|龍運/gi, '巴士站 BUS STOP'],
+    [/港鐵|MTR/gi, '地鐵'],
+    [/麥當勞|McDonald'?s?|肯德基|KFC|大家樂|Caf[eé] de Coral|美心|Maxim'?s?|大快活|Fairwood|吉野家|Yoshinoya|譚仔|Pizza ?Hut|必勝客|星巴克|Starbucks/gi, '快餐店'],
+    [/匯豐|HSBC|中銀|中國銀行|BOC|恒生|Hang ?Seng|渣打|Standard Chartered|東亞銀行/gi, '銀行'],
+    [/百佳|PARKnSHOP|Park ?n ?Shop|惠康|Wellcome|HKTVmall/gi, '超級市場'],
+    [/屈臣氏|Watsons|萬寧|Mannings|莎莎|Sasa|優品360/gi, '藥房'],
+    [/周大福|Chow Tai Fook|六福/gi, '金行'],
+    [/豐澤|Fortress|百老匯|Broadway/gi, '電器舖'],
+    [/崇光|SOGO|海港城|Harbour City|朗豪坊|Langham|領展|Link ?REIT|Uniqlo|H&M|IKEA|宜家/gi, '商場'],
+    [/八達通|Octopus|太古|Swire|新鴻基|SHKP|中電|CLP|港燈|煤氣|Towngas|嶺南/gi, '']
+  ];
+  const c27dBrandSafe = (t) => {
+    if (typeof t !== 'string' || !C27D_BRAND.test(t)) { C27D_BRAND.lastIndex = 0; return t; }
+    C27D_BRAND.lastIndex = 0;
+    let o = t; for (const [re, r] of C27D_SWAP) { o = o.replace(re, r); re.lastIndex = 0; }
+    if (o.includes('巴士站 BUS STOP')) return '巴士站 BUS STOP';
+    o = o.replace(/(8仔|快餐店|銀行|超級市場|藥房|金行|電器舖|商場)(\s*\1)+/g, '$1').replace(/\s{2,}/g, ' ').trim();
+    if (/地鐵/.test(o) && !/站/.test(o)) o += '站';
+    return o || '舖頭';
+  };
   try {
     const CP = CanvasRenderingContext2D.prototype;
     for (const k of ['fillText', 'strokeText']) { const f = CP[k]; CP[k] = function (t, ...r) { return f.call(this, c27dBrandSafe(t), ...r); }; }

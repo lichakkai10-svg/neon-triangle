@@ -7,7 +7,7 @@
  * 唐樓伸出招牌（戲仿 emissive 色盒，冇字）、電線桿（只限 KT／新界味路段）。
  */
 const WIDE = /彌敦|長沙灣|荔枝角|太子道|界限街|亞皆老|馬頭涌|衙前圍|東頭村|承啟|干諾|德輔|告士打|梳士巴利|葵涌道|青山公路/;
-const KEYS = ['YTM', 'CW', 'KT', 'SSP', 'KCITY'];
+const KEYS = ['YTM', 'CW', 'KT', 'SSP', 'KCITY', 'WC', 'EAST', 'TW', 'ST'];
 const SIGN_COLS = [0xd8402e, 0x2e7fd8, 0xe8b830, 0x2ea860, 0xd86aa8, 0xf0f0e8, 0x8a3ad8];
 
 function rngOf(seed) { let s = seed >>> 0 || 1; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
@@ -131,9 +131,10 @@ export function buildStreetFurniture(THREE, parent, trunks, opts = {}) {
   return { group: grp, props: count, drawCalls: buckets.size };
 }
 
-export function attachAll(THREE, url = './assets/data/osm-street-furniture-core27d.json') {
-  const done = new Set(); let PTS = null, tried = false;
-  fetch(url).then((r) => (r.ok ? r.json() : null)).then((j) => { PTS = j && j.districts; }).catch(() => {}).finally(() => { tried = true; });
+export function attachAll(THREE, urls = ['./assets/data/osm-street-furniture-core27d.json', './assets/data/osm-street-furniture-core28.json', './assets/data/osm-street-furniture-core29.json']) {
+  const done = new Set(); let PTS = {}, tried = false;
+  Promise.all([].concat(urls).map((u) => fetch(u).then((r) => (r.ok ? r.json() : null)).catch(() => null)))
+    .then((js) => { for (const j of js) if (j && j.districts) Object.assign(PTS, j.districts); }).finally(() => { tried = true; });
   const iv = setInterval(() => {
     if (!tried) return;
     const NT = window.NT || {}; const day = /[?&]day\b/.test(location.search);
@@ -146,7 +147,7 @@ export function attachAll(THREE, url = './assets/data/osm-street-furniture-core2
         console.info('[core27d-furniture]', k, r.props, 'props /', r.drawCalls, 'draws');
       } catch (e) { console.warn('[core27d-furniture]', k, e && e.message); }
     }
-    if (done.size === KEYS.length) clearInterval(iv);
+    /* 新區 lazy 出現都接到，唔 clear */
   }, 1500);
   Object.assign(window.NT = window.NT || {}, { C27D_FURNITURE: { buildStreetFurniture, done } });
 }
