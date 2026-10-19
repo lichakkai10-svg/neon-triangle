@@ -14,7 +14,7 @@
       "facade_file": "facade_d_cw.jpg",
       "facade_path": "m1c/assets/tex/facade/district/facade_d_cw.jpg",
       "accent": "#8A9AA8",
-      "modules_path": "m1c/assets/tex/facade/cw/",
+      "modules_path": "tex/facade/cw/",
       "modules": [
         "cw_sheungwan_tonglau.jpg",
         "cw_central_glass.jpg",
@@ -59,7 +59,7 @@
       "facade_file": "facade_d_mk.jpg",
       "facade_path": "m1c/assets/tex/facade/district/facade_d_mk.jpg",
       "accent": "#3A3E44",
-      "modules_path": "m1c/assets/tex/facade/ytm/",
+      "modules_path": "tex/facade/ytm/",
       "modules": [
         "ytm_gf_shop_mosaic",
         "ytm_mk_window_ac",
@@ -77,7 +77,7 @@
       "facade_file": "facade_d_ssp.jpg",
       "facade_path": "m1c/assets/tex/facade/district/facade_d_ssp.jpg",
       "accent": "#C9A84A",
-      "modules_path": "m1c/assets/tex/facade/ssp/",
+      "modules_path": "tex/facade/ssp/",
       "modules": [
         "ssp_tonglau_grille.jpg",
         "ssp_old_industrial_shutter.jpg",
@@ -95,7 +95,7 @@
       "facade_file": "facade_d_kcw.jpg",
       "facade_path": "m1c/assets/tex/facade/district/facade_d_kcw.jpg",
       "accent": "#8B4A3A",
-      "modules_path": "m1c/assets/tex/facade/kcity/",
+      "modules_path": "tex/facade/kcity/",
       "modules": [
         "kcity_tonglau_brick_balcony.jpg",
         "kcity_thai_shopfront_wood.jpg",
@@ -132,7 +132,7 @@
       "facade_path": "m1c/assets/tex/facade/district/facade_d_kc.jpg",
       "accent": "#7A8088",
       "note": "葵涌工廈／碼頭；路跟 kwai_chung_elbow.arterials[].points",
-      "modules_path": "m1c/assets/tex/facade/kc/",
+      "modules_path": "tex/facade/kc/",
       "modules": [
         "kc_industrial_concrete.jpg",
         "kc_corrugated_warehouse.jpg",

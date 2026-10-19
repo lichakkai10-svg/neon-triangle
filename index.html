@@ -274,7 +274,7 @@ body.aim #cross{transform:scale(.45)}
     if(b && cur < n) b.style.width=n+'%';
     if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
-  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core27。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core27b。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
   var tipEl=document.getElementById("loadTips"); var ti=0;
   if(tipEl) tipEl.textContent=tips[0];
   var tipTimer=setInterval(function(){
@@ -284,7 +284,7 @@ body.aim #cross{transform:scale(.45)}
   setTimeout(function(){
     if(done) return;
     var t=document.getElementById('loadTxt');
-    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core27';
+    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core27b';
   },45000);
 })();
 </script>
@@ -8973,13 +8973,19 @@ const SFX10 = {
   /* §6／core22：市政噠燈戲仿、廣華坊靜院、電車帶（tram_bell 已有） */
   bus_wait_blip: () => { const n=[]; for(let i=0;i<3;i++) n.push([980,i*0.11,0.07,'square',0.35]); tone(n,0.08); }, // 巴士站噠噠殼戲仿短嘀（非真過路系統）
   hospital_quiet: () => tone([[180,0,0.5,'sine',0.4],[220,0.15,0.45,'triangle',0.2],[140,0.35,0.4,'sine',0.25]],0.05), // 廣華坊醫院靜院疏層
-  district_breeze: () => tone([[95,0,0.7,'sine',0.35],[120,0.2,0.55,'triangle',0.18],[70,0.4,0.5,'sine',0.22]],0.04) // 離島／南區疏風（十八區骨架）
+  district_breeze: () => tone([[95,0,0.7,'sine',0.35],[120,0.2,0.55,'triangle',0.18],[70,0.4,0.5,'sine',0.22]],0.04), // 離島／南區疏風（十八區骨架）
+  /* core27 深水埗／九龍城（placeholder 合成；之後可換原創錄音，cue id 唔好改）· core27b：收 vol（揸車減半）*/
+  market_chatter: (v = 1) => { const n=[]; for(let i=0;i<7;i++){ const f=220+((i*137)%260); n.push([f,i*0.09+Math.random()*0.05,0.12+Math.random()*0.08,i%2?'triangle':'sine',0.25+Math.random()*0.2]); } tone(n,0.05*v); }, // 鴨寮街攤檔人聲嘈（無可辨字）
+  junk_stall_click: (v = 1) => tone([[1900,0,0.03,'square',0.3],[1400,0.05,0.03,'square',0.25],[2400,0.11,0.025,'square',0.18]],0.06*v), // 二手電子攤：插頭／旋鈕卡嗒
+  shutter_roll: (v = 1) => tone([[140,0,0.6,'sawtooth',0.3],[110,0.2,0.5,'square',0.15],[90,0.45,0.35,'triangle',0.25]],0.07*v), // 舖頭閘拉落（收檔）
+  thai_wok_sizzle: (v = 1) => { const n=[]; for(let i=0;i<9;i++) n.push([3200+((i*311)%1800),i*0.05,0.06,'sawtooth',0.12]); n.push([160,0,0.35,'sine',0.3]); tone(n,0.05*v); }, // 泰菜街鑊氣嗞嗞
+  street_diner_clink: (v = 1) => tone([[2637,0,0.08,'sine',0.5],[3136,0.09,0.1,'sine',0.35],[1760,0.2,0.12,'triangle',0.2]],0.07*v) // 大排檔碗碟／玻璃樽輕碰
 };
 /** 雨夜床聲增益（amb_rain_night_loop placeholder＝既有 audio.rain）*/
 function setRainBed(gain = 0.13) {
   if (audio.rain && audio.rain.gn) audio.rain.gn.gain.setTargetAtTime(Math.max(0, gain), audio.ctx?.currentTime || 0, 0.2);
 }
-{ const _s = sfx; sfx = function (kind, vol = 1) { if (SFX10[kind]) { if (audio.ctx && vol > 0.01) SFX10[kind](); return; } return _s(kind, vol); }; }
+{ const _s = sfx; sfx = function (kind, vol = 1) { if (SFX10[kind]) { if (audio.ctx && vol > 0.01) SFX10[kind](Math.min(1.5, vol)); return; } return _s(kind, vol); }; }
 // 接駁：入 8仔 = 叮咚；執錢 = 收錢 + 警鐘；買嘢 = 收錢；支線完成 = 完成音；坐卡位 = 坐低
 { const _ei = enterInterior; enterInterior = function (id, instant) { const r = _ei(id, instant); if (id === 'store8' || id === 'mburger') setTimeout(() => sfx('chime'), instant ? 0 : 200); return r; }; }
 HOOKS.robbed.push(() => { sfx('coin'); setTimeout(() => sfx('alarm'), 350); });
@@ -20458,10 +20464,9 @@ function hk18AmbSim(dt) {
       vol = 0.32;
       break;
     case 'kowloon_city':
-      // 寨城公園對九龍城——園靜
-      cue = 'hospital_quiet';
-      vol = 0.5;
-      break;
+    case 'sham_shui_po':
+      // core27：交 modYt_kowloonamb（真街點）
+      return;
     case 'yuen_long':
       cue = 'district_breeze';
       vol = 0.4;
@@ -22662,6 +22667,31 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       console.warn('[hk18] osm-hk18-skeleton-core23.json 未到手');
       return;
     }
+    // core27：深水埗＋九龍城真 OSM 主幹（data/core27-ssp-kc-spines.json）取代 hub_link ssp_kc 示意線
+    try {
+      const c27 = await hk18FetchJson([
+        'data/core27-ssp-kc-spines.json',
+        '../data/core27-ssp-kc-spines.json',
+        './assets/data/core27-ssp-kc-spines.json'
+      ]);
+      if (c27 && c27.districts) {
+        const add = [];
+        for (const did of ['sham_shui_po', 'kowloon_city']) {
+          const D = c27.districts[did];
+          if (!D || !Array.isArray(D.spines)) continue;
+          for (const sp of D.spines) {
+            if (!sp.points || sp.points.length < 2) continue;
+            add.push({ id: sp.id, name_zh: sp.name_zh, from: did, to: did, kind: sp.kind, speed: sp.speed, points: sp.points, core27: true });
+          }
+        }
+        if (add.length) {
+          data.spines = (data.spines || []).filter((sp) => sp.id !== 'ssp_kc').concat(add);
+          HK18.core27 = { entries: { sham_shui_po: c27.districts.sham_shui_po.entries, kowloon_city: c27.districts.kowloon_city.entries },
+            anchors: { sham_shui_po: c27.districts.sham_shui_po.landmark_anchors, kowloon_city: c27.districts.kowloon_city.landmark_anchors },
+            spines: add.length };
+        }
+      }
+    } catch (e) { console.warn('[hk18] core27 ssp/kc spines skip', e && e.message); }
     HK18.data = data;
     const root = new THREE.Group();
     root.name = 'hk18-district-skeleton';
@@ -22682,7 +22712,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       const pts = sp.points || [];
       if (pts.length < 2) continue;
       const kind = sp.kind || '';
-      const w = /osm_arterial|arterial/.test(kind) ? 11 : 8;
+      const w = /osm_arterial|arterial/.test(kind) ? 11 : (sp.speed === 'walk' ? 6 : 8); // core27 鴨寮街 walk 收窄
       const mat = /osm_arterial|arterial/.test(kind) ? aspMajor : asp;
       const n = hk18RoadPolyline(gSpines, pts, w, 'hk18_spine_' + (sp.id || 'x'), mat);
       spineSegs += n;
@@ -22855,6 +22885,400 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
     hk18SimplifyPts
   });
 })();
+
+/* =========================================================================
+ * core27b · modZc_sspkc_signs_core27（關卡／市政交付，原檔照貼）
+ * ========================================================================= */
+/* =========================================================================
+ * core27b · 深水埗＋九龍城 路牌＋燈位／車線偏移＋迴旋島碰撞
+ *  · 讀 data/core27-ssp-kc-signs.json（tools/core27_signs.py 由 spines 生成）
+ *  · 街名牌：港式白底黑字、上中文下英文、真街名；每街口 ≤1
+ *  · 入區牌每區 1（太子入口／太子道東）；方向牌極稀；無徽、無「九龍城站」
+ *  · calming[]：design_not_osm 6 點 → 實體燈柱＋停車線＋斑馬／偏移島＋碰撞
+ *  · roundabouts[]：九龍城迴旋處、承啟道迴旋處 島心碰撞（跟 kwEnforceElbowDrive）
+ *  · Safari／iPhone／LOW_MEM：只掛 primary 街名牌、半解像紋理、略過裝飾；碰撞照舊
+ *  · 唔放葵涌；禁相板
+ * ========================================================================= */
+(function () {
+  const SG = { ready: false, group: null, signs: 0, calming: 0, islands: 0, colliders: 0, lite: false };
+  const LITE = (typeof IS_SAFARI !== 'undefined' && IS_SAFARI) || (typeof IS_IPHONE !== 'undefined' && IS_IPHONE)
+    || (typeof LOW_MEM !== 'undefined' && LOW_MEM) || !!(typeof NT !== 'undefined' && NT.safariLite);
+  SG.lite = LITE;
+
+  async function fetchJson(paths) {
+    for (const u of paths) {
+      try { const r = await fetch(u, { cache: 'no-store' }); if (r && r.ok) return await r.json(); } catch (e) { /* next */ }
+    }
+    return null;
+  }
+
+  const M = {};
+  function mats() {
+    if (M.ok) return;
+    const S = (c, r, m, e, ei) => { const o = { color: c, roughness: r, metalness: m || 0 }; if (e != null) { o.emissive = new THREE.Color(e); o.emissiveIntensity = ei || 0; } return new THREE.MeshStandardMaterial(o); };
+    M.pole = S(0x4a5056, 0.5, 0.6);
+    M.kerb = S(0x8a8c88, 0.85);
+    M.grass = S(0x3e6a34, 0.95);
+    M.white = S(0xeeeeea, 0.6);
+    M.asp = S(0x2e3032, 0.94);
+    M.yel = S(0xe0b000, 0.65);
+    M.black = S(0x141414, 0.6);
+    M.bollard = S(0xe8e8e8, 0.5, 0.1, 0x8aa0c0, 0.25);
+    M.lampR = S(0x401010, 0.4, 0, 0xff2a1a, 0);
+    M.lampA = S(0x403010, 0.4, 0, 0xffb020, 0);
+    M.lampG = S(0x104020, 0.4, 0, 0x30ff70, 0);
+    M.shrub = S(0x2f5a2a, 0.95);
+    M.ok = true;
+  }
+
+  // 港式街名牌（程序字）：白底、黑字、細黑邊，上中文下英文
+  function plateTex(zh, en, kind) {
+    if (typeof canvasTex !== 'function') return null;
+    const k = LITE ? 0.5 : 1;
+    const W = Math.round((kind === 'district_entry' ? 640 : 512) * k), H = Math.round((kind === 'district_entry' ? 256 : 192) * k);
+    return canvasTex(W, H, (c, w, h) => {
+      c.fillStyle = '#f4f4f0'; c.fillRect(0, 0, w, h);
+      c.strokeStyle = '#111'; c.lineWidth = Math.max(2, h * 0.035); c.strokeRect(c.lineWidth, c.lineWidth, w - 2 * c.lineWidth, h - 2 * c.lineWidth);
+      c.fillStyle = '#111'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      let x0 = w / 2;
+      if (kind === 'direction') { // 箭咀
+        c.beginPath(); c.moveTo(w * 0.06, h * 0.5); c.lineTo(w * 0.16, h * 0.3); c.lineTo(w * 0.16, h * 0.7); c.closePath(); c.fill();
+        c.fillRect(w * 0.15, h * 0.44, w * 0.06, h * 0.12); x0 = w * 0.58;
+      }
+      c.font = `bold ${Math.round(h * 0.4)}px "PingFang HK","Noto Sans TC",sans-serif`;
+      c.fillText(zh, x0, h * 0.36);
+      c.font = `${Math.round(h * 0.22)}px "Helvetica Neue",Arial,sans-serif`;
+      c.fillText(en, x0, h * 0.75);
+    });
+  }
+
+  function addSign(parent, s) {
+    const g = new THREE.Group();
+    g.position.set(s.x, 0, s.z); g.rotation.y = s.yaw || 0;
+    g.name = 'c27_sign_' + s.id; g.userData.labelId = s.label_id; g.userData.copy = s.zh + ' · ' + s.en; g.userData.noMerge = true;
+    const big = s.kind === 'district_entry';
+    const pw = big ? 3.4 : (s.kind === 'direction' ? 2.6 : 2.2), ph = big ? 1.36 : 0.82, py = big ? 3.4 : 2.8;
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, py + ph / 2, 6), M.pole);
+    pole.position.set(big ? -pw / 2 + 0.2 : 0, (py + ph / 2) / 2, -0.08); g.add(pole);
+    if (big) { const p2 = pole.clone(); p2.position.x = pw / 2 - 0.2; g.add(p2); }
+    const tex = plateTex(s.zh, s.en, s.kind);
+    const face = new THREE.MeshStandardMaterial({ color: tex ? 0xffffff : 0xf0f0f0, roughness: 0.5, metalness: 0.05, map: tex || null });
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(pw, ph, 0.05), face);
+    plate.position.y = py; g.add(plate);
+    parent.add(g);
+    if (typeof addCollider === 'function' && !big) { addCollider(s.x, s.z, 0.15, 0.15, py); SG.colliders++; }
+    if (big && typeof addCollider === 'function') { addCollider(s.x, s.z, 0.6, 0.6, py); SG.colliders++; }
+    SG.signs++;
+  }
+
+  // 斜放長方形 → 細方格 AABB 鋪（AABB 只可軸向）
+  function colRect(cx, cz, tx, tz, len, wid, h) {
+    if (typeof addCollider !== 'function') return;
+    const lx = tz, lz = -tx; const s = Math.min(1.2, wid, len);
+    const nu = Math.max(1, Math.round(len / s)), nv = Math.max(1, Math.round(wid / s));
+    for (let i = 0; i < nu; i++) for (let j = 0; j < nv; j++) {
+      const u = -len / 2 + (i + 0.5) * len / nu, v = -wid / 2 + (j + 0.5) * wid / nv;
+      addCollider(cx + tx * u + lx * v, cz + tz * u + lz * v, s * 0.5, s * 0.5, h); SG.colliders++;
+    }
+  }
+  function boxAt(parent, cx, cz, tx, tz, len, wid, h, mat, y) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(wid, h, len), mat);
+    m.position.set(cx, (y || 0) + h / 2, cz); m.rotation.y = Math.atan2(tx, tz); parent.add(m); return m;
+  }
+
+  function trafficLight(parent, x, z, faceYaw) {
+    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = faceYaw; g.name = 'c27_traffic_light';
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 3.4, 8), M.pole); p.position.y = 1.7; g.add(p);
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.36, 1.0, 0.26), M.black); head.position.set(0, 3.0, 0.12); g.add(head);
+    [[M.lampR, 3.32], [M.lampA, 3.0], [M.lampG, 2.68]].forEach(([mt, y]) => {
+      const l = new THREE.Mesh(new THREE.CircleGeometry(0.12, 12), mt); l.position.set(0, y, 0.26); g.add(l);
+    });
+    parent.add(g);
+    if (typeof addCollider === 'function') { addCollider(x, z, 0.15, 0.15, 3.4); SG.colliders++; }
+  }
+
+  function bollard(parent, x, z) {
+    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 1.0, 8), M.bollard); b.position.set(x, 0.5, z); parent.add(b);
+  }
+
+  // 燈位過路處：燈柱×2、停車線、斑馬線、中央安全島（碰撞）＋路緣伸出（闊路先有）
+  function buildCrossing(parent, c) {
+    const { x, z, tx, tz } = c; const W = c.road_w; const lx = tz, lz = -tx;
+    const g = new THREE.Group(); g.name = c.id; parent.add(g);
+    // 斑馬（沿行車方向嘅白條，橫跨路面）
+    const n = Math.floor(W / 1.0);
+    {
+      const geo = new THREE.BoxGeometry(0.5, 0.03, 3.0);
+      const im = new THREE.InstancedMesh(geo, M.white, n); const o = new THREE.Object3D();
+      for (let i = 0; i < n; i++) {
+        const v = -W / 2 + 0.5 + i * (W - 1) / Math.max(1, n - 1);
+        o.position.set(x + lx * v, 0.075, z + lz * v); o.rotation.set(0, Math.atan2(tx, tz), 0); o.updateMatrix(); im.setMatrixAt(i, o.matrix);
+      }
+      im.userData.noMerge = true; g.add(im);
+    }
+    // 停車線：各自行車方向左半（香港靠左）
+    for (const sgn of [1, -1]) {
+      const u = -sgn * 4.2, v = sgn * W / 4;
+      boxAt(g, x + tx * u + lx * v, z + tz * u + lz * v, tx, tz, 0.35, W / 2 - 0.3, 0.03, M.white, 0.06);
+      // 燈柱喺各自來車方向嘅左邊路緣
+      const lu = -sgn * 4.6, lv = sgn * (W / 2 + 0.8);
+      trafficLight(g, x + tx * lu + lx * lv, z + tz * lu + lz * lv, Math.atan2(-tx * sgn, -tz * sgn));
+    }
+    // 中央安全島（碰撞）
+    const isl = 1.2, islL = 6.0;
+    boxAt(g, x, z, tx, tz, islL, isl, 0.25, M.kerb);
+    colRect(x, z, tx, tz, islL, isl, 1.0);
+    bollard(g, x + tx * (islL / 2 - 0.3), z + tz * (islL / 2 - 0.3));
+    bollard(g, x - tx * (islL / 2 - 0.3), z - tz * (islL / 2 - 0.3));
+    // 路緣伸出：剩低每邊 ≥3.3 先做
+    const bo = Math.max(0, Math.min(1.6, (W - isl - 2 * 3.3) / 2));
+    if (bo >= 0.6) {
+      for (const sgn of [1, -1]) {
+        const v = sgn * (W / 2 - bo / 2);
+        boxAt(g, x + lx * v, z + lz * v, tx, tz, 7.0, bo, 0.2, M.kerb);
+        colRect(x + lx * v, z + lz * v, tx, tz, 7.0, bo, 1.0);
+      }
+    }
+    SG.calming++;
+  }
+
+  // 車線偏移（chicane）：兩粒左右交錯路緣島＋護柱，碰撞迫 S 形慢駛
+  function buildLaneShift(parent, c) {
+    const { x, z, tx, tz } = c; const W = c.road_w; const lx = tz, lz = -tx;
+    const g = new THREE.Group(); g.name = c.id; parent.add(g);
+    const iw = W / 2, il = 6.0, gap = 8.0;
+    for (const sgn of [1, -1]) {
+      const u = sgn * gap, v = sgn * (W / 2 - iw / 2);
+      const cx = x + tx * u + lx * v, cz = z + tz * u + lz * v;
+      boxAt(g, cx, cz, tx, tz, il, iw, 0.22, M.kerb);
+      if (!LITE) boxAt(g, cx, cz, tx, tz, il - 0.6, iw - 0.6, 0.05, M.yel, 0.22);
+      colRect(cx, cz, tx, tz, il, iw, 1.0);
+      for (const k of [-1, 1]) for (const q of [0.3, 0.75]) {
+        const bu = u + k * (il / 2 - 0.3), bv = sgn * (W / 2 - iw * q);
+        bollard(g, x + tx * bu + lx * bv, z + tz * bu + lz * bv);
+      }
+      // 島前斜紋（裝飾）
+      if (!LITE) for (let i = 0; i < 4; i++) {
+        const hu = u - sgn * (il / 2 + 1 + i * 1.2);
+        const m = boxAt(g, x + tx * hu + lx * v, z + tz * hu + lz * v, tx, tz, 0.3, iw * 0.9, 0.02, M.white, 0.06);
+        m.rotation.y += 0.6 * sgn;
+      }
+    }
+    SG.calming++;
+  }
+
+  // 迴旋島：路緣圓台＋草＋碰撞（十字＋內接方，貼圓）
+  function buildRoundabout(parent, rb) {
+    const g = new THREE.Group(); g.name = rb.id; parent.add(g);
+    const R = rb.island_r;
+    const ring = new THREE.Mesh(new THREE.CylinderGeometry(rb.ring_r, rb.ring_r, 0.06, 40), M.asp);
+    ring.position.set(rb.x, 0.028, rb.z); ring.receiveShadow = true; g.add(ring);
+    const kerb = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.4, 32), M.kerb);
+    kerb.position.set(rb.x, 0.2, rb.z); kerb.name = rb.id + '_island_col'; g.add(kerb);
+    const grass = new THREE.Mesh(new THREE.CylinderGeometry(R - 0.5, R - 0.5, 0.1, 32), M.grass);
+    grass.position.set(rb.x, 0.42, rb.z); g.add(grass);
+    if (!LITE) for (let i = 0; i < 6; i++) {
+      const a = i * 1.047, r = R * 0.55;
+      const s = new THREE.Mesh(new THREE.SphereGeometry(0.9, 8, 6), M.shrub);
+      s.position.set(rb.x + Math.cos(a) * r, 0.9, rb.z + Math.sin(a) * r); g.add(s);
+    }
+    if (typeof addCollider === 'function') {
+      addCollider(rb.x, rb.z, R * 0.92, R * 0.4, 1.2);
+      addCollider(rb.x, rb.z, R * 0.4, R * 0.92, 1.2);
+      addCollider(rb.x, rb.z, R * 0.707, R * 0.707, 1.2);
+      SG.colliders += 3;
+    }
+    SG.islands++;
+  }
+
+  // 每區 ≤1 醒目區牌：core27 入區牌出咗就收 hk18 hub 舊牌（只限兩區）
+  function hideHubSigns() {
+    const H = typeof NT !== 'undefined' && NT.HK18;
+    if (!H || !H.byId || !H.ready) return false;
+    for (const id of ['sham_shui_po', 'kowloon_city']) {
+      const def = H.byId[id]; if (!def || !def.group) continue;
+      const kids = def.group.children;
+      for (let i = 0; i < kids.length; i++) {
+        const o = kids[i];
+        if (o.name === 'hk18_pole_' + id) o.visible = false;
+        if (o.name === 'hk18_sign_' + id) {
+          o.visible = false;
+          const nx = kids[i + 1]; // makeNeonSign 短標緊接 board
+          if (nx && !String(nx.name || '').startsWith('hk18_core_')) nx.visible = false;
+        }
+      }
+    }
+    return true;
+  }
+
+  let phaseT = 0;
+  function signalTick(dt) {
+    phaseT = (phaseT + (dt || 0.016)) % 14;
+    const p = phaseT < 8 ? 'G' : (phaseT < 10 ? 'A' : 'R');
+    M.lampG.emissiveIntensity = p === 'G' ? 2.2 : 0;
+    M.lampA.emissiveIntensity = p === 'A' ? 2.2 : 0;
+    M.lampR.emissiveIntensity = p === 'R' ? 2.2 : 0;
+    SG.phase = p; SG.phaseT = phaseT;
+  }
+
+  async function build() {
+    const data = await fetchJson(['data/core27-ssp-kc-signs.json', '../data/core27-ssp-kc-signs.json', './assets/data/core27-ssp-kc-signs.json', 'assets/data/core27-ssp-kc-signs.json']);
+    if (!data || !Array.isArray(data.signs)) { console.warn('[core27b] core27-ssp-kc-signs.json 未到手'); return; }
+    mats();
+    const root = new THREE.Group(); root.name = 'core27b-ssp-kc-signs'; root.userData.noMerge = true; scene.add(root); SG.group = root;
+    const byD = { sham_shui_po: new THREE.Group(), kowloon_city: new THREE.Group() };
+    for (const k in byD) { byD[k].name = 'c27_' + k; byD[k].userData.noMerge = true; root.add(byD[k]); }
+    for (const s of data.signs) {
+      if (Math.abs(s.x) < 3000) continue; // 保險：唔掛葵涌
+      if (LITE && s.kind === 'street_name' && !s.primary) continue;
+      addSign(byD[s.district] || root, s);
+    }
+    for (const c of (data.calming || [])) {
+      if (c.type === 'lane_shift') buildLaneShift(byD[c.district] || root, c); else buildCrossing(byD[c.district] || root, c);
+    }
+    for (const rb of (data.roundabouts || [])) buildRoundabout(byD.kowloon_city, rb);
+    // 中心點（遠距隱藏，碰撞常在）
+    const ctr = {};
+    for (const k in byD) {
+      const xs = data.signs.filter((s) => s.district === k);
+      ctr[k] = { x: xs.reduce((a, s) => a + s.x, 0) / Math.max(1, xs.length), z: xs.reduce((a, s) => a + s.z, 0) / Math.max(1, xs.length) };
+    }
+    if (typeof HOOKS !== 'undefined') {
+      HOOKS.frame = HOOKS.frame || [];
+      let hubDone = false, acc = 0;
+      HOOKS.frame.push(function core27bSigns(dt) {
+        signalTick(typeof dt === 'number' && dt < 1 ? dt : 0.016);
+        if (!hubDone) hubDone = hideHubSigns();
+        acc += 1; if (acc % 20) return;
+        const p = (typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined') ? car.pos : (typeof player !== 'undefined' ? player.pos : null);
+        if (!p) return;
+        for (const k in byD) { const v = Math.hypot(p.x - ctr[k].x, p.z - ctr[k].z) < 2200; if (byD[k].visible !== v) byD[k].visible = v; }
+      });
+    }
+    SG.ready = true; SG.counts = data.counts; SG.calmingData = data.calming || []; // core27b：俾執法 shim 讀
+    console.info('[core27b] ssp+kc signs/signals', { signs: SG.signs, calming: SG.calming, islands: SG.islands, colliders: SG.colliders, lite: LITE });
+  }
+
+  const t0 = setInterval(() => {
+    if (typeof scene === 'undefined' || typeof THREE === 'undefined') return;
+    clearInterval(t0);
+    build().catch((e) => console.warn('[core27b]', e && e.message));
+  }, 450);
+
+  Object.assign(window.NT = window.NT || {}, { C27SIGNS: SG });
+})();
+
+/* core27b · 燈位執法（Grok Bot 合併）：讀 NT.C27SIGNS（modZc）嘅 ped_crossing_signal 點＋SG.phase
+ *  · 紅／黃燈：AI 車喺停車線前停（唔郁警車／泊車）
+ *  · 紅燈：玩家車 >18km/h 越過停車線 → issueFine('hk_red_light')，25 秒冷卻
+ *  · 唔加任何 mesh（燈柱／斑馬／島全部用 modZc）*/
+(function () {
+  const E = { fines: 0, aiHolds: 0, pts: null, cool: 0 };
+  function pts() {
+    const SG = typeof NT !== 'undefined' && NT.C27SIGNS;
+    if (!SG || !SG.ready || !SG.calmingData) return null;
+    if (!E.pts) E.pts = SG.calmingData.filter((c) => c.type !== 'lane_shift').map((c) => {
+      const L = Math.hypot(c.tx, c.tz) || 1;
+      return { id: c.id, x: c.x, z: c.z, fx: c.tx / L, fz: c.tz / L, half: (c.road_w || 10) / 2, prev: 0 };
+    });
+    return E.pts;
+  }
+  function sim(dt) {
+    const P = pts(); if (!P) return;
+    const ph = NT.C27SIGNS.phase || 'G';
+    E.cool = Math.max(0, E.cool - dt);
+    const driving = typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined' && car.pos;
+    for (const L of P) {
+      if (driving) {
+        const dx = car.pos.x - L.x, dz = car.pos.z - L.z;
+        if (Math.abs(dx) < 40 && Math.abs(dz) < 40) {
+          const along = dx * L.fx + dz * L.fz, lat = Math.abs(-dx * L.fz + dz * L.fx);
+          const side = lat > L.half + 1 ? 0 : (along > 4.2 ? 1 : (along < -4.2 ? -1 : 2));
+          if (side === 2 && (L.prev === 1 || L.prev === -1) && ph === 'R' && (car.speedKmh || 0) > 18 && E.cool <= 0) {
+            E.cool = 25; E.fines++;
+            if (typeof issueFine === 'function') issueFine('hk_red_light', '衝紅燈');
+          }
+          L.prev = side;
+        } else L.prev = 0;
+      }
+      if (ph === 'G' || typeof VEHS === 'undefined') continue;
+      for (const v of VEHS) {
+        if (!v.pos || v.kind === 'police' || v.ai === 'park') continue;
+        const ex = v.pos.x - L.x, ez = v.pos.z - L.z;
+        if (Math.abs(ex) > 32 || Math.abs(ez) > 32) continue;
+        if (Math.abs(-ex * L.fz + ez * L.fx) > L.half + 2) continue;
+        const hx = Math.sin(v.heading || 0), hz = Math.cos(v.heading || 0);
+        if (hx * ex + hz * ez >= 0) continue; // 唔係向住燈位
+        const dist = Math.abs(ex * L.fx + ez * L.fz);
+        if (dist < 5 || dist > 30) continue;
+        const vmax = Math.max(0, (dist - 5.5) * 0.9);
+        if (v.speed > vmax) { v.speed = vmax; E.aiHolds++; }
+      }
+    }
+  }
+  if (typeof HOOKS !== 'undefined') HOOKS.sim.push(sim);
+  Object.assign(window.NT = window.NT || {}, { C27ENF: E });
+})();
+
+/* core27b · modYt_kowloonamb（深水埗＋九龍城真街點環境音；座標跟 core27-ssp-kc-spines 錨點）*/
+
+/* =========================================================================
+ * core27 深水埗＋九龍城環境音
+ *  · 鴨寮街／黃金電腦商場一帶：攤檔人聲嘈、二手電子卡嗒、夜深收檔拉閘
+ *  · 九龍城南角道／衙前圍道泰菜街：夜鑊氣、大排檔碗碟；城寨公園靜（hospital_quiet 借用）
+ * 全部原創合成 placeholder；禁真歌、禁可辨商號叫賣、禁真電台。唔郁 Pages。
+ * 座標：真實 lat/lon → hkGeo（跟 modYe_landmarks／十八區 JSON）
+ * ========================================================================= */
+const KLNAMB = { cool: {}, lastSpot: '' };
+const KLNAMB_SPOTS = [
+  // id, lat, lon, 半徑(m), 日／夜權重, cues
+  { id: 'apliu_st',      lat: 22.329923, lon: 114.162335, r: 70, day: 1.0, night: 0.4, cues: [['market_chatter', 0.6, 0.10], ['junk_stall_click', 0.5, 0.06]] },
+  { id: 'pei_ho_st',     lat: 22.32946,  lon: 114.16078,  r: 60, day: 1.0, night: 0.4, cues: [['market_chatter', 0.55, 0.08]] },          // 北河街街市
+  { id: 'golden_centre', lat: 22.33202, lon: 114.16202, r: 50, day: 0.8, night: 0.5, cues: [['junk_stall_click', 0.45, 0.07]] },
+  { id: 'ssp_shutters',  lat: 22.3302,  lon: 114.1638,  r: 90, day: 0.0, night: 1.0, cues: [['shutter_roll', 0.5, 0.025]] },           // 夜深收檔
+  { id: 'kc_thai_st',    lat: 22.3304,  lon: 114.1902,  r: 80, day: 0.3, night: 1.0, cues: [['thai_wok_sizzle', 0.55, 0.09], ['street_diner_clink', 0.5, 0.07], ['market_chatter', 0.4, 0.05]] },
+  { id: 'kc_market',     lat: 22.32921,  lon: 114.18901,  r: 55, day: 1.0, night: 0.2, cues: [['market_chatter', 0.5, 0.07]] },          // 龍城街市
+  { id: 'walled_park',   lat: 22.33218,  lon: 114.19027,  r: 75, day: 1.0, night: 0.6, cues: [['hospital_quiet', 0.45, 0.04]] },         // 城寨公園園靜
+  { id: 'hau_wong',      lat: 22.33269,  lon: 114.18749,  r: 40, day: 1.0, night: 0.5, cues: [['district_breeze', 0.4, 0.03]] }          // 侯王廟一帶
+];
+
+function klnAmbXZ() {
+  if (typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined' && car.pos) return { x: car.pos.x, z: car.pos.z, drive: true };
+  if (typeof player !== 'undefined' && player.pos) return { x: player.pos.x, z: player.pos.z, drive: false };
+  return null;
+}
+function klnAmbSim(dt) {
+  if (typeof state === 'undefined' || !state.started) return;
+  if (typeof INT !== 'undefined' && INT.active) return;
+  if (document.body && document.body.classList.contains('cine')) return;
+  if (typeof sfx !== 'function' || typeof hkGeo !== 'function') return;
+  const p = klnAmbXZ(); if (!p) return;
+  const night = (typeof TOD === 'undefined') || TOD.mode !== 'day';
+  const K = (typeof LM !== 'undefined' && LM.K) ? LM.K : 1;
+  for (const s of KLNAMB_SPOTS) {
+    if (s._x == null) { const g = hkGeo(s.lat, s.lon); s._x = g.x; s._z = g.z; }
+    const d = Math.hypot(p.x - s._x, p.z - s._z);
+    if (d > s.r * K) continue;
+    const w = (night ? s.night : s.day) * (p.drive ? 0.5 : 1); // 揸車經過減半，唔洗腦
+    if (w <= 0) continue;
+    const fall = 1 - d / (s.r * K);
+    for (const [cue, vol, rate] of s.cues) {
+      const key = s.id + ':' + cue;
+      KLNAMB.cool[key] = Math.max(0, (KLNAMB.cool[key] || 0) - dt);
+      if (KLNAMB.cool[key] > 0) continue;
+      if (Math.random() < dt * rate * w) {
+        KLNAMB.cool[key] = 4 + Math.random() * 9;
+        KLNAMB.lastSpot = s.id;
+        sfx(cue, vol * (p.drive ? 0.5 : 1) * (0.5 + 0.5 * fall)); // 揸車音量減半
+      }
+    }
+  }
+}
+HOOKS.sim.push(klnAmbSim);
+if (typeof window !== 'undefined' && window.NT) Object.assign(NT, { KLNAMB, KLNAMB_SPOTS, klnAmbSim });
+
+
+
 
 /* =========================================================================
  * M1c 手機效能優化（iPhone Safari）
@@ -23061,6 +23485,7 @@ Promise.race([
 });
 
 Object.assign(window, { loadVehicle, load_vehicle, loadRealisticCar, loadRealisticBuildings, loadCharacter });
+
 
 </script>
 </body>
