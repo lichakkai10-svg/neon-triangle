@@ -946,6 +946,26 @@
       "oral_term": "收費",
       "oral_toast_prefix": "醫學中心門診掛號",
       "amount_hkd_equiv": 103.28
+    },
+    {
+      "id": "hk_red_light",
+      "region": "hk",
+      "category": "traffic",
+      "currency": "HKD",
+      "amount": 900,
+      "amount_kind": "fixed",
+      "title_zh": "沒有遵從交通燈的指示",
+      "law": "Cap.240 定額罰款(刑事訴訟)條例 附表第14項（Cap.374G 第18條）",
+      "source_url": "https://www.elegislation.gov.hk/hk/cap240@2026-01-01T00:00:00/sch0.pdf",
+      "source_url_2": "https://www.tlb.gov.hk/tc/psp/pressreleases/transport/2025/P202512290028_tc.pdf",
+      "effective": "2026-01-01",
+      "term": "定額罰款",
+      "note": "由 600 調至 900",
+      "game_amount": 22,
+      "oral_toast": "定額罰款——不遵守交通燈號 $22",
+      "oral_term": "定額罰款",
+      "oral_toast_prefix": "定額罰款——不遵守交通燈號",
+      "amount_hkd_equiv": 900.0
     }
   ],
   "review_status": "official_amounts_ready_for_oral_merge",

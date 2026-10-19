@@ -274,7 +274,7 @@ body.aim #cross{transform:scale(.45)}
     if(b && cur < n) b.style.width=n+'%';
     if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
-  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core27b。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core27c。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
   var tipEl=document.getElementById("loadTips"); var ti=0;
   if(tipEl) tipEl.textContent=tips[0];
   var tipTimer=setInterval(function(){
@@ -284,7 +284,7 @@ body.aim #cross{transform:scale(.45)}
   setTimeout(function(){
     if(done) return;
     var t=document.getElementById('loadTxt');
-    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core27b';
+    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core27c';
   },45000);
 })();
 </script>
@@ -23486,7 +23486,276 @@ Promise.race([
 
 Object.assign(window, { loadVehicle, load_vehicle, loadRealisticCar, loadRealisticBuildings, loadCharacter });
 
+/* =========================================================================
+ * core27c：日頭宣傳模式（&day）＋自家 HUD v2
+ * - 藍天、光猛、太陽陰影跟主角；LDR／setClearColor(0x0b0c0e)／vendor 唔郁
+ * - HUD v2：左上圓形小地圖＋N；右上時鐘／HK$／血條；左下搖桿；右下 跳／跑／蹲／打
+ * - 啟用：&day 自動開 HUD v2；&hud2 單開；&hud=old 用返舊 HUD
+ * - 全部自家繪製，冇用任何現有遊戲嘅圖、字體或 logo
+ * ========================================================================= */
+{
+  const Q27C = new URLSearchParams(location.search);
+  const HUD2_ON = (Q27C.has('day') || Q27C.has('hud2')) && Q27C.get('hud') !== 'old';
+  const DAY27C = { on: false, hud: HUD2_ON, jumpY: 0, jumpV: 0, run: false, crouch: false, crouchK: 0, clockMin: 0 };
 
+  /* ---------- 日頭：宣傳片藍天光猛 ---------- */
+  try {
+    Object.assign(TOD.day, {
+      fog: 0xa9c8e6, horizon: 0x9cc6ee, top: 0x1f63c8,
+      hemiSky: 0xe6f1ff, hemiGround: 0x9a8b72, hemiI: 1.25,
+      exposure: 1.12, bloom: 0.08, envI: 0.95, rain: false, sat: 1.12,
+      mastMul: 0.0, sunI: 3.0, sirenMul: 0.35, flashMul: 0.35
+    });
+  } catch (e) { /* */ }
+
+  todOnChange((m) => {
+    DAY27C.on = m === 'day';
+    try {
+      // 天空底色用藍（唔會觸發白屏偵測 >220 白）；清屏色照舊夜黑
+      scene.background.setHex(DAY27C.on ? 0x6f9fd2 : 0x0b0c0e);
+      if (scene.fog && scene.fog.isFogExp2) scene.fog.density = DAY27C.on ? 0.0019 : 0.0095;
+      const sun = TOD.sun;
+      if (sun) {
+        sun.color.setHex(DAY27C.on ? 0xfff0d6 : 0xc0d0ff);
+        if (DAY27C.on && !sun.target.parent) scene.add(sun.target);
+      }
+      if (DAY27C.on) DAY27C.clockMin = 13 * 60 + 20; else DAY27C.clockMin = 23 * 60 + 5;
+      document.body.classList.toggle('day27c', DAY27C.on);
+      // 日頭乾地：關倒影、去水氹低粗糙度（夜晚還原）
+      if (typeof REFL !== 'undefined') { if (DAY27C._refl == null) DAY27C._refl = REFL.enabled; REFL.enabled = DAY27C.on ? false : DAY27C._refl; }
+      if (typeof reflUniforms !== 'undefined') reflUniforms.uReflOn.value = DAY27C.on ? 0 : 1;
+      if (typeof groundMat !== 'undefined') {
+        if (!DAY27C._gm) DAY27C._gm = { rm: groundMat.roughnessMap, r: groundMat.roughness, ns: groundMat.normalScale.clone() };
+        groundMat.roughnessMap = DAY27C.on ? null : DAY27C._gm.rm;
+        groundMat.roughness = DAY27C.on ? 0.88 : DAY27C._gm.r;
+        groundMat.normalScale.copy(DAY27C.on ? new THREE.Vector2(0.25, 0.25) : DAY27C._gm.ns);
+        groundMat.needsUpdate = true;
+      }
+    } catch (e) { /* */ }
+  });
+
+  HOOKS.frame.push((dt) => {
+    DAY27C.clockMin = (DAY27C.clockMin + dt * 0.5) % 1440; // 遊戲 1 分鐘＝2 秒
+    if (!DAY27C.on || !TOD.sun) return;
+    const p = state.mode === 'drive' && car ? car.pos : player.pos;
+    // 太陽跟主角（陰影框 ±80m 跟住行），斜陽角度：西南高角
+    TOD.sun.position.set(p.x - 55, 95, p.z - 40);
+    TOD.sun.target.position.set(p.x, 0, p.z);
+    TOD.sun.target.updateMatrixWorld();
+    // 日頭唔准白屏：背景保持藍
+    if (scene.background && scene.background.isColor && scene.background.getHex() === 0x0b0c0e && !(INT && INT.active)) scene.background.setHex(0x6f9fd2);
+  });
+
+  /* ---------- HUD v2 ---------- */
+  if (HUD2_ON) {
+    document.body.classList.add('hud2');
+    const st = document.createElement('style');
+    st.textContent = `
+body.hud2 #radarWrap{width:150px;top:calc(var(--sat) + 10px);left:calc(var(--sal) + 12px)}
+body.hud2 #radarBox{width:150px;height:150px;border-radius:50%;border:3px solid rgba(255,255,255,.88);box-shadow:0 2px 10px rgba(0,0,0,.45);background:#2b3236}
+body.hud2 #radarBars{display:none}
+body.hud2 #overviewWrap{display:none}
+body.hud2 #topRight,body.hud2 #btnCar,body.hud2 #wanted,body.hud2 #inv{right:calc(var(--sar) + 12px) !important}
+body.hud2 #btnCar{top:calc(var(--sat) + 162px)}
+body.hud2 #wanted{top:calc(var(--sat) + 122px);right:calc(var(--sar) + 80px) !important}
+#h2N{position:absolute;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;background:#0d1a2a;border:2px solid #fff;color:#fff;
+  font:900 13px "PingFang HK","Noto Sans TC",sans-serif;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:3}
+#h2Top{position:absolute;top:calc(var(--sat) + 10px);right:calc(var(--sar) + 12px);display:none;flex-direction:column;align-items:flex-end;gap:5px;pointer-events:none;z-index:6}
+body.hud2 #h2Top{display:flex}
+#h2Clock{font:800 22px "PingFang HK","Noto Sans TC",sans-serif;color:#fff;letter-spacing:.04em;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+#h2Clock small{font-size:12px;margin-left:6px;opacity:.85}
+#h2Cash{font:900 20px "PingFang HK","Noto Sans TC",sans-serif;color:#7fe08a;text-shadow:0 1px 3px rgba(0,0,0,.75)}
+#h2Cash i{font-style:normal;font-size:13px;margin-right:3px;color:#d8f5dc}
+#h2Hp{width:150px;height:12px;border-radius:7px;background:rgba(0,0,0,.45);border:2px solid rgba(255,255,255,.85);overflow:hidden}
+#h2Hp b{display:block;height:100%;width:100%;background:linear-gradient(90deg,#e8463c,#ff7a5c);transition:width .2s}
+#h2Hp.low b{animation:h2blink .6s infinite alternate} @keyframes h2blink{to{opacity:.35}}
+#h2HpLbl{font:800 11px "PingFang HK","Noto Sans TC",sans-serif;color:#fff;text-shadow:0 1px 2px #000}
+body.hud2 #cash,body.hud2 #topRight{display:none}
+body.hud2 #todBtn{top:calc(var(--sat) + 118px)}
+body.hud2 #joy{width:140px;height:140px;left:calc(var(--sal) + 24px);bottom:calc(var(--sab) + 22px);background:rgba(255,255,255,.14);border:2px solid rgba(255,255,255,.55)}
+body.hud2 #joyKnob{background:rgba(255,255,255,.82);box-shadow:0 2px 8px rgba(0,0,0,.35)}
+#h2Btns{position:absolute;right:calc(var(--sar) + 18px);bottom:calc(var(--sab) + 18px);width:200px;height:200px;display:none;z-index:7}
+body.hud2.foot #h2Btns{display:block}
+body.hud2.foot #btnMain{display:none}
+body.hud2.foot #btnAim{right:calc(var(--sar) + 230px);bottom:calc(var(--sab) + 26px);width:60px;height:60px;font-size:13px}
+.h2b{position:absolute;border-radius:50%;pointer-events:auto;touch-action:none;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  color:#fff;font:900 17px "PingFang HK","Noto Sans TC",sans-serif;background:rgba(14,22,32,.55);border:2px solid rgba(255,255,255,.75);
+  text-shadow:0 1px 2px rgba(0,0,0,.6);user-select:none;-webkit-user-select:none}
+.h2b small{font-size:9px;font-weight:700;opacity:.75;letter-spacing:.08em}
+.h2b.on{background:rgba(255,196,60,.55);border-color:#ffd36a}
+#h2Hit{right:0;bottom:0;width:92px;height:92px;font-size:24px;background:rgba(200,50,40,.6)}
+#h2Jump{right:104px;bottom:6px;width:64px;height:64px}
+#h2Run{right:96px;bottom:84px;width:62px;height:62px}
+#h2Crouch{right:18px;bottom:104px;width:62px;height:62px}
+body.cine #h2Top,body.cine #h2Btns,body.cine #h2N{visibility:hidden}`;
+    document.head.appendChild(st);
+
+    const hud = document.getElementById('hud') || document.body;
+    const top = document.createElement('div');
+    top.id = 'h2Top';
+    top.innerHTML = '<div id="h2Clock">--:--</div><div id="h2Cash"><i>HK$ </i><span>0</span></div><div id="h2Hp"><b></b></div>';
+    hud.appendChild(top);
+    const nEl = document.createElement('div'); nEl.id = 'h2N'; nEl.textContent = 'N';
+    const rb = document.getElementById('radarBox'); if (rb) rb.appendChild(nEl);
+
+    const btns = document.createElement('div');
+    btns.id = 'h2Btns';
+    btns.innerHTML = '<div class="h2b" id="h2Hit">打<small>HIT</small></div><div class="h2b" id="h2Jump">跳<small>JUMP</small></div>' +
+      '<div class="h2b" id="h2Run">跑<small>RUN</small></div><div class="h2b" id="h2Crouch">蹲<small>CROUCH</small></div>';
+    hud.appendChild(btns);
+
+    const $$ = (id) => document.getElementById(id);
+    const doJump = () => { if (state.mode !== 'foot' || state.locked || player.dead) return; if (DAY27C.jumpY > 0.02) return; DAY27C.jumpV = 4.6; DAY27C.crouch = false; $$('h2Crouch').classList.remove('on'); };
+    holdButton($$('h2Hit'), () => { input.main = true; if (state.mode === 'foot') fire(); }, () => { input.main = false; });
+    holdButton($$('h2Jump'), doJump, () => {});
+    holdButton($$('h2Run'), () => { DAY27C.run = true; }, () => { DAY27C.run = false; });
+    // 蹲：撳一下切換
+    $$('h2Crouch').addEventListener('pointerdown', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      DAY27C.crouch = !DAY27C.crouch; $$('h2Crouch').classList.toggle('on', DAY27C.crouch);
+      if (DAY27C.crouch) DAY27C.run = false;
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.repeat || !state.started) return;
+      if (e.code === 'KeyX' && state.mode === 'foot') { doJump(); }
+      if (e.code === 'KeyC' && state.mode === 'foot') { DAY27C.crouch = !DAY27C.crouch; $$('h2Crouch').classList.toggle('on', DAY27C.crouch); }
+    });
+
+    // 小地圖：圓形，N 改用 DOM 徽章沿圓邊（canvas 原有 N 唔畫）
+    try {
+      const _ft = mctx.fillText.bind(mctx);
+      mctx.fillText = function (t, x, y, w) { if (t === 'N') return; return w == null ? _ft(t, x, y) : _ft(t, x, y, w); };
+      setTimeout(() => { try { resizeMinimap(); } catch (e) { /* */ } }, 50);
+      window.addEventListener('resize', () => setTimeout(() => { try { resizeMinimap(); } catch (e) { /* */ } }, 60));
+    } catch (e) { /* */ }
+
+    let lastCash = -1, lastHp = -1, lastClk = '';
+    HOOKS.frame.push(() => {
+      const yaw = state.mode === 'drive' ? state.camYaw + state.yawOffset : state.camYaw;
+      const R = 75 - 4; // 盒半徑 75（150px）
+      nEl.style.left = (75 + Math.sin(yaw) * R) + 'px';
+      nEl.style.top = (75 - Math.cos(yaw) * R) + 'px';
+      const cash = (typeof ECON !== 'undefined' && ECON) ? ECON.cash : 0;
+      if (cash !== lastCash) { lastCash = cash; $$('h2Cash').lastChild.textContent = Number(cash || 0).toLocaleString('en-US'); }
+      const hp = Math.max(0, Math.min(100, player.hp | 0));
+      if (hp !== lastHp) { lastHp = hp; const b = $$('h2Hp'); b.firstChild.style.width = hp + '%'; b.classList.toggle('low', hp < 25); }
+      const m = DAY27C.clockMin | 0, hh = (m / 60) | 0, mi = m % 60;
+      const clk = String(hh).padStart(2, '0') + ':' + String(mi).padStart(2, '0');
+      if (clk !== lastClk) { lastClk = clk; $$('h2Clock').textContent = clk; }
+    });
+  }
+
+  /* ---------- 跑／蹲：改讀入嘅搖桿幅度；跳：疊加垂直位移 ---------- */
+  {
+    const _rm = readMove;
+    readMove = function () {
+      const r = _rm();
+      if (state.mode === 'foot' && r.mag > 0.12) {
+        if (DAY27C.crouch) r.mag = Math.min(r.mag, 0.42);
+        else if (DAY27C.run) r.mag = 1;
+      }
+      return r;
+    };
+    const _up = updatePlayer;
+    updatePlayer = function (dt) {
+      _up(dt);
+      if (state.mode !== 'foot' || !player.root) { DAY27C.jumpY = 0; DAY27C.jumpV = 0; return; }
+      if (DAY27C.jumpV !== 0 || DAY27C.jumpY > 0) {
+        DAY27C.jumpV -= 13 * dt; DAY27C.jumpY += DAY27C.jumpV * dt;
+        if (DAY27C.jumpY <= 0) { DAY27C.jumpY = 0; DAY27C.jumpV = 0; }
+      }
+      DAY27C.crouchK = damp(DAY27C.crouchK, DAY27C.crouch ? 1 : 0, 12, dt);
+      if (DAY27C.jumpY > 0 || DAY27C.crouchK > 0.01) {
+        player.root.position.y = player.pos.y + DAY27C.jumpY - 0.04 * DAY27C.crouchK;
+        player.root.scale.set(1, 1 - 0.28 * DAY27C.crouchK, 1);
+        player.root.updateMatrixWorld(true);
+      } else if (player.root.scale.y !== 1) { player.root.scale.set(1, 1, 1); }
+    };
+  }
+
+  // 若 &day 喺本模組之前已經套用，再套一次新日頭設定
+  try { if (TOD.mode === 'day') setTimeOfDay('day', { silent: true }); } catch (e) { /* */ }
+  Object.assign(window.NT = window.NT || {}, { DAY27C, core27c: true });
+}
+
+
+
+
+/* =========================================================================
+ * core27c · HUD 去 GTA（跟 docs/hud-de-gta-core27c.md，gta團隊）
+ * - 方形小地圖搬去右下；入區時地圖下面細字顯示 18 區名
+ * - 錢：細字米白「HK$ 12,480」；時鐘 24 小時；血條冇字
+ * - 通緝級：文字＋5 格橫條（唔用星）；事件字（搞掂／搞砸／掛咗／拉咗）細細一條
+ * - 掣：行路「跳」「跑」「蹲」「打」；揸車「落車」「喊咪」；全部 ≥44px，角位跟 env(safe-area-inset-*)
+ * ========================================================================= */
+{
+  const st = document.createElement('style');
+  st.textContent = `
+body.hud2 #radarWrap{left:auto !important;top:auto !important;right:calc(env(safe-area-inset-right,0px) + 14px) !important;bottom:calc(env(safe-area-inset-bottom,0px) + 14px) !important;width:128px !important}
+body.hud2 #radarBox{width:128px !important;height:128px !important;border-radius:8px !important;border:2px solid rgba(236,230,216,.75) !important;box-shadow:0 2px 8px rgba(0,0,0,.35) !important}
+#h2N{width:20px !important;height:20px !important;margin:-10px 0 0 -10px !important;border-radius:4px !important;font:700 12px "Noto Sans TC","PingFang HK",sans-serif !important;background:rgba(20,24,28,.85) !important;border:1px solid #ece6d8 !important}
+#c27Dist{position:absolute;right:calc(env(safe-area-inset-right,0px) + 14px);bottom:calc(env(safe-area-inset-bottom,0px) + 146px);width:128px;text-align:center;
+  font:600 12px "Noto Sans TC","PingFang HK",sans-serif;color:#ece6d8;letter-spacing:.12em;text-shadow:0 1px 2px rgba(0,0,0,.8);opacity:0;transition:opacity .6s;pointer-events:none}
+#c27Dist.show{opacity:1}
+body.hud2 #h2Top{top:calc(env(safe-area-inset-top,0px) + 10px) !important;right:calc(env(safe-area-inset-right,0px) + 14px) !important;gap:4px !important}
+#h2Clock{font:500 18px "Noto Sans TC","PingFang HK",sans-serif !important;color:#f4f1ea !important}
+#h2Cash{font:500 14px "Noto Sans TC","PingFang HK",sans-serif !important;color:#ece6d8 !important;letter-spacing:.04em}
+#h2Cash i{font-size:12px !important;color:#ece6d8 !important;margin-right:4px !important}
+#h2HpLbl{display:none !important}
+#h2Hp{width:120px !important;height:6px !important;border-radius:3px !important;border:0 !important;background:rgba(0,0,0,.45) !important}
+#h2Hp b{background:#d8463c !important}
+#c27Wanted{font:500 12px "Noto Sans TC","PingFang HK",sans-serif;color:#ece6d8;letter-spacing:.06em;text-shadow:0 1px 2px rgba(0,0,0,.8);display:none}
+#c27Wanted.on{display:block} #c27Wanted b{font-weight:500;color:#e8b04a;letter-spacing:0}
+body.hud2 #wanted{display:none !important}
+body.hud2 #h2Btns{right:calc(env(safe-area-inset-right,0px) + 156px) !important;bottom:calc(env(safe-area-inset-bottom,0px) + 14px) !important}
+.h2b{font-family:"Noto Sans TC","PingFang HK",sans-serif !important;font-weight:700 !important;min-width:48px;min-height:48px}
+body.hud2.foot #btnAim{right:calc(env(safe-area-inset-right,0px) + 368px) !important;bottom:calc(env(safe-area-inset-bottom,0px) + 22px) !important}
+body.hud2.drive #btnMain{right:calc(env(safe-area-inset-right,0px) + 156px) !important;bottom:calc(env(safe-area-inset-bottom,0px) + 18px) !important;width:92px !important;height:92px !important}
+body.hud2 #btnCar{top:auto !important;right:calc(env(safe-area-inset-right,0px) + 262px) !important;bottom:calc(env(safe-area-inset-bottom,0px) + 70px) !important;width:76px !important;height:48px !important}
+body.hud2.foot #btnCar{right:calc(env(safe-area-inset-right,0px) + 170px) !important;bottom:calc(env(safe-area-inset-bottom,0px) + 228px) !important}
+#c27Horn{position:absolute;right:calc(env(safe-area-inset-right,0px) + 262px);bottom:calc(env(safe-area-inset-bottom,0px) + 14px);width:76px;height:48px;display:none;align-items:center;justify-content:center;
+  pointer-events:auto;touch-action:none;font:700 16px "Noto Sans TC","PingFang HK",sans-serif;letter-spacing:.15em;color:#f4f1ea;background:rgba(14,22,32,.55);border:1.5px solid rgba(236,230,216,.7);border-radius:10px}
+body.hud2.drive #c27Horn{display:flex}
+#c27Horn.on{background:rgba(232,176,74,.5)}
+body.hud2 #loc{display:none !important}
+body.hud2 #loc b,body.hud2 #loc span,body.hud2 #speedo,body.hud2 #ammo{font-style:normal !important}
+body.hud2 #screen{background:none !important;justify-content:flex-start !important;padding-top:calc(env(safe-area-inset-top,0px) + 64px)}
+body.hud2 #screen .band{width:auto !important;padding:6px 18px !important;background:rgba(10,12,14,.62) !important;border-left:3px solid #e8b04a}
+body.hud2 #screen h1{font:600 22px "Noto Sans TC","PingFang HK",sans-serif !important;letter-spacing:.2em !important;text-shadow:none !important;color:#f4f1ea !important}
+body.hud2 #screen h1.failed,body.hud2 #screen h1.wasted{color:#ff8a7a !important}
+body.hud2 #screen p{font-size:12px !important}
+body.cine #c27Dist,body.cine #c27Wanted,body.cine #c27Horn{visibility:hidden}`;
+  document.head.appendChild(st);
+  const hud = document.getElementById('hud') || document.body;
+  const dEl = document.createElement('div'); dEl.id = 'c27Dist'; hud.appendChild(dEl);
+  const wEl = document.createElement('div'); wEl.id = 'c27Wanted';
+  const top = document.getElementById('h2Top'); (top || hud).appendChild(wEl);
+  const horn = document.createElement('div'); horn.id = 'c27Horn'; horn.textContent = '喊咪'; hud.appendChild(horn);
+  const beep = () => { try { if (typeof initAudio === 'function') initAudio(); tone([[392, 0, 0.32, 'square', 0.35], [494, 0, 0.32, 'square', 0.3]], 0.16); } catch (e) { /* */ } };
+  horn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); horn.classList.add('on'); beep(); });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) horn.addEventListener(ev, () => horn.classList.remove('on'));
+  window.addEventListener('keydown', (e) => { if (e.code === 'KeyH' && !e.repeat && state.mode === 'drive') beep(); });
+  // 18 區名（入區顯示 4 秒）
+  const DIST = [['YTM', '油尖旺'], ['CW', '中西區'], ['KT', '葵青'], ['SSP', '深水埗'], ['KCITY', '九龍城']];
+  const boxes = []; let lastD = null, dT = 0, boxT = 0;
+  const box = () => { boxes.length = 0; for (const [k, zh] of DIST) { const g = window.NT && NT[k] && NT[k].group; if (!g || !g.children.length) continue; const b = new THREE.Box3().setFromObject(g); boxes.push([zh, b]); } };
+  HOOKS.frame.push((dt) => {
+    if (!document.body.classList.contains('hud2')) return;
+    // N 徽章：方形邊
+    const n = document.getElementById('h2N');
+    if (n) { const yaw = state.mode === 'drive' ? state.camYaw + state.yawOffset : state.camYaw; const sx = Math.sin(yaw), sy = -Math.cos(yaw), k = 54 / Math.max(Math.abs(sx), Math.abs(sy), 1e-3); n.style.left = (64 + sx * k) + 'px'; n.style.top = (64 + sy * k) + 'px'; }
+    // 錢：HK$ 12,480
+    const c = document.getElementById('h2Cash'); if (c && c.firstChild && c.firstChild.textContent !== 'HK$') c.firstChild.textContent = 'HK$';
+    // 通緝級
+    const s = (typeof WANTED !== 'undefined' && WANTED) ? WANTED.stars | 0 : 0;
+    if (s !== wEl._s) { wEl._s = s; wEl.classList.toggle('on', s > 0); wEl.innerHTML = '通緝級 <b>' + '▮'.repeat(s) + '▯'.repeat(5 - s) + '</b>'; }
+    // 地區名
+    if ((boxT -= dt) <= 0) { boxT = 5; box(); }
+    if ((dT -= dt) <= 0) { dT = 0.5; const p = state.mode === 'drive' ? car.pos : player.pos; let d = null; for (const [zh, b] of boxes) if (p.x >= b.min.x && p.x <= b.max.x && p.z >= b.min.z && p.z <= b.max.z) { d = zh; break; }
+      if (d !== lastD) { lastD = d; if (d) { dEl.textContent = d; dEl.classList.add('show'); clearTimeout(dEl._t); dEl._t = setTimeout(() => dEl.classList.remove('show'), 4000); } } }
+  });
+  setTimeout(() => { try { resizeMinimap(); } catch (e) { /* */ } }, 120);
+}
 </script>
 </body>
 </html>

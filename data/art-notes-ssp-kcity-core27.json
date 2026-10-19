@@ -7,7 +7,7 @@
     "real shop signs"
   ],
   "sham_shui_po": {
-    "path": "m1c/assets/tex/facade/ssp/",
+    "path": "tex/facade/ssp/",
     "district_facade": "facade/district/facade_d_ssp.jpg",
     "modules": [
       "ssp_tonglau_grille.jpg",
@@ -21,7 +21,7 @@
     "hint": "electronics_shopfront 色盒招牌位留空，戲仿 emissive 字跟 docs/street-signage-parody.md；fabric_stall_tarp 用於基隆街布市擠出簷篷"
   },
   "kowloon_city": {
-    "path": "m1c/assets/tex/facade/kcity/",
+    "path": "tex/facade/kcity/",
     "district_facade": "facade/district/facade_d_kcw.jpg",
     "modules": [
       "kcity_tonglau_brick_balcony.jpg",

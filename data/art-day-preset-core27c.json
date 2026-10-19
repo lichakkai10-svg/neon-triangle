@@ -1,0 +1,70 @@
+{
+  "updated": "2026-10-19T15:45:00+08:00",
+  "for": "core27c &day",
+  "source": "procedural numpy fbm, no photo/AI",
+  "sky": {
+    "equirect": "tex/sky/sky_day_hk_equirect.jpg",
+    "lite_safari": "tex/sky/sky_day_hk_equirect_lite.jpg",
+    "mapping": "EquirectangularReflectionMapping",
+    "use_as": "scene.background + scene.environment(PMREM, lite skip)"
+  },
+  "renderer": {
+    "toneMapping": "ACESFilmic",
+    "exposure": 1.05,
+    "outputColorSpace": "srgb"
+  },
+  "sun": {
+    "type": "DirectionalLight",
+    "color": "#FFF4E0",
+    "intensity": 2.6,
+    "elevation_deg": 52,
+    "azimuth_deg": 135,
+    "castShadow": true,
+    "shadow_map": 1024,
+    "shadow_map_lite": 512,
+    "shadow_camera_half": 60,
+    "follow_player": true,
+    "bias": -0.0004
+  },
+  "hemi": {
+    "sky": "#BFD9F2",
+    "ground": "#8C8070",
+    "intensity": 0.9
+  },
+  "fog": {
+    "type": "Fog",
+    "color": "#C7DCEB",
+    "near": 180,
+    "far": 1400,
+    "lite_far": 900
+  },
+  "materials": {
+    "facade_roughness": 0.85,
+    "glass_roughness": 0.15,
+    "glass_metalness": 0.6,
+    "road": "weather/road_wet_asphalt_albedo.jpg 改 roughness 0.9（日頭乾路，唔用 neon_reflect_streaks）",
+    "emissive_signs_intensity": 0.25,
+    "bloom": "off"
+  },
+  "street": {
+    "accent_by_district": "district-facade-map.json 照用",
+    "foliage_tint": "#6E8F4A",
+    "shadow_color_hint": "冷藍陰影由 hemi 帶出，唔好加 AO 貼圖"
+  },
+  "promo_camera": {
+    "third_person_offset": [
+      0,
+      2.2,
+      -4.8
+    ],
+    "look_at_height": 1.6,
+    "fov": 60,
+    "suggest_routes": [
+      "彌敦道 旺角段 向南",
+      "長沙灣道 鴨寮街口",
+      "太子道西 九龍城",
+      "皇后大道中"
+    ],
+    "time": "上午 10–11 點感覺，太陽喺東南"
+  }
+}
