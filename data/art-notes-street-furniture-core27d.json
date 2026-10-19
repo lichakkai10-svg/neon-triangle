@@ -1,0 +1,45 @@
+{
+  "updated": "2026-10-19T16:25:00+08:00",
+  "for": "core27d 日頭街道密度",
+  "module": "assets/js/street-furniture-core27d.js",
+  "hook": "import('./assets/js/street-furniture-core27d.js').then((m) => m.attachAll(THREE));",
+  "rule": "純程序 InstancedMesh，冇相板、冇貼圖、冇真商標；招牌係戲仿 emissive 色盒冇字",
+  "attach": "NT.YTM/CW/KT/SSP/KCITY .group，跟 lazy 收起",
+  "props": [
+    "行道樹",
+    "路燈(單臂灰柱)",
+    "交通燈+行人燈(轉角/起點)",
+    "路邊欄杆",
+    "石墩",
+    "橙垃圾桶",
+    "巴士站",
+    "綠路牌",
+    "伸出招牌",
+    "電線桿(KT)"
+  ],
+  "test_node": {
+    "ssp": {
+      "full": {
+        "instances": 34391,
+        "draws": 24
+      },
+      "lite": {
+        "instances": 14371,
+        "draws": 23
+      }
+    },
+    "kcity": {
+      "full": {
+        "instances": 21878,
+        "draws": 26
+      },
+      "lite": {
+        "instances": 9253,
+        "draws": 25
+      }
+    }
+  },
+  "kt_night_fix": {
+    "suggest": "葵涌碼頭夜晚：路燈 PointLight／SpotLight intensity ×0.35、distance ≤40；路面 emissive 0；toneMapping exposure 夜晚 0.85；碼頭高桿燈改 #FFC98A 暖鈉燈，唔好純白"
+  }
+}

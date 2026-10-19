@@ -274,7 +274,7 @@ body.aim #cross{transform:scale(.45)}
     if(b && cur < n) b.style.width=n+'%';
     if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
-  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core27c1。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core27d。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
   var tipEl=document.getElementById("loadTips"); var ti=0;
   if(tipEl) tipEl.textContent=tips[0];
   var tipTimer=setInterval(function(){
@@ -284,7 +284,7 @@ body.aim #cross{transform:scale(.45)}
   setTimeout(function(){
     if(done) return;
     var t=document.getElementById('loadTxt');
-    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core27c1';
+    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core27d';
   },45000);
 })();
 </script>
@@ -3591,7 +3591,7 @@ Object.assign(window.NT, { INT, DOORS, FLAGS, enterInterior, exitInterior, conte
 const NPCS = [];          // 步行角色
 const VEHS = [];          // AI 車輛
 const PICKUPS = [];       // 地上的現金
-const ECON = { cash: 0, dirty: 0 };   // cash = 乾淨錢；dirty = 黑錢（任務報酬、搶返嚟嘅錢）
+const ECON = { cash: 350, dirty: 0 };   // cash = 乾淨錢；dirty = 黑錢（任務報酬、搶返嚟嘅錢）
 const WANTED = { stars: 0, lostT: 0, search: false, seenT: 0, lock: false };
 const VPROTO = { police: null, van: null };
 const _npcV = new THREE.Vector3(), _npcV2 = new THREE.Vector3();
@@ -7034,7 +7034,7 @@ HOOKS.minimap.unshift((c) => {
  * 主角切換
  * ========================================================================= */
 const HEROES = {
-  kit: { id: 'kit', name: '阿傑', full: '阿傑 Kit', home: '香港 · 九龍', outfit: 'kit', glyph: '傑', col: '#e0a040', unlocked: true, area: 'hk', pos: null, yaw: 0, cash: 0, dirty: 0, inv: null, hp: 100, armour: 50 },
+  kit: { id: 'kit', name: '阿傑', full: '阿傑 Kit', home: '香港 · 九龍', outfit: 'kit', glyph: '傑', col: '#e0a040', unlocked: true, area: 'hk', pos: null, yaw: 0, cash: 350, dirty: 0, inv: null, hp: 100, armour: 50 },
   wentao: { id: 'wentao', name: '文濤', full: '李文濤 WenTao', home: '台灣 · 高雄', outfit: 'wentao', glyph: '濤', col: '#5ad06a', unlocked: false, area: 'taiwan', pos: null, yaw: Math.PI, cash: 3000, dirty: 0, inv: null, hp: 100, armour: 50 }
 };
 const HERO = { cur: 'kit' };
@@ -14269,7 +14269,7 @@ function setTimeOfDay(mode, opts = {}) {
           if (o.isMesh && o.material && o.material.emissiveIntensity != null && o.name !== 'p1-mongkok-neon') {
             if (o.userData._todEmi == null) o.userData._todEmi = o.material.emissiveIntensity;
             // 日頭削弱霓虹／燈箱自發光
-            if (m === 'day') o.material.emissiveIntensity = Math.min(o.userData._todEmi, 0.35);
+            if (m === 'day') o.material.emissiveIntensity = Math.min(o.userData._todEmi, 0.25);
             else o.material.emissiveIntensity = o.userData._todEmi;
           }
         });
@@ -15082,7 +15082,7 @@ function stormBadge(show, name) {
   let el = $('stormBadge');
   if (!el) {
     el = document.createElement('div'); el.id = 'stormBadge';
-    el.style.cssText = 'position:fixed;top:calc(var(--sat)+96px);left:50%;transform:translateX(-50%);z-index:8;padding:6px 12px;background:rgba(120,20,20,.85);border:1px solid rgba(255,80,60,.6);color:#ffb0a0;font:800 12px "PingFang HK",sans-serif;letter-spacing:.08em;pointer-events:none;display:none';
+    el.style.cssText = 'position:fixed;top:calc(var(--sat) + 96px);left:50%;transform:translateX(-50%);z-index:8;padding:6px 12px;background:rgba(120,20,20,.85);border:1px solid rgba(255,80,60,.6);color:#ffb0a0;font:800 12px "PingFang HK",sans-serif;letter-spacing:.08em;pointer-events:none;display:none';
     document.body.appendChild(el);
   }
   el.style.display = show ? 'block' : 'none';
@@ -15193,7 +15193,7 @@ function uniformBadge(on) {
   let el = $('uniBadge');
   if (!el) {
     el = document.createElement('div'); el.id = 'uniBadge';
-    el.style.cssText = 'position:fixed;top:calc(var(--sat)+128px);right:calc(var(--sar)+10px);z-index:8;padding:5px 8px;background:rgba(20,40,60,.8);border:1px solid rgba(90,184,255,.5);color:#9ecfff;font:800 11px "PingFang HK",sans-serif;display:none;pointer-events:none';
+    el.style.cssText = 'position:fixed;top:calc(var(--sat) + 128px);right:calc(var(--sar) + 10px);z-index:8;padding:5px 8px;background:rgba(20,40,60,.8);border:1px solid rgba(90,184,255,.5);color:#9ecfff;font:800 11px "PingFang HK",sans-serif;display:none;pointer-events:none';
     document.body.appendChild(el);
   }
   el.style.display = on ? 'block' : 'none';
@@ -15241,9 +15241,9 @@ HOOKS.sim.push((dt) => {
   const st = document.createElement('style');
   st.textContent = `#propBtn,#stormBtn,#uniBtn{position:fixed;z-index:5;width:44px;height:44px;border-radius:22px;border:1px solid rgba(255,255,255,.3);
   font:800 10px "PingFang HK",sans-serif;pointer-events:auto;touch-action:manipulation;background:rgba(10,12,16,.72);color:#eee}
-#propBtn{left:calc(var(--sal)+10px);bottom:calc(var(--sab)+192px);border-color:rgba(240,196,25,.4);color:#f0c419}
-#stormBtn{left:calc(var(--sal)+58px);bottom:calc(var(--sab)+192px);border-color:rgba(255,90,58,.45);color:#ffb0a0}
-#uniBtn{left:calc(var(--sal)+106px);bottom:calc(var(--sab)+192px);border-color:rgba(90,184,255,.45);color:#9ecfff}
+#propBtn{left:calc(var(--sal) + 10px);bottom:calc(var(--sab) + 192px);border-color:rgba(240,196,25,.4);color:#f0c419}
+#stormBtn{left:calc(var(--sal) + 58px);bottom:calc(var(--sab) + 192px);border-color:rgba(255,90,58,.45);color:#ffb0a0}
+#uniBtn{left:calc(var(--sal) + 106px);bottom:calc(var(--sab) + 192px);border-color:rgba(90,184,255,.45);color:#9ecfff}
 body.cine #propBtn,body.cine #stormBtn,body.cine #uniBtn{visibility:hidden}`;
   document.head.appendChild(st);
   const mk = (id, label, fn) => {
@@ -15483,7 +15483,7 @@ function repHudPulse() {
   let el = $('repToast');
   if (!el) {
     el = document.createElement('div'); el.id = 'repToast';
-    el.style.cssText = 'position:fixed;left:calc(var(--sal)+10px);top:calc(var(--sat)+88px);z-index:7;font:700 11px "PingFang HK","Noto Sans TC",sans-serif;color:#c8d0d8;text-shadow:0 1px 2px #000;pointer-events:none;opacity:.85;line-height:1.45';
+    el.style.cssText = 'position:fixed;left:calc(var(--sal) + 10px);top:calc(var(--sat) + 88px);z-index:7;font:700 11px "PingFang HK","Noto Sans TC",sans-serif;color:#c8d0d8;text-shadow:0 1px 2px #000;pointer-events:none;opacity:.85;line-height:1.45';
     document.body.appendChild(el);
   }
   el.innerHTML = ['east', 'jiaotou', 'police', 'neighbor'].map((k) =>
@@ -15766,7 +15766,7 @@ MISSIONS.race_side = {
     let el = $('raceSideT');
     if (!el) {
       el = document.createElement('div'); el.id = 'raceSideT';
-      el.style.cssText = 'position:fixed;left:calc(var(--sal)+10px);top:calc(var(--sat)+120px);z-index:8;font:800 14px "PingFang HK",sans-serif;color:#f0c419;text-shadow:0 1px 3px #000;pointer-events:none';
+      el.style.cssText = 'position:fixed;left:calc(var(--sal) + 10px);top:calc(var(--sat) + 120px);z-index:8;font:800 14px "PingFang HK",sans-serif;color:#f0c419;text-shadow:0 1px 3px #000;pointer-events:none';
       document.body.appendChild(el);
     }
     el.textContent = `飆車 ${left.toFixed(1)}s · 檢查點 ${SIDE.race.cp}/${SIDE.race.cps.length - 1}`;
@@ -20953,7 +20953,14 @@ const VO = {
     vo_whistle_crowd: 'audio/vo/npc/whistle_crowd.ogg',
     vo_dealer_whisper: 'audio/vo/npc/dealer_whisper.ogg',
     vo_sec_docs: 'audio/vo/npc/sec_docs.ogg',
-    vo_pj_freeze: 'audio/vo/npc/pj_freeze.ogg'
+    vo_pj_freeze: 'audio/vo/npc/pj_freeze.ogg',
+    vo_ssp_fat_01: 'audio/vo/npc/ssp_fat_01.ogg',
+    vo_ssp_fat_02: 'audio/vo/npc/ssp_fat_02.ogg',
+    vo_ssp_veg_01: 'audio/vo/npc/ssp_veg_01.ogg',
+    vo_klc_lin_01: 'audio/vo/npc/klc_lin_01.ogg',
+    vo_klc_lin_02: 'audio/vo/npc/klc_lin_02.ogg',
+    vo_klc_chung_01: 'audio/vo/npc/klc_chung_01.ogg',
+    vo_klc_bake_01: 'audio/vo/npc/klc_bake_01.ogg'
   }
 };
 
@@ -21010,6 +21017,13 @@ function voCueForLine(who, line) {
   if (/水客出千/.test(t) && /司警入場前/.test(t)) return 'vo_dealer_whisper';
   if (/Senhor.*documentos/i.test(t) || /documentos, por favor/i.test(t)) return 'vo_sec_docs';
   if (/^司警[。.]/.test(t) || (/司警/.test(t) && /手放枱上/.test(t))) return 'vo_pj_freeze';
+  if (/二手叉電線十蚊/.test(t)) return 'vo_ssp_fat_01';
+  if (/冇單冇保養/.test(t)) return 'vo_ssp_fat_02';
+  if (/菜心十蚊一斤/.test(t)) return 'vo_ssp_veg_01';
+  if (/Sawasdee/i.test(t) && /幾多位/.test(t)) return 'vo_klc_lin_01';
+  if (/冬陰功同船麵/.test(t)) return 'vo_klc_lin_02';
+  if (/香茅、魚露、椰汁/.test(t)) return 'vo_klc_chung_01';
+  if (/椰撻熱辣辣/.test(t)) return 'vo_klc_bake_01';
   return null;
 }
 
@@ -21054,6 +21068,89 @@ function playVoForSay(who, line) {
 }
 
 Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueForLine });
+/* =========================================================================
+ * core27 · 深水埗＋九龍城 10 個有名路人＋主角日頭造型
+ *  · 日頭（TOD day）主角換輕便衫：阿傑 kit_day／文濤 wentao_day；夜晚還原
+ *  · 錨點跟 modZb 真 lat/lon（±30m）；玩家 <400m 先生成，>520m 收走（世界比例約 1.5×）
+ *  · 行近 <3.2m 講一句（say → modYv 自動配 VO）；每人 25s 冷卻
+ *  · 全部 hostile:false、unarmed；只用 man.glb 現有 clip；冇 GTA 素材
+ *  · 唔掂 Pages／vendor／LDR
+ * ========================================================================= */
+(function () {
+  if (typeof OUTFITS === 'undefined') return;
+  Object.assign(OUTFITS, {
+    kit_day:    { jacket: 0x3d4f66, shirt: 0xe9e5da, tie: 0xe9e5da, pants: 0x2a2f38, shoe: 0xd8d4ca, skin: 0xc89878, hair: 0x1c140e }, // 灰藍恤衫外套＋白T＋白波鞋
+    wentao_day: { jacket: 0x4a5a3c, shirt: 0xe6e1d3, tie: 0xe6e1d3, pants: 0x2c3a52, shoe: 0xbdb8ad, skin: 0xc89878, hair: 0x1c140e }, // 軍綠工作外套＋米白T＋牛仔
+    ped_fat:    { jacket: 0xd9d4c6, shirt: 0xd9d4c6, tie: 0xd9d4c6, pants: 0x3a3a3a, shoe: 0x2a2a2a, skin: 0xb08060, hair: 0x9a9a9a }, // 白背心、灰髮
+    ped_fabric: { jacket: 0x8a3a52, shirt: 0xe8c9a0, tie: 0xe8c9a0, pants: 0x2a2a30, shoe: 0x1a1a1a, skin: 0xc49474, hair: 0x2a1a10 },
+    ped_veg:    { jacket: 0x2f6a9a, shirt: 0xd8b070, tie: 0x2f6a9a, pants: 0x3a3a42, shoe: 0x1f6a3a, skin: 0xb88a68, hair: 0x1a1210 }, // 藍圍裙、綠水鞋
+    ped_youth:  { jacket: 0xcfc4a8, shirt: 0x2a2a2a, tie: 0x2a2a2a, pants: 0x9fa6ad, shoe: 0xeeeeee, skin: 0xd0a080, hair: 0x14100c },
+    ped_elder:  { jacket: 0x8a8f78, shirt: 0xd0ccc0, tie: 0xd0ccc0, pants: 0x4a4a42, shoe: 0x5a4a3a, skin: 0xa8805c, hair: 0xbdbdbd },
+    ped_lin:    { jacket: 0x7a1e2a, shirt: 0xf0e6d0, tie: 0x7a1e2a, pants: 0x1a1a1a, shoe: 0x1a1a1a, skin: 0xb07c58, hair: 0x0e0a08 }, // 酒紅店舖圍裙
+    ped_chung:  { jacket: 0x2f7a5a, shirt: 0x2f7a5a, tie: 0x2f7a5a, pants: 0x5a5040, shoe: 0x2a2420, skin: 0xa87a56, hair: 0x2a2420 }, // 綠 Polo
+    ped_baker:  { jacket: 0xf2f0ea, shirt: 0xf2f0ea, tie: 0xf2f0ea, pants: 0x3a3a3a, shoe: 0x1a1a1a, skin: 0xc49474, hair: 0xf2f0ea }, // 白廚師服＋白帽
+    ped_plane:  { jacket: 0x6a5a48, shirt: 0xe0dccf, tie: 0xe0dccf, pants: 0x3e3a34, shoe: 0x2a2420, skin: 0xa8805c, hair: 0xcfcfcf },
+    ped_guide:  { jacket: 0x3f8a3a, shirt: 0xf0f0e8, tie: 0xf0f0e8, pants: 0x2a3040, shoe: 0x6a6a6a, skin: 0xc49474, hair: 0x1a120c }  // 綠背心
+  });
+
+  // [id, 名, 錨點 lat, lon, 偏移 dx, dz(米), yaw, outfit, pose, 對白]
+  const PEDS = [
+    ['npc_ssp_elec',  '發叔',     22.32897, 114.16285,  2, -1, 2.2, 'ped_fat',    null,       ['靚仔，二手叉電線十蚊一條，試過先俾錢。', '呢部機冇單冇保養㗎，要就要。']],
+    ['npc_ssp_fabric','布行姐姐', 22.32990, 114.16390, -3,  2, 0.6, 'ped_fabric', null,       ['借借！借借！布卷好重㗎！', '呢匹布做衫啱晒，碼數任剪。']],
+    ['npc_ssp_market','菜檔嬸嬸', 22.33020, 114.16170,  1,  2, 3.8, 'ped_veg',    null,       ['菜心十蚊一斤！靚仔，買啲返去煲湯啦！']],
+    ['npc_ssp_youth', '打卡後生', 22.32990, 114.16390,  6, -2, 1.9, 'ped_youth',  null,       ['唔好意思，我影緊相……多謝。']],
+    ['npc_ssp_elder', '公園伯伯', 22.33070, 114.16220,  2,  1, 4.0, 'ped_elder',  null,       ['後生仔，跑咁快做乜？慢慢行啦。']],
+    ['npc_klc_thai_staff','阿蓮', 22.32850, 114.19100,  2, -1, 2.6, 'ped_lin',    'wave',     ['Sawasdee kha，幾多位呀？', '入嚟坐啦，冬陰功同船麵都有，今日咖喱蟹好抵食！']],
+    ['npc_klc_thai_boss', '阿頌', 22.32850, 114.19100, 12,  3, 4.2, 'ped_chung',  'interact', ['香茅、魚露、椰汁，新鮮到。Khob khun khrap！', '借借，箱好重！']],
+    ['npc_klc_bakery','餅店師傅', 22.32790, 114.19190,  1, -2, 2.6, 'ped_baker',  null,       ['啱啱出爐，椰撻熱辣辣！']],
+    ['npc_klc_plane', '懷舊街坊', 22.32960, 114.19060, -2,  3, 1.0, 'ped_plane',  null,       ['以前飛機喺頭頂飛過，掂到天台咁㗎！']],
+    ['npc_klc_temple','導賞義工', 22.33190, 114.19020,  0,  0, 3.1, 'ped_guide',  null,       ['寨城公園以前係城寨，入面有南門遺址，慢慢睇。']]
+  ];
+  const ST = { live: {}, cd: {}, t: 0, w: {} };
+
+  function wpos(p) {
+    const k = p[0];
+    if (!ST.w[k] && typeof hkGeo === 'function') { const g = hkGeo(p[2], p[3]); if (g) ST.w[k] = { x: g.x + p[4], z: g.z + p[5] }; }
+    return ST.w[k];
+  }
+  function inHK() { return !(typeof TW !== 'undefined' && TW.active) && !(typeof AREA !== 'undefined' && AREA.active) && !(typeof INT !== 'undefined' && INT.active); }
+
+  function tick(dt) {
+    ST.t -= dt; if (ST.t > 0) return; ST.t = 0.5;
+    if (typeof spawnNPC !== 'function' || typeof HUMAN === 'undefined' || !HUMAN.gltf || !player) return;
+    const pp = player.pos, ok = inHK(), now = performance.now() / 1000;
+    for (const p of PEDS) {
+      const w = wpos(p); if (!w) continue;
+      const d = Math.hypot(w.x - pp.x, w.z - pp.z);
+      let n = ST.live[p[0]];
+      if (n && (!n.alive || !ok || d > 520)) { if (n.alive && typeof removeNPC === 'function') removeNPC(n); delete ST.live[p[0]]; n = null; }
+      if (!n && ok && d < 400) {
+        n = spawnNPC('civ', w.x, w.z, p[6], { hostile: false, unarmed: true, hp: 60, cash: 40, outfit: OUTFITS[p[7]], state: 'idle', tag: 'core27-ped', pose: p[8] || undefined });
+        if (n) { n.kind = 'civ'; n.hostile = false; n.pedName = p[1]; ST.live[p[0]] = n; }
+      }
+      if (n && n.alive && d < 3.2 && (ST.cd[p[0]] || 0) < now && typeof say === 'function') {
+        ST.cd[p[0]] = now + 25;
+        const L = p[9]; say(p[1], L[(Math.random() * L.length) | 0], 3.2);
+      }
+    }
+  }
+
+  function applyDayOutfit(m) {
+    try {
+      if (typeof HERO === 'undefined' || typeof setPlayerOutfit !== 'function') return;
+      const base = HERO.cur === 'wentao' ? 'wentao' : 'kit';
+      const o = m === 'day' ? OUTFITS[base + '_day'] : (OUTFITS[base] || OUTFITS.kit);
+      if (o) setPlayerOutfit(o);
+    } catch (e) { /* */ }
+  }
+
+  if (typeof HOOKS !== 'undefined' && HOOKS.sim) HOOKS.sim.push(tick);
+  if (typeof todOnChange === 'function') todOnChange(applyDayOutfit);
+  setTimeout(() => { if (typeof TOD !== 'undefined') applyDayOutfit(TOD.mode); }, 1500);
+  function gotoPed(i) { const w = wpos(PEDS[i | 0] || PEDS[0]); if (w && player) { player.pos.set(w.x + 2, player.pos.y, w.z + 2); } return w; } // 測試用：瞬移去第 i 個路人
+  Object.assign(window.NT = window.NT || {}, { CORE27_PEDS: { PEDS, ST, applyDayOutfit, gotoPed, liveCount: () => Object.keys(ST.live).length } });
+})();
+
 /* =========================================================================
  * core24 · 油尖旺可駛彎道＋樓腳 Extrude
  *  · data/osm-ytm-drive-extrude-core24.json
@@ -23501,22 +23598,64 @@ Object.assign(window, { loadVehicle, load_vehicle, loadRealisticCar, loadRealist
   /* ---------- 日頭：宣傳片藍天光猛 ---------- */
   try {
     Object.assign(TOD.day, {
-      fog: 0xa9c8e6, horizon: 0x9cc6ee, top: 0x1f63c8,
-      hemiSky: 0xe6f1ff, hemiGround: 0x9a8b72, hemiI: 1.25,
-      exposure: 1.12, bloom: 0.08, envI: 0.95, rain: false, sat: 1.12,
-      mastMul: 0.0, sunI: 3.0, sirenMul: 0.35, flashMul: 0.35
+      fog: 0xc7dceb, horizon: 0x9cc6ee, top: 0x1f63c8,
+      hemiSky: 0xbfd9f2, hemiGround: 0x8c8070, hemiI: 0.9,
+      exposure: 1.05, bloom: 0.0, envI: 0.95, rain: false, sat: 1.12,
+      mastMul: 0.0, sunI: 2.6, sirenMul: 0.35, flashMul: 0.35
     });
   } catch (e) { /* */ }
+
+  /* core27d：日頭天空圖（equirect）做 scene.background；Safari／lite 用 _lite、唔做 PMREM */
+  const C27D_LITE = !!((window.NT && NT.safariLite) || IS_SAFARI);
+  const C27D_SKY = { tex: null, env: null, bg0: null, env0: undefined, loading: false };
+  function c27dSky(on) {
+    try {
+      if (!C27D_SKY.bg0 && scene.background && scene.background.isColor) C27D_SKY.bg0 = scene.background;
+      if (!on) {
+        if (C27D_SKY.bg0 && scene.background !== C27D_SKY.bg0) scene.background = C27D_SKY.bg0;
+        if (C27D_SKY.env0 !== undefined) { scene.environment = C27D_SKY.env0; C27D_SKY.env0 = undefined; }
+        if (typeof sky !== 'undefined') sky.visible = true;
+        return;
+      }
+      if (INT && INT.active) return;
+      if (C27D_SKY.tex) {
+        scene.background = C27D_SKY.tex;
+        if (typeof sky !== 'undefined') sky.visible = false;
+        if (C27D_SKY.env && C27D_SKY.env0 === undefined) { C27D_SKY.env0 = scene.environment; scene.environment = C27D_SKY.env; }
+        return;
+      }
+      if (C27D_SKY.loading) return;
+      C27D_SKY.loading = true;
+      new THREE.TextureLoader().load('./assets/tex/sky/sky_day_hk_equirect' + (C27D_LITE ? '_lite' : '') + '.jpg', (t) => {
+        t.mapping = THREE.EquirectangularReflectionMapping; t.colorSpace = THREE.SRGBColorSpace;
+        C27D_SKY.tex = t;
+        if (!C27D_LITE) { try { const pm = new THREE.PMREMGenerator(renderer); C27D_SKY.env = pm.fromEquirectangular(t).texture; pm.dispose(); } catch (e) { /* */ } }
+        if (DAY27C.on) c27dSky(true);
+      }, undefined, () => { C27D_SKY.loading = false; });
+    } catch (e) { /* */ }
+  }
+  // 夜晚 setTimeOfDay 會 setHex 背景：先還原 Color 物件先俾佢行
+  { const _sto = setTimeOfDay; setTimeOfDay = function (m, o) { if (scene.background && !scene.background.isColor) c27dSky(false); return _sto.call(this, m, o); }; }
 
   todOnChange((m) => {
     DAY27C.on = m === 'day';
     try {
       // 天空底色用藍（唔會觸發白屏偵測 >220 白）；清屏色照舊夜黑
-      scene.background.setHex(DAY27C.on ? 0x6f9fd2 : 0x0b0c0e);
-      if (scene.fog && scene.fog.isFogExp2) scene.fog.density = DAY27C.on ? 0.0019 : 0.0095;
+      if (scene.background && scene.background.isColor) scene.background.setHex(DAY27C.on ? 0x6f9fd2 : 0x0b0c0e);
+      // core27d：美術 preset 線性霧 180–1400m（lite 900）→ 用 FogExp2 等效密度，唔換霧類型
+      if (scene.fog && scene.fog.isFogExp2) scene.fog.density = DAY27C.on ? (C27D_LITE ? 0.0016 : 0.0011) : 0.0095;
+      if (typeof bloomPass !== 'undefined') { if (DAY27C._bloomEn == null) DAY27C._bloomEn = bloomPass.enabled; bloomPass.enabled = DAY27C.on ? false : DAY27C._bloomEn; }
+      c27dSky(DAY27C.on);
       const sun = TOD.sun;
       if (sun) {
-        sun.color.setHex(DAY27C.on ? 0xfff0d6 : 0xc0d0ff);
+        sun.color.setHex(DAY27C.on ? 0xfff4e0 : 0xc0d0ff);
+        if (DAY27C.on && !DAY27C._shadowSet) {
+          DAY27C._shadowSet = true;
+          const sz = C27D_LITE ? 512 : 1024, c = sun.shadow.camera;
+          sun.shadow.mapSize.set(sz, sz); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
+          c.left = -60; c.right = 60; c.top = 60; c.bottom = -60; c.updateProjectionMatrix();
+          sun.shadow.bias = -0.0004;
+        }
         if (DAY27C.on && !sun.target.parent) scene.add(sun.target);
       }
       if (DAY27C.on) DAY27C.clockMin = 13 * 60 + 20; else DAY27C.clockMin = 23 * 60 + 5;
@@ -23538,12 +23677,14 @@ Object.assign(window, { loadVehicle, load_vehicle, loadRealisticCar, loadRealist
     DAY27C.clockMin = (DAY27C.clockMin + dt * 0.5) % 1440; // 遊戲 1 分鐘＝2 秒
     if (!DAY27C.on || !TOD.sun) return;
     const p = state.mode === 'drive' && car ? car.pos : player.pos;
-    // 太陽跟主角（陰影框 ±80m 跟住行），斜陽角度：西南高角
-    TOD.sun.position.set(p.x - 55, 95, p.z - 40);
+    // 太陽跟主角：美術 preset 仰角 52°、方位 135°（東南），距離 120m
+    TOD.sun.position.set(p.x + 52.2, 94.6, p.z - 52.2);
     TOD.sun.target.position.set(p.x, 0, p.z);
     TOD.sun.target.updateMatrixWorld();
     // 日頭唔准白屏：背景保持藍
     if (scene.background && scene.background.isColor && scene.background.getHex() === 0x0b0c0e && !(INT && INT.active)) scene.background.setHex(0x6f9fd2);
+    if (INT && INT.active) { if (scene.background && !scene.background.isColor) c27dSky(false); }
+    else if (C27D_SKY.tex && scene.background !== C27D_SKY.tex) c27dSky(true);
   });
 
   /* ---------- HUD v2 ---------- */
@@ -23551,25 +23692,19 @@ Object.assign(window, { loadVehicle, load_vehicle, loadRealisticCar, loadRealist
     document.body.classList.add('hud2');
     const st = document.createElement('style');
     st.textContent = `
-body.hud2 #radarWrap{width:150px;top:calc(var(--sat) + 10px);left:calc(var(--sal) + 12px)}
-body.hud2 #radarBox{width:150px;height:150px;border-radius:50%;border:3px solid rgba(255,255,255,.88);box-shadow:0 2px 10px rgba(0,0,0,.45);background:#2b3236}
 body.hud2 #radarBars{display:none}
 body.hud2 #overviewWrap{display:none}
 body.hud2 #topRight,body.hud2 #btnCar,body.hud2 #wanted,body.hud2 #inv{right:calc(var(--sar) + 12px) !important}
-body.hud2 #btnCar{top:calc(var(--sat) + 162px)}
-body.hud2 #wanted{top:calc(var(--sat) + 122px);right:calc(var(--sar) + 80px) !important}
 #h2N{position:absolute;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;background:#0d1a2a;border:2px solid #fff;color:#fff;
   font:900 13px "PingFang HK","Noto Sans TC",sans-serif;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:3}
 #h2Top{position:absolute;top:calc(var(--sat) + 10px);right:calc(var(--sar) + 12px);display:none;flex-direction:column;align-items:flex-end;gap:5px;pointer-events:none;z-index:6}
 body.hud2 #h2Top{display:flex}
+#h2Cash i{font-style:normal}
 #h2Clock{font:800 22px "PingFang HK","Noto Sans TC",sans-serif;color:#fff;letter-spacing:.04em;text-shadow:0 1px 3px rgba(0,0,0,.7)}
 #h2Clock small{font-size:12px;margin-left:6px;opacity:.85}
-#h2Cash{font:900 20px "PingFang HK","Noto Sans TC",sans-serif;color:#7fe08a;text-shadow:0 1px 3px rgba(0,0,0,.75)}
-#h2Cash i{font-style:normal;font-size:13px;margin-right:3px;color:#d8f5dc}
 #h2Hp{width:150px;height:12px;border-radius:7px;background:rgba(0,0,0,.45);border:2px solid rgba(255,255,255,.85);overflow:hidden}
 #h2Hp b{display:block;height:100%;width:100%;background:linear-gradient(90deg,#e8463c,#ff7a5c);transition:width .2s}
 #h2Hp.low b{animation:h2blink .6s infinite alternate} @keyframes h2blink{to{opacity:.35}}
-#h2HpLbl{font:800 11px "PingFang HK","Noto Sans TC",sans-serif;color:#fff;text-shadow:0 1px 2px #000}
 body.hud2 #cash,body.hud2 #topRight{display:none}
 body.hud2 #todBtn{top:calc(var(--sat) + 118px)}
 body.hud2 #joy{width:140px;height:140px;left:calc(var(--sal) + 24px);bottom:calc(var(--sab) + 22px);background:rgba(255,255,255,.14);border:2px solid rgba(255,255,255,.55)}
@@ -23631,10 +23766,6 @@ body.cine #h2Top,body.cine #h2Btns,body.cine #h2N{visibility:hidden}`;
 
     let lastCash = -1, lastHp = -1, lastClk = '';
     HOOKS.frame.push(() => {
-      const yaw = state.mode === 'drive' ? state.camYaw + state.yawOffset : state.camYaw;
-      const R = 75 - 4; // 盒半徑 75（150px）
-      nEl.style.left = (75 + Math.sin(yaw) * R) + 'px';
-      nEl.style.top = (75 - Math.cos(yaw) * R) + 'px';
       const cash = (typeof ECON !== 'undefined' && ECON) ? ECON.cash : 0;
       if (cash !== lastCash) { lastCash = cash; $$('h2Cash').lastChild.textContent = Number(cash || 0).toLocaleString('en-US'); }
       const hp = Math.max(0, Math.min(100, player.hp | 0));
@@ -23672,6 +23803,135 @@ body.cine #h2Top,body.cine #h2Btns,body.cine #h2N{visibility:hidden}`;
       } else if (player.root.scale.y !== 1) { player.root.scale.set(1, 1, 1); }
     };
   }
+
+
+  /* ---------- core27d：HUD 收納、區名修正、葵涌夜燈 ---------- */
+  // 區名：最近十八區 hub（唔再 fallback 做「葵涌貨櫃碼頭」）
+  const C27D_KEEP = { '中西區': 1, '東區': 1, '南區': 1, '北區': 1 };
+  function c27dShort(n) { return !n ? '' : C27D_KEEP[n] ? n : n.replace(/區$/, ''); }
+  function c27dDistAt(p) {
+    const H = window.NT && NT.HK18;
+    if (!H || !H.list || !H.list.length || !p) return null;
+    let best = null, bd = 1e12;
+    for (const d of H.list) { if (d.x == null) continue; const q = (p.x - d.x) ** 2 + (p.z - d.z) ** 2; if (q < bd) { bd = q; best = d; } }
+    return best && bd < 6500 * 6500 ? best : null;
+  }
+  {
+    const _zo = zoneOf;
+    zoneOf = function (p) {
+      const z = _zo(p);
+      // 葵涌碼頭本體係原點附近；遠離咗仲報 yard 就改報最近嘅十八區
+      if ((z === 'yard' || z === 'tst') && (Math.abs(p.x) > 900 || Math.abs(p.z) > 900) && !(INT && INT.active)) {
+        if (z === 'tst' && typeof HK_RECT !== 'undefined' && hkRectDist(HK_RECT.ytm, p.x, p.z) < 50) return z;
+        const d = c27dDistAt(p);
+        if (d) { const k = 'hk18:' + d.id; if (!ZONES[k]) ZONES[k] = [c27dShort(d.name_zh), d.name_zh]; return k; }
+        return 'hkopen';
+      }
+      return z;
+    };
+    ZONES.hkopen = ['香港', '公路'];
+  }
+
+  // HUD v2：左上收納「關係／掣／能力」，唔再散落同搖桿撞
+  if (HUD2_ON) {
+    const st2 = document.createElement('style');
+    st2.textContent = `
+#h2Left{position:absolute;left:calc(env(safe-area-inset-left,0px) + 12px);top:calc(env(safe-area-inset-top,0px) + 8px);display:flex;flex-direction:column;gap:6px;z-index:8;pointer-events:none;max-width:46vw}
+#h2Chips{display:flex;flex-wrap:wrap;gap:6px;pointer-events:auto}
+body.hud2 #h2Chips > button{position:static !important;left:auto !important;top:auto !important;bottom:auto !important;right:auto !important;
+  width:auto !important;min-width:48px;height:44px !important;padding:0 10px;border-radius:10px !important;font:700 13px "Noto Sans TC","PingFang HK",sans-serif !important;
+  color:#f4f1ea !important;background:rgba(14,22,32,.55) !important;border:1.5px solid rgba(236,230,216,.6) !important;letter-spacing:.08em}
+body.hud2 #h2Left #repToast{position:static !important;font:500 11px "Noto Sans TC","PingFang HK",sans-serif !important;color:#ece6d8 !important;opacity:.9}
+body.hud2 #h2Left #abil{position:static !important;width:150px !important;font:600 11px "Noto Sans TC","PingFang HK",sans-serif !important;color:#ece6d8 !important}
+body.cine #h2Left{visibility:hidden}`;
+    document.head.appendChild(st2);
+    const hud = document.getElementById('hud') || document.body;
+    const left = document.createElement('div'); left.id = 'h2Left';
+    left.innerHTML = '<div id="h2Chips"></div>';
+    hud.appendChild(left);
+    const chips = left.querySelector('#h2Chips');
+    const CHIP_IDS = ['radioBtn', 'propBtn', 'stormBtn'];
+    let dockT = 0;
+    HOOKS.frame.push((dt) => {
+      if ((dockT -= dt) > 0) return; dockT = 1;
+      for (const id of CHIP_IDS) { const b = document.getElementById(id); if (b && b.parentNode !== chips) chips.appendChild(b); }
+      const r = document.getElementById('repToast'); if (r && r.parentNode !== left) left.insertBefore(r, chips);
+      const a = document.getElementById('abil'); if (a && a.parentNode !== left) left.appendChild(a);
+    });
+  }
+
+  // 葵涌碼頭夜晚（美術 art-notes-street-furniture-core27d）：燈 ×0.35、距離 ≤40、鈉燈暖黃 #FFC98A、夜曝光 0.85
+  try { Object.assign(TOD.night, { mastMul: 0.35, exposure: 0.85 }); } catch (e) { /* */ }
+  const c27dMastFix = () => {
+    try {
+      if (typeof masts === 'undefined') return;
+      for (const mast of masts) {
+        const L = mast.group && mast.group.userData && mast.group.userData.light;
+        if (!L || L.userData._c27d) continue;
+        L.userData._c27d = true; L.color.setHex(0xffc98a);
+        if (L.distance === 0 || L.distance > 40) L.distance = 40;
+      }
+    } catch (e) { /* */ }
+  };
+  c27dMastFix(); todOnChange(c27dMastFix);
+
+  // 街道傢俬（美術模組，用爬蟲 OSM 真點；電線桿只限葵涌）
+  try { import('./assets/js/street-furniture-core27d.js').then((m) => m.attachAll(THREE)).catch((e) => console.warn('[core27d-furniture]', e)); } catch (e) { /* */ }
+
+  // HUD core27d（QA iPhone 844×390）：小地圖 92px 疊喺右下掣上面、隔 ≥12px、貼右；身份／暗網入血條下；字幕同倒數避位
+  if (HUD2_ON) {
+    const SA = (k, n) => `calc(env(safe-area-inset-${k},0px) + ${n}px)`;
+    const st3 = document.createElement('style');
+    st3.textContent = `
+html body.hud2 #radarWrap{left:auto !important;top:auto !important;right:${SA('right', 14)} !important;bottom:${SA('bottom', 152)} !important;width:92px !important}
+html body.hud2 #radarBox{width:92px !important;height:92px !important}
+html body.hud2 #todBtn{top:auto !important;left:auto !important;right:${SA('right', 112)} !important;bottom:${SA('bottom', 206)} !important}
+html body.hud2 #radarWrap canvas{width:100% !important;height:100% !important}
+html body.hud2 #c27Dist{right:${SA('right', 6)} !important;bottom:${SA('bottom', 134)} !important;width:108px !important;font-size:12px !important;white-space:nowrap;overflow:hidden}
+html body.hud2 #h2Btns{right:${SA('right', 14)} !important;bottom:${SA('bottom', 12)} !important;width:210px !important;height:122px !important}
+html body.hud2 #h2Hit{right:0 !important;bottom:0 !important;width:76px !important;height:76px !important;font-size:22px !important}
+html body.hud2 #h2Jump{right:86px !important;bottom:0 !important;width:56px !important;height:56px !important}
+html body.hud2 #h2Run{right:150px !important;bottom:12px !important;width:56px !important;height:56px !important}
+html body.hud2 #h2Crouch{right:86px !important;bottom:66px !important;width:54px !important;height:54px !important}
+html body.hud2.foot #btnAim{right:${SA('right', 236)} !important;bottom:${SA('bottom', 16)} !important}
+html body.hud2.drive #btnMain{right:${SA('right', 14)} !important;bottom:${SA('bottom', 12)} !important;width:92px !important;height:92px !important}
+html body.hud2 #c27Horn{right:${SA('right', 116)} !important;bottom:${SA('bottom', 12)} !important}
+html body.hud2 #btnCar{right:${SA('right', 116)} !important;bottom:${SA('bottom', 68)} !important}
+html body.hud2.foot #btnCar{right:${SA('right', 124)} !important;bottom:${SA('bottom', 146)} !important}
+html body.hud2 #h2Top{top:${SA('top', 8)} !important;right:${SA('right', 12)} !important;gap:3px !important}
+html body.hud2 #h2Clock{font-size:20px !important}
+html body.hud2 #c27Wanted{position:absolute;right:160px;top:4px;white-space:nowrap}
+#h2Id{display:flex;gap:6px;pointer-events:auto;margin-top:2px}
+html body.hud2 #h2Id > button{position:static !important;left:auto !important;top:auto !important;bottom:auto !important;right:auto !important;
+  width:auto !important;min-width:48px;height:44px !important;padding:0 10px;border-radius:10px !important;font:700 13px "Noto Sans TC","PingFang HK",sans-serif !important;
+  color:#f4f1ea !important;background:rgba(14,22,32,.55) !important;border:1.5px solid rgba(236,230,216,.6) !important;letter-spacing:.06em;white-space:nowrap}
+html body.hud2 #uniBtn.on{border-color:#6fb8ff !important;color:#cfe6ff !important}
+html body.hud2 #subs{max-width:min(62vw, calc(100vw - 500px)) !important;bottom:${SA('bottom', 96)} !important}
+html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important}`;
+    setTimeout(() => document.head.appendChild(st3), 0);
+    let idT = 0;
+    HOOKS.frame.push((dt) => {
+      if ((idT -= dt) > 0) return; idT = 0.5;
+      const top = document.getElementById('h2Top'); if (!top) return;
+      let row = document.getElementById('h2Id');
+      if (!row) { row = document.createElement('div'); row.id = 'h2Id'; top.appendChild(row); }
+      for (const id of ['uniBtn', 'darknetBtn']) { const b = document.getElementById(id); if (b && b.parentNode !== row) row.appendChild(b); }
+      const u = document.getElementById('uniBtn');
+      if (u) { const on = !!(typeof UNIFORM !== 'undefined' && UNIFORM.active); const t = '身份：' + (on ? '制服' : '便衣'); if (u.textContent !== t) u.textContent = t; u.classList.toggle('on', on); }
+      const d = document.getElementById('darknetBtn'); if (d && d.textContent !== '暗網') d.textContent = '暗網';
+    });
+  }
+  try { if (typeof REFL !== 'undefined') REFL.strength = Math.min(REFL.strength, 0.75); } catch (e) { /* */ }
+
+
+  // core27d：真品牌過濾（OSM 建築／店名入遊戲前剷走真品牌字，唔出字）
+  const C27D_BRAND = /九龍巴士|九巴|KMB|城巴|Citybus|新巴|NWFB|龍運|嶺南|港鐵|MTR|地鐵|八達通|Octopus|7-?Eleven|7-?11|OK便利店|Circle ?K|百佳|PARKnSHOP|Park ?n ?Shop|惠康|Wellcome|屈臣氏|Watsons|萬寧|Mannings|麥當勞|McDonald'?s?|肯德基|KFC|星巴克|Starbucks|大家樂|Caf[eé] de Coral|美心|Maxim'?s?|大快活|Fairwood|吉野家|Yoshinoya|譚仔|匯豐|HSBC|中銀|中國銀行|BOC|恒生|Hang ?Seng|渣打|Standard Chartered|東亞銀行|莎莎|Sasa|優品360|周大福|Chow Tai Fook|六福|豐澤|Fortress|百老匯|Broadway|崇光|SOGO|海港城|Harbour City|朗豪坊|Langham|領展|Link ?REIT|太古|Swire|新鴻基|SHKP|中電|CLP|港燈|煤氣|Towngas|HKTVmall|Pizza ?Hut|必勝客|Uniqlo|H&M|IKEA|宜家/gi;
+  const c27dBrandSafe = (t) => (typeof t === 'string' && C27D_BRAND.test(t)) ? (C27D_BRAND.lastIndex = 0, t.replace(C27D_BRAND, '').replace(/\s{2,}/g, ' ').trim()) : (C27D_BRAND.lastIndex = 0, t);
+  try {
+    const CP = CanvasRenderingContext2D.prototype;
+    for (const k of ['fillText', 'strokeText']) { const f = CP[k]; CP[k] = function (t, ...r) { return f.call(this, c27dBrandSafe(t), ...r); }; }
+  } catch (e) { /* */ }
+  Object.assign(window.NT = window.NT || {}, { c27dDistAt, c27dShort, c27dBrandSafe });
 
   // 若 &day 喺本模組之前已經套用，再套一次新日頭設定
   try { if (TOD.mode === 'day') setTimeOfDay('day', { silent: true }); } catch (e) { /* */ }
@@ -23751,7 +24011,7 @@ body.cine #c27Dist,body.cine #c27Wanted,body.cine #c27Horn{visibility:hidden}`;
     if (s !== wEl._s) { wEl._s = s; wEl.classList.toggle('on', s > 0); wEl.innerHTML = '通緝級 <b>' + '▮'.repeat(s) + '▯'.repeat(5 - s) + '</b>'; }
     // 地區名
     if ((boxT -= dt) <= 0) { boxT = 5; box(); }
-    if ((dT -= dt) <= 0) { dT = 0.5; const p = state.mode === 'drive' ? car.pos : player.pos; let d = null; for (const [zh, b] of boxes) if (p.x >= b.min.x && p.x <= b.max.x && p.z >= b.min.z && p.z <= b.max.z) { d = zh; break; }
+    if ((dT -= dt) <= 0) { dT = 0.5; const p = state.mode === 'drive' ? car.pos : player.pos; let d = null; for (const [zh, b] of boxes) if (p.x >= b.min.x && p.x <= b.max.x && p.z >= b.min.z && p.z <= b.max.z) { d = zh; break; } if (!d && NT.c27dDistAt && !(INT && INT.active)) { const hd = NT.c27dDistAt(p); if (hd) d = NT.c27dShort(hd.name_zh); }
       if (d !== lastD) { lastD = d; if (d) { dEl.textContent = d; dEl.classList.add('show'); clearTimeout(dEl._t); dEl._t = setTimeout(() => dEl.classList.remove('show'), 4000); } } }
   });
   setTimeout(() => { try { resizeMinimap(); } catch (e) { /* */ } }, 120);
