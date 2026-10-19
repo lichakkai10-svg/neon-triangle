@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-17T19:56:00+08:00",
+  "updated": "2026-10-19T13:02:00+08:00",
   "aligns_with": "data/osm-hk18-skeleton-core23.json districts[].id",
   "labels_doc": "docs/hk-18-districts-labels.md",
   "path": "m1c/assets/tex/facade/district/",
@@ -13,7 +13,16 @@
       "dz": -12124.4,
       "facade_file": "facade_d_cw.jpg",
       "facade_path": "m1c/assets/tex/facade/district/facade_d_cw.jpg",
-      "accent": "#8A9AA8"
+      "accent": "#8A9AA8",
+      "modules_path": "m1c/assets/tex/facade/cw/",
+      "modules": [
+        "cw_sheungwan_tonglau.jpg",
+        "cw_central_glass.jpg",
+        "cw_midlevels_balcony.jpg",
+        "cw_desvoeux_granite.jpg",
+        "cw_hollywood_brick.jpg",
+        "cw_sidewalk_granite.jpg"
+      ]
     },
     {
       "id": "wan_chai",
@@ -49,7 +58,16 @@
       "dz": -7297.9,
       "facade_file": "facade_d_mk.jpg",
       "facade_path": "m1c/assets/tex/facade/district/facade_d_mk.jpg",
-      "accent": "#3A3E44"
+      "accent": "#3A3E44",
+      "modules_path": "m1c/assets/tex/facade/ytm/",
+      "modules": [
+        "ytm_gf_shop_mosaic",
+        "ytm_mk_window_ac",
+        "ytm_tst_glass_podium",
+        "ytm_arcade_teal",
+        "ytm_neon_box_blank",
+        "ytm_sidewalk_granite"
+      ]
     },
     {
       "id": "sham_shui_po",
@@ -58,7 +76,16 @@
       "dz": -4146.5,
       "facade_file": "facade_d_ssp.jpg",
       "facade_path": "m1c/assets/tex/facade/district/facade_d_ssp.jpg",
-      "accent": "#C9A84A"
+      "accent": "#C9A84A",
+      "modules_path": "m1c/assets/tex/facade/ssp/",
+      "modules": [
+        "ssp_tonglau_grille.jpg",
+        "ssp_old_industrial_shutter.jpg",
+        "ssp_electronics_shopfront.jpg",
+        "ssp_fabric_stall_tarp.jpg",
+        "ssp_publichousing_corridor.jpg",
+        "ssp_sidewalk_worn.jpg"
+      ]
     },
     {
       "id": "kowloon_city",
@@ -67,7 +94,16 @@
       "dz": -4478.2,
       "facade_file": "facade_d_kcw.jpg",
       "facade_path": "m1c/assets/tex/facade/district/facade_d_kcw.jpg",
-      "accent": "#8B4A3A"
+      "accent": "#8B4A3A",
+      "modules_path": "m1c/assets/tex/facade/kcity/",
+      "modules": [
+        "kcity_tonglau_brick_balcony.jpg",
+        "kcity_thai_shopfront_wood.jpg",
+        "kcity_walled_city_park_edge.jpg",
+        "kcity_kaitak_1960s_pastel.jpg",
+        "kcity_pewr_midrise_ac.jpg",
+        "kcity_sidewalk_treepit.jpg"
+      ]
     },
     {
       "id": "wong_tai_sin",
@@ -95,7 +131,16 @@
       "facade_file": "facade_d_kc.jpg",
       "facade_path": "m1c/assets/tex/facade/district/facade_d_kc.jpg",
       "accent": "#7A8088",
-      "note": "葵涌工廈／碼頭；路跟 kwai_chung_elbow.arterials[].points"
+      "note": "葵涌工廈／碼頭；路跟 kwai_chung_elbow.arterials[].points",
+      "modules_path": "m1c/assets/tex/facade/kc/",
+      "modules": [
+        "kc_industrial_concrete.jpg",
+        "kc_corrugated_warehouse.jpg",
+        "kc_container_accent.jpg",
+        "kc_publichousing_green.jpg",
+        "kc_weigh_hazard_curb.jpg",
+        "kc_sidewalk_stained.jpg"
+      ]
     },
     {
       "id": "tsuen_wan",
@@ -191,5 +236,11 @@
     "facade_d_tw.jpg",
     "facade_d_wts.jpg",
     "facade_d_yl.jpg"
-  ]
+  ],
+  "next_priority": [
+    "yau_tsim_mong",
+    "central_west",
+    "kwai_tsing"
+  ],
+  "stack_note": "CSDI iB1000 footprints + OSM Overpass roads + Three.js ExtrudeGeometry — pure Three.js, no Unity"
 }

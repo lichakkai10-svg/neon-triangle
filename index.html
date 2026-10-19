@@ -274,7 +274,7 @@ body.aim #cross{transform:scale(.45)}
     if(b && cur < n) b.style.width=n+'%';
     if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
-  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core26。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core27。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
   var tipEl=document.getElementById("loadTips"); var ti=0;
   if(tipEl) tipEl.textContent=tips[0];
   var tipTimer=setInterval(function(){
@@ -284,7 +284,7 @@ body.aim #cross{transform:scale(.45)}
   setTimeout(function(){
     if(done) return;
     var t=document.getElementById('loadTxt');
-    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core26';
+    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core27';
   },45000);
 })();
 </script>
@@ -22163,6 +22163,331 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
   }, 510);
 
   Object.assign(window.NT = window.NT || {}, { KT, ktBuild });
+})();
+
+
+/* =========================================================================
+ * core27 · 深水埗＋九龍城 densify 可駛彎道＋樓腳 Extrude（sspBuild／kcityBuild）
+ *  · data/osm-ssp-drive-extrude-core27.json／osm-kcity-drive-extrude-core27.json（schema＝KT／CW）
+ *  · 只用 path_chord_ratio≤4；tex/facade/ssp|kcity/ RepeatWrapping；district facade_d_ssp／facade_d_kcw
+ *  · 懶載：玩家入咗 bbox ±1.5km 先 fetch＋build；>4.5km 隱藏（手機省 FPS）
+ *  · 九龍寨城：只係公園——寨城公園範圍內一律唔擠樓（唔重建城寨）
+ *  · 保留 ytmBuild／cwBuild／ktBuild／elbow_trunk；禁直軸／相板／Google mesh
+ * ========================================================================= */
+(function () {
+  const LAZY_M = 1500, HIDE_M = 4500;
+  const CFGS = {
+    ssp: {
+      id: 'ssp', label: '深水埗區', zone: 'ssp:core27',
+      json: 'osm-ssp-drive-extrude-core27.json',
+      bbox: [-8353, -4661, -6042, -2417], // minX,maxX,minZ,maxZ（樓腳實測）
+      wide: /彌敦|長沙灣|荔枝角|太子道西|界限街/,
+      minimap: '#c9a84a', fallbackH: 26,
+      files: {
+        tonglau: 'tex/facade/ssp/ssp_tonglau_grille.jpg',
+        industrial: 'tex/facade/ssp/ssp_old_industrial_shutter.jpg',
+        shop: 'tex/facade/ssp/ssp_electronics_shopfront.jpg',
+        tarp: 'tex/facade/ssp/ssp_fabric_stall_tarp.jpg',
+        housing: 'tex/facade/ssp/ssp_publichousing_corridor.jpg',
+        sidewalk: 'tex/facade/ssp/ssp_sidewalk_worn.jpg',
+        district: 'tex/facade/district/facade_d_ssp.jpg'
+      },
+      park: null
+    },
+    kcity: {
+      id: 'kcity', label: '九龍城區', zone: 'kcity:core27',
+      json: 'osm-kcity-drive-extrude-core27.json',
+      bbox: [-12634, -8883, -6733, -3254],
+      wide: /太子道|亞皆老|馬頭涌|衙前圍/,
+      minimap: '#b0604a', fallbackH: 22,
+      files: {
+        tonglau: 'tex/facade/kcity/kcity_tonglau_brick_balcony.jpg',
+        shop: 'tex/facade/kcity/kcity_thai_shopfront_wood.jpg',
+        parkwall: 'tex/facade/kcity/kcity_walled_city_park_edge.jpg',
+        pastel: 'tex/facade/kcity/kcity_kaitak_1960s_pastel.jpg',
+        midrise: 'tex/facade/kcity/kcity_pewr_midrise_ac.jpg',
+        sidewalk: 'tex/facade/kcity/kcity_sidewalk_treepit.jpg',
+        district: 'tex/facade/district/facade_d_kcw.jpg'
+      },
+      // 寨城公園中心（hkGeo 22.3321,114.1903）— 半徑內唔擠任何樓
+      park: { x: -11011, z: -3798, r: 165 }
+    }
+  };
+
+  function dpos() {
+    if (typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined') return car.pos;
+    return typeof player !== 'undefined' ? player.pos : null;
+  }
+  function bboxDist(b, p) {
+    const dx = Math.max(b[0] - p.x, 0, p.x - b[1]);
+    const dz = Math.max(b[2] - p.z, 0, p.z - b[3]);
+    return Math.hypot(dx, dz);
+  }
+  async function dFetch(json) {
+    for (const u of ['data/' + json, './assets/data/' + json, '../data/' + json]) {
+      try { const r = await fetch(u, { cache: 'no-store' }); if (r && r.ok) return await r.json(); } catch (e) { /* */ }
+    }
+    return null;
+  }
+
+  function makeDistrict(cfg) {
+    const D = { cfg, ready: false, building: false, group: null, data: null, tex: {}, mats: {}, stats: null };
+
+    async function loadMats() {
+      if (typeof loadTex === 'function') {
+        for (const [k, f] of Object.entries(cfg.files)) {
+          try {
+            const t = await loadTex(f, true, true);
+            if (t) {
+              t.wrapS = t.wrapT = THREE.RepeatWrapping;
+              const sw = k === 'sidewalk';
+              t.repeat.set(sw ? 4 : 2, sw ? 4 : 3);
+              D.tex[k] = t;
+            }
+          } catch (e) { /* */ }
+        }
+      }
+      const T = D.tex;
+      const mk = (map, rough, metal, color) => new THREE.MeshStandardMaterial({
+        map: map || null, color: map ? 0xffffff : (color || 0x7a746c),
+        roughness: rough == null ? 0.88 : rough, metalness: metal == null ? 0.04 : metal
+      });
+      D.mats.tonglau = mk(T.tonglau || T.district, 0.9, 0.03);
+      D.mats.shop = mk(T.shop || T.tonglau || T.district, 0.8, 0.05);
+      D.mats.industrial = mk(T.industrial || T.midrise || T.district, 0.88, 0.1);
+      D.mats.housing = mk(T.housing || T.pastel || T.district, 0.88, 0.03);
+      D.mats.midrise = mk(T.midrise || T.district, 0.85, 0.05);
+      D.mats.district = mk(T.district || T.tonglau, 0.88, 0.04);
+      D.mats.parkwall = mk(T.parkwall || T.district, 0.92, 0.02);
+      D.mats.road = new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.5, metalness: 0.08 });
+      D.mats.sidewalk = mk(T.sidewalk, 0.92, 0.02, 0x7a7e72);
+      D.mats.yel = new THREE.MeshStandardMaterial({ color: 0xc9a000, emissive: 0x332200, emissiveIntensity: 0.35 });
+    }
+
+    function pickMat(b, h) {
+      const kind = ((b.building || b.block_type || '') + ' ' + (b.name || b.name_zh || '')).toLowerCase();
+      if (/industrial|warehouse|factory|工廈|廠/.test(kind)) return D.mats.industrial;
+      if (/retail|commercial|shop|商場|電腦|market|街市/.test(kind)) return D.mats.shop;
+      if (/邨|estate|public|公屋/.test(kind)) return D.mats.housing;
+      if (/office|hotel|tower|school|學校|hospital/.test(kind)) return D.mats.midrise;
+      if (h < 34) return D.mats.tonglau;
+      if (h < 60) return cfg.id === 'kcity' ? D.mats.midrise : D.mats.housing;
+      return D.mats.district;
+    }
+
+    function height(b, near) {
+      if (b.levels && b.levels > 0) return Math.min(180, b.levels * 3.1);
+      if (b.height_m && b.height_m > 2) return Math.min(180, b.height_m);
+      if (b.storeys && b.storeys > 0) return Math.min(180, b.storeys * 3.1);
+      if (b.top_height_m != null && b.base_height_m != null) { const h = b.top_height_m - b.base_height_m; if (h > 2) return Math.min(180, h); }
+      if (near) {
+        if (near.height_m > 2) return Math.min(180, near.height_m);
+        if (near.storeys > 0) return Math.min(180, near.storeys * 3.1);
+      }
+      const kind = ((b.building || b.block_type || '') + ' ' + (b.name || '')).toLowerCase();
+      if (/tower|office|hotel/.test(kind)) return 60;
+      if (/apartments|residential/.test(kind)) return 28; // 唐樓≈9 層
+      if (/retail|commercial|shop/.test(kind)) return 16;
+      return cfg.fallbackH;
+    }
+
+    function inPark(c) {
+      const P = cfg.park; if (!P || !c) return false;
+      return Math.hypot(c.dx - P.x, c.dz - P.z) < P.r;
+    }
+
+    function extrude(ring, h, mat, parent, name) {
+      if (!ring || ring.length < 3 || h < 2) return false;
+      let pts = ring.map((p) => new THREE.Vector2(p.dx, p.dz));
+      const a0 = pts[0], aN = pts[pts.length - 1];
+      if (Math.hypot(a0.x - aN.x, a0.y - aN.y) < 0.05) pts = pts.slice(0, -1);
+      if (pts.length < 3) return false;
+      if (THREE.ShapeUtils.isClockWise(pts)) pts.reverse();
+      const pos = [], uv = [], idx = [];
+      const n = pts.length; let acc = 0;
+      for (let k = 0; k < n; k++) {
+        const p0 = pts[k], p1 = pts[(k + 1) % n];
+        const L = p0.distanceTo(p1); if (L < 0.3) continue;
+        const vi = pos.length / 3, u0 = acc / 4.2, u1 = (acc + L) / 4.2, v1 = h / 3.2; acc += L;
+        pos.push(p0.x, 0, p0.y, p1.x, 0, p1.y, p1.x, h, p1.y, p0.x, h, p0.y);
+        uv.push(u0, 0, u1, 0, u1, v1, u0, v1);
+        idx.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3);
+      }
+      if (pos.length < 12) return false;
+      try {
+        const tris = THREE.ShapeUtils.triangulateShape(pts, []);
+        const ri = pos.length / 3;
+        for (const p of pts) { pos.push(p.x, h, p.y); uv.push(p.x / 40, p.y / 40); }
+        for (const t of tris) idx.push(ri + t[0], ri + t[1], ri + t[2]);
+      } catch (e) { /* */ }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      g.setIndex(idx); g.computeVertexNormals();
+      const m = new THREE.Mesh(g, mat);
+      m.castShadow = true; m.receiveShadow = true; m.userData.noMerge = true; m.userData[cfg.id] = true;
+      m.name = name; parent.add(m);
+      if (typeof addCollider === 'function') {
+        let minx = Infinity, maxx = -Infinity, minz = Infinity, maxz = -Infinity;
+        for (const p of pts) { if (p.x < minx) minx = p.x; if (p.x > maxx) maxx = p.x; if (p.y < minz) minz = p.y; if (p.y > maxz) maxz = p.y; }
+        const hx = (maxx - minx) * 0.5, hz = (maxz - minz) * 0.5;
+        if (hx > 1 && hz > 1) addCollider((minx + maxx) * 0.5, (minz + maxz) * 0.5, hx, hz, Math.min(h, 40));
+      }
+      return true;
+    }
+
+    function ribbon(parent, pts, width) {
+      let n = 0;
+      for (let i = 0; i + 1 < pts.length; i++) {
+        const a = pts[i], b = pts[i + 1];
+        const len = Math.hypot(b.dx - a.dx, b.dz - a.dz); if (len < 4) continue;
+        const yaw = Math.atan2(b.dx - a.dx, b.dz - a.dz);
+        const m = new THREE.Mesh(new THREE.BoxGeometry(width, 0.08, len), D.mats.road);
+        m.position.set((a.dx + b.dx) * 0.5, 0.03, (a.dz + b.dz) * 0.5); m.rotation.y = yaw;
+        m.receiveShadow = true; m.userData.noMerge = true; m.name = cfg.id + '_drive_trunk';
+        parent.add(m);
+        if (n % 2 === 0) {
+          for (const side of [-width * 0.42, width * 0.42]) {
+            const e = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.03, Math.min(len, 48)), D.mats.yel);
+            e.position.set(m.position.x + Math.cos(yaw) * side, 0.07, m.position.z - Math.sin(yaw) * side); e.rotation.y = yaw;
+            parent.add(e);
+          }
+        }
+        if (n % 3 === 0) {
+          for (const side of [-width * 0.72, width * 0.72]) {
+            const s = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.05, Math.min(len, 36)), D.mats.sidewalk);
+            s.position.set(m.position.x + Math.cos(yaw) * side, 0.04, m.position.z - Math.sin(yaw) * side); s.rotation.y = yaw;
+            s.receiveShadow = true; parent.add(s);
+          }
+        }
+        n++;
+      }
+      return n;
+    }
+
+    function nearestCsdi(cx, cz, list) {
+      let best = null, bd = 140;
+      for (const c of list) { const p = c.centroid; if (!p) continue; const d = Math.hypot(p.dx - cx, p.dz - cz); if (d < bd) { bd = d; best = c; } }
+      return best;
+    }
+
+    async function build() {
+      if (D.ready || D.building || typeof scene === 'undefined') return D.stats;
+      D.building = true;
+      try {
+        const data = await dFetch(cfg.json);
+        if (!data) { console.warn('[' + cfg.id + '] ' + cfg.json + ' 未到手'); return null; }
+        D.data = data;
+        await loadMats();
+        const lite = typeof NT !== 'undefined' && NT.safariLite;
+        const root = new THREE.Group(); root.name = cfg.id + '-core27'; scene.add(root); D.group = root;
+
+        const gRoad = new THREE.Group(); gRoad.name = cfg.id + '_drive_trunks'; gRoad.userData.noMerge = true;
+        let roadSegs = 0, trunks = 0; const rn = [];
+        for (const t of (data.drive_trunk || [])) {
+          if ((t.path_chord_ratio || 1) > 4) continue;
+          const pts = t.points || []; if (pts.length < 2) continue;
+          const nm = (t.name_zh || '') + (t.id || '');
+          roadSegs += ribbon(gRoad, pts, cfg.wide.test(nm) ? 14 : 11); trunks++;
+          rn.push(pts.map((p) => ({ x: p.dx, z: p.dz })));
+        }
+        root.add(gRoad);
+
+        try {
+          if (typeof ROADNET !== 'undefined' && Array.isArray(ROADNET)) {
+            for (const line of rn) {
+              const step = Math.max(1, Math.floor(line.length / (lite ? 6 : 14)));
+              const s = []; for (let i = 0; i < line.length; i += step) s.push(line[i]);
+              if (s[s.length - 1] !== line[line.length - 1]) s.push(line[line.length - 1]);
+              const base = ROADNET.length;
+              for (const p of s) ROADNET.push({ x: p.x, z: p.z, nb: [] });
+              for (let i = 0; i + 1 < s.length; i++) { ROADNET[base + i].nb.push(base + i + 1); ROADNET[base + i + 1].nb.push(base + i); }
+            }
+          }
+        } catch (e) { console.warn('[' + cfg.id + '-roadnet]', e && e.message); }
+
+        const gB = new THREE.Group(); gB.name = cfg.id + '_extrude_buildings'; gB.userData.noMerge = true;
+        const csdi = data.csdi_buildings || [];
+        const ranked = (data.buildings || []).slice().sort((a, b) => ((b.height_m || (b.levels || 0) * 3.1) - (a.height_m || (a.levels || 0) * 3.1)));
+        const cap = lite ? 200 : 480;
+        let nB = 0, nC = 0, parkSkip = 0;
+        for (const b of ranked) {
+          if (nB >= cap) break;
+          const ring = b.footprint_ring; if (!ring || ring.length < 3) continue;
+          const c = b.centroid || { dx: ring[0].dx, dz: ring[0].dz };
+          if (inPark(c) || /城寨|寨城|walled city/i.test(b.name || '')) { parkSkip++; continue; }
+          const h = height(b, nearestCsdi(c.dx, c.dz, csdi));
+          if (extrude(ring, h, pickMat(b, h), gB, cfg.id + '_bld_' + (b.osm_id || nB))) nB++;
+        }
+        const cCap = lite ? 70 : 160;
+        const top = ranked.slice(0, Math.min(nB, 200));
+        for (const c of csdi) {
+          if (nC >= cCap) break;
+          const ring = c.footprint_ring, cen = c.centroid; if (!ring || ring.length < 3 || !cen) continue;
+          if (inPark(cen) || /城寨|寨城/.test(c.name_zh || '')) { parkSkip++; continue; }
+          let near = false;
+          for (const b of top) { const bc = b.centroid; if (bc && Math.hypot(bc.dx - cen.dx, bc.dz - cen.dz) < 25) { near = true; break; } }
+          if (near) continue;
+          const h = height(c, null);
+          if (extrude(ring, h, pickMat(c, h), gB, cfg.id + '_csdi_' + (c.csdi_objectid || nC))) nC++;
+        }
+        root.add(gB);
+
+        if (typeof ZONES !== 'undefined') ZONES[cfg.zone] = [cfg.label, '進入：' + cfg.label + ' densify'];
+        D.ready = true;
+        D.stats = { roadSegs, trunks, buildings: nB, csdi: nC, parkSkip, tex: Object.keys(D.tex), lazy: true };
+        console.info('[' + cfg.id + '] core27 drive+extrude densify', D.stats);
+        return D.stats;
+      } finally { D.building = false; }
+    }
+    D.build = build;
+    return D;
+  }
+
+  const DIST = { ssp: makeDistrict(CFGS.ssp), kcity: makeDistrict(CFGS.kcity) };
+  const sspBuild = () => DIST.ssp.build();
+  const kcityBuild = () => DIST.kcity.build();
+
+  function tick() {
+    const p = dpos(); if (!p) return;
+    for (const D of Object.values(DIST)) {
+      const d = bboxDist(D.cfg.bbox, p);
+      if (!D.ready && !D.building && d < LAZY_M) {
+        const go = () => D.build().catch((e) => console.warn('[' + D.cfg.id + ']', e && e.message));
+        if (typeof requestIdleCallback === 'function') requestIdleCallback(go, { timeout: 1500 }); else setTimeout(go, 50);
+      }
+      if (D.group) { const v = d < HIDE_M; if (D.group.visible !== v) D.group.visible = v; }
+    }
+  }
+
+  const t0 = setInterval(() => {
+    if (typeof scene === 'undefined' || typeof THREE === 'undefined') return;
+    clearInterval(t0);
+    if (/[?&]core27all\b/.test(location.search)) { sspBuild(); kcityBuild(); } // QA：強制全部建
+    setInterval(tick, 1200);
+    tick();
+    if (typeof HOOKS !== 'undefined') {
+      HOOKS.minimap = HOOKS.minimap || [];
+      HOOKS.minimap.push(function core27Minimap(c) {
+        const p = dpos(); if (!p) return;
+        for (const D of Object.values(DIST)) {
+          if (!D.data) continue;
+          c.strokeStyle = D.cfg.minimap; c.lineWidth = 4;
+          for (const t of (D.data.drive_trunk || [])) {
+            if ((t.path_chord_ratio || 1) > 4) continue;
+            c.beginPath(); let st = false;
+            for (const q of (t.points || [])) {
+              if (Math.abs(q.dx - p.x) > 700 || Math.abs(q.dz - p.z) > 700) { st = false; continue; }
+              if (!st) { c.moveTo(q.dx, q.dz); st = true; } else c.lineTo(q.dx, q.dz);
+            }
+            if (st) c.stroke();
+          }
+        }
+      });
+    }
+  }, 530);
+
+  Object.assign(window.NT = window.NT || {}, { SSP: DIST.ssp, KCITY: DIST.kcity, sspBuild, kcityBuild });
 })();
 
 
