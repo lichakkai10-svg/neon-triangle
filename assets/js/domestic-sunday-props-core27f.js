@@ -87,7 +87,7 @@ export function buildDomesticSundayProps(THREE, parent, gather, opts = {}) {
       g.font = '28px "PingFang HK","Noto Sans TC",sans-serif';
       g.fillText('請保持通道暢通', 256, 160);
       const tex = new THREE.CanvasTexture(c);
-      const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 0.42), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85 }));
+      const plate = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.42, 0.08), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85, side: THREE.DoubleSide }));
       const s = opts._signAt;
       plate.position.set(s.x, 1.45, s.z); plate.rotation.y = s.yaw + Math.PI;
       plate.userData.noMerge = true; grp.add(plate);

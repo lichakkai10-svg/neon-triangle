@@ -380,7 +380,7 @@ const KWAI_SCALE = {
     stack: 'gltf/hk-port/hk-container-yard-stack.glb',
     flyover: 'gltf/hk-port/hk-flyover-undercroft-bay.glb',
     tunnel: 'gltf/hk-port/hk-tunnel-portal.glb',
-    indWall: 'gltf/hk-port/hk-industrial-wall-bay.glb',
+    indWall: 'assets/gltf/hk-buildings/hk-facade-industrial-shell.glb', // 厚殼 ≥0.45；覆寫紙片工廈牆
     scaleJson: 'gltf/hk-port/hk-kwai-port-scale.json',
     gisOverlay: 'assets/data/kwai-terminal-gis-overlay-p0.json'
   }
@@ -399,6 +399,112 @@ const KWAI_GEO = {
 function kwWorld(lx, lz) { return { x: KWAI_GEO.hubX + lx, z: KWAI_GEO.hubZ + lz }; }
 function kwHubCol(cx, cz, hw, hd, h) {
   if (typeof addCollider === 'function') addCollider(KWAI_GEO.hubX + cx, KWAI_GEO.hubZ + cz, hw, hd, h);
+}
+/** 程序化貨櫃只掛港區堆場（禁市區 origin） */
+function kwContainerRoot() {
+  if (typeof scene === 'undefined' || typeof KWAI_GEO === 'undefined') return null;
+  // 用全域袋，唔依賴 KWAI const 宣告次序
+  const bag = (typeof window !== 'undefined' && (window.NT = window.NT || {})) || {};
+  if (!bag._kwContRoot) {
+    const g = new THREE.Group(); g.name = 'kwai-yard-containers';
+    g.position.set(KWAI_GEO.hubX, 0, KWAI_GEO.hubZ); g.userData.kwaichung = true;
+    scene.add(g); bag._kwContRoot = g;
+    try { if (typeof KWAI !== 'undefined') KWAI._contRoot = g; } catch (e) { /* TDZ */ }
+  }
+  return bag._kwContRoot;
+}
+
+/** core28 · 立面厚度（老闆 FAIL 穿毛／單面）≥0.45 m 外牆＋背臉＋頂 return
+ *  docs/hk-facade-thickness-boss-fail-2026-10-24.md · assets/gltf/hk-buildings/ */
+const FACADE_SHELL_D = 0.5;
+const HK_FACADE_KIT_FILES = {
+  residential: 'assets/gltf/hk-buildings/hk-facade-residential-bay.glb',
+  ph: 'assets/gltf/hk-buildings/hk-facade-ph-panel-bay.glb',
+  tonglau: 'assets/gltf/hk-buildings/hk-facade-tonglau-shell.glb',
+  industrial: 'assets/gltf/hk-buildings/hk-facade-industrial-shell.glb',
+  massing: 'assets/gltf/hk-buildings/hk-massing-block-8x22x10.glb'
+};
+const HK_FACADE_KIT = { ready: false, proto: {} };
+function hkPushThickWall(pos, uv, idx, p0, p1, y0, h, u0, u1, v1, shellD) {
+  const L = Math.hypot(p1.x - p0.x, p1.y - p0.y);
+  if (L < 0.3) return false;
+  const d = shellD == null ? FACADE_SHELL_D : shellD;
+  const dx = p1.x - p0.x, dz = p1.y - p0.y;
+  const ox = dz / L, oz = -dx / L; // outward for CCW
+  let vi = pos.length / 3;
+  pos.push(p0.x, y0, p0.y, p1.x, y0, p1.y, p1.x, y0 + h, p1.y, p0.x, y0 + h, p0.y);
+  uv.push(u0, 0, u1, 0, u1, v1, u0, v1);
+  idx.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3);
+  const b0x = p0.x - ox * d, b0z = p0.y - oz * d, b1x = p1.x - ox * d, b1z = p1.y - oz * d;
+  vi = pos.length / 3;
+  pos.push(b1x, y0, b1z, b0x, y0, b0z, b0x, y0 + h, b0z, b1x, y0 + h, b1z);
+  uv.push(u1, 0, u0, 0, u0, v1, u1, v1);
+  idx.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3);
+  vi = pos.length / 3;
+  pos.push(p0.x, y0 + h, p0.y, p1.x, y0 + h, p1.y, b1x, y0 + h, b1z, b0x, y0 + h, b0z);
+  uv.push(u0, 0, u1, 0, u1, d / 4.2, u0, d / 4.2);
+  idx.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3);
+  return true;
+}
+function hkEnsureFacadeSide(mat) {
+  if (!mat) return mat;
+  const apply = (m) => { if (m && m.side !== THREE.DoubleSide) { m.side = THREE.DoubleSide; m.needsUpdate = true; } };
+  if (Array.isArray(mat)) mat.forEach(apply); else apply(mat);
+  return mat;
+}
+async function hkLoadFacadeKit() {
+  if (HK_FACADE_KIT.ready || typeof loadGLTF !== 'function') return HK_FACADE_KIT;
+  for (const [k, f] of Object.entries(HK_FACADE_KIT_FILES)) {
+    try {
+      const g = await loadGLTF(f, 12000);
+      const root = g && (g.scene || g);
+      if (!root) continue;
+      root.traverse((o) => {
+        if (!o.isMesh) return;
+        o.castShadow = o.receiveShadow = true;
+        o.userData.noMerge = true; o.userData.hkFacadeThick = true;
+        if (o.material) hkEnsureFacadeSide(o.material);
+      });
+      HK_FACADE_KIT.proto[k] = root;
+    } catch (e) { console.warn('[hk-facade-kit]', k, e && e.message); }
+  }
+  HK_FACADE_KIT.ready = Object.keys(HK_FACADE_KIT.proto).length > 0;
+  console.info('[hk-facade-kit]', Object.keys(HK_FACADE_KIT.proto).join(','));
+  return HK_FACADE_KIT;
+}
+function hkDressFootprintShell(parent, ring, h, typeHint) {
+  if (!parent || !ring || ring.length < 3 || !HK_FACADE_KIT.ready) return 0;
+  const key = /industrial|廠|warehouse|貨櫃/.test(typeHint || '') ? 'industrial'
+    : /public_housing|公屋|ph|estate/.test(typeHint || '') ? 'ph'
+    : /tong_lau|tonglau|唐樓/.test(typeHint || '') ? 'tonglau'
+    : /massing|fill|block/.test(typeHint || '') ? 'massing'
+    : 'residential';
+  const proto = HK_FACADE_KIT.proto[key] || HK_FACADE_KIT.proto.residential || HK_FACADE_KIT.proto.massing;
+  if (!proto) return 0;
+  const dims = { residential: [8, 18, 0.55], ph: [10, 24, 0.6], tonglau: [9, 16, 0.75], industrial: [12, 28, 0.85], massing: [8, 22, 10] }[key] || [8, 18, 0.55];
+  const [sw, sh, sd] = dims;
+  let pts = ring.map((p) => new THREE.Vector2(p.dx != null ? p.dx : p.x, p.dz != null ? p.dz : p.y));
+  const a0 = pts[0], aN = pts[pts.length - 1];
+  if (pts.length > 2 && Math.hypot(a0.x - aN.x, a0.y - aN.y) < 0.05) pts = pts.slice(0, -1);
+  if (THREE.ShapeUtils.isClockWise(pts)) pts.reverse();
+  let n = 0, maxBay = 6;
+  for (let k = 0; k < pts.length && n < maxBay; k++) {
+    const p0 = pts[k], p1 = pts[(k + 1) % pts.length];
+    const L = p0.distanceTo(p1); if (L < sw * 0.55) continue;
+    const dx = p1.x - p0.x, dz = p1.y - p0.y;
+    const yaw = Math.atan2(dx, dz), ox = dz / L, oz = -dx / L;
+    const steps = Math.min(3, Math.max(1, Math.floor(L / sw)));
+    for (let s = 0; s < steps && n < maxBay; s++) {
+      const t = (s + 0.5) / steps;
+      const cl = proto.clone(true);
+      const sy = Math.min(1.4, Math.max(0.4, h / sh));
+      cl.scale.set(1, sy, 1);
+      cl.position.set(p0.x + dx * t + ox * (sd * 0.5), 0, p0.y + dz * t + oz * (sd * 0.5));
+      cl.rotation.y = yaw; cl.userData.hkFacadeThick = true; cl.userData.noMerge = true;
+      parent.add(cl); n++;
+    }
+  }
+  return n;
 }
 // 不放貨櫃的區域（M2：泊位辦公室、碼頭控制室所在位置）{ x0, x1, z0, z1 }
 const YARD_EXCLUDE = [
@@ -1141,7 +1247,11 @@ function planContainerLayout() {
       containerStacks.push({ x: wx, z: wallZ, len, h: wallH, levels, side: 0, lane: 0 });
     }
   }
-  for (const s of containerStacks) addCollider(s.x, s.z, CONT.W / 2 + (s.side === 0 ? 0.4 : 0), s.len / 2, s.h * CONT.H);
+  // 櫃只掛葵涌堆場（KWAI_GEO.hub），唔落 origin／市區
+  for (const s of containerStacks) {
+    if (typeof kwHubCol === 'function') kwHubCol(s.x, s.z, CONT.W / 2 + (s.side === 0 ? 0.4 : 0), s.len / 2, s.h * CONT.H);
+    else addCollider((typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : 0) + s.x, (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : 0) + s.z, CONT.W / 2 + (s.side === 0 ? 0.4 : 0), s.len / 2, s.h * CONT.H);
+  }
 }
 
 // 貨櫃色調（乘上原貼圖顏色；令貨櫃有多種顏色）
@@ -1285,8 +1395,8 @@ async function loadRealisticBuildings(files) {
   const meshes = {};
   for (const len of [CONT.L20, CONT.L40]) {
     const im = new THREE.InstancedMesh(geos[len], mats, Math.max(1, counts[len]));
-    im.castShadow = true; im.receiveShadow = true; im.count = 0; im.name = 'containers';
-    scene.add(im); shootables.push(im); meshes[len] = im;
+    im.castShadow = true; im.receiveShadow = true; im.count = 0; im.name = 'containers'; im.userData.kwaichung = true;
+    const _cr = (typeof kwContainerRoot === 'function' && kwContainerRoot()) || null; (_cr || scene).add(im); shootables.push(im); meshes[len] = im;
   }
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), one = new THREE.Vector3(1, 1, 1), yAxis = new THREE.Vector3(0, 1, 0);
   for (const s of containerStacks) {
@@ -1334,8 +1444,8 @@ async function loadContainerGLBs(files = ASSET_FILES.containersFallback) {
   const counts = variants.map(() => 0);
   for (const s of containerStacks) for (const l of s.levels) { l.variant %= variants.length; counts[l.variant]++; }
   const meshes = variants.map((v, vi) => v.parts.map(({ geo, mat, tint }) => {
-    const im = new THREE.InstancedMesh(geo, mat, counts[vi]); im.userData.tint = tint; im.castShadow = true; im.receiveShadow = true; im.count = 0; im.name = 'containers';
-    scene.add(im); shootables.push(im); return im;
+    const im = new THREE.InstancedMesh(geo, mat, counts[vi]); im.userData.tint = tint; im.castShadow = true; im.receiveShadow = true; im.count = 0; im.name = 'containers'; im.userData.kwaichung = true;
+    const _cr = (typeof kwContainerRoot === 'function' && kwContainerRoot()) || null; (_cr || scene).add(im); shootables.push(im); return im;
   }));
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), sc = new THREE.Vector3(), yAxis = new THREE.Vector3(0, 1, 0);
   for (const s of containerStacks) {
@@ -4442,12 +4552,12 @@ const osmCity = (() => {
     let acc = 0;
     for (let k = 0; k < n; k++) {
       const p0 = pts[k], p1 = pts[(k + 1) % n], L = p0.distanceTo(p1);
+      if (L < 0.3) continue;
       const u0 = acc / 3.2, u1 = (acc + L) / 3.2, v1 = h / 3.1; acc += L;
-      const vi = pos.length / 3;
-      pos.push(p0.x, 0, p0.y, p1.x, 0, p1.y, p1.x, h, p1.y, p0.x, h, p0.y);
-      uv.push(u0, 0, u1, 0, u1, v1, u0, v1);
-      for (let q = 0; q < 4; q++) info.push(seed, kind, 0);
-      idx.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3);
+      const before = pos.length / 3;
+      hkPushThickWall(pos, uv, idx, p0, p1, 0, h, u0, u1, v1, FACADE_SHELL_D);
+      const added = pos.length / 3 - before;
+      for (let q = 0; q < added; q++) info.push(seed, kind, 0);
     }
     // 天台
     const tris = THREE.ShapeUtils.triangulateShape(pts, []);
@@ -4698,8 +4808,10 @@ function makeLobbyTex() {
     g.fillStyle = col; g.textAlign = 'center'; g.font = `bold 30px ${FONT}`; g.fillText(cn, x + 128, y + 36); g.font = 'bold 13px Arial,sans-serif'; g.fillStyle = emi ? col : '#ddd'; g.fillText(en, x + 128, y + 54); g.shadowBlur = 0; });
   const signMat = shared(new THREE.MeshStandardMaterial({ map: shared(canvasTex(1024, 512, drawSigns(false))), emissiveMap: shared(canvasTex(1024, 512, drawSigns(true))), emissive: new THREE.Color(1, 1, 1), emissiveIntensity: 2.4, roughness: 0.5 }));
   /** 平面 + 圖集格（cols×rows，cell 由左上數起）；faceX: 面向 ±X，否則面向 ±Z */
-  const atlasQuad = (mat, cols, rows, cell, w, h, x, y, z, rotY) => { const geo = new THREE.PlaneGeometry(w, h), uv = geo.attributes.uv, c = cell % cols, r = Math.floor(cell / cols) % rows;
+  const atlasQuad = (mat, cols, rows, cell, w, h, x, y, z, rotY) => { const geo = new THREE.BoxGeometry(w, h, 0.5), uv = geo.attributes.uv, c = cell % cols, r = Math.floor(cell / cols) % rows;
+    /* 只改前面 (+Z) UV；其餘跟 atlas 格 */
     for (let i = 0; i < uv.count; i++) uv.setXY(i, (c + uv.getX(i)) / cols, 1 - (r + 1 - uv.getY(i)) / rows);
+    if (mat) hkEnsureFacadeSide(mat);
     const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.y = rotY; g.add(m); return m; };
   // —— 塔樓立面：12 米 × 17 層一張圖；窗位佈局同時用嚟擺立體冷氣機／晾衫
   const FLOORS = [];
@@ -4753,11 +4865,11 @@ function makeLobbyTex() {
     addCollider(xc, (za + zb) / 2, D / 2, w / 2, 60); }
   // —— 一二樓（4.2–13 米）：招牌牆 + 窗
   const podCore = boxMesh(conc, D, POD - 4.2, LEN, xc - 0.2, (POD + 4.2) / 2, zmid, g); podCore.castShadow = true; shootables.push(podCore);
-  { const geo = new THREE.PlaneGeometry(LEN, 3.6), uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * 3);
-    signWall.map.wrapS = signWall.emissiveMap.wrapS = THREE.RepeatWrapping; signWall.map.needsUpdate = signWall.emissiveMap.needsUpdate = true;
+  { const geo = new THREE.BoxGeometry(LEN, 3.6, 0.5), uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * 3);
+    signWall.map.wrapS = signWall.emissiveMap.wrapS = THREE.RepeatWrapping; signWall.map.needsUpdate = signWall.emissiveMap.needsUpdate = true; hkEnsureFacadeSide(signWall);
     const m = new THREE.Mesh(geo, signWall); m.position.set(front + 0.12, 6.3, zmid); m.rotation.y = Math.PI / 2; g.add(m); }
-  { const geo = new THREE.PlaneGeometry(LEN, POD - 8.4), uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * LEN / 12, uv.getY(i) * (POD - 8.4) / (TOP - POD));
-    const m = new THREE.Mesh(geo, facade); m.position.set(front + 0.11, (POD + 8.4) / 2, zmid); m.rotation.y = Math.PI / 2; g.add(m); }
+  { const geo = new THREE.BoxGeometry(LEN, POD - 8.4, 0.5), uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * LEN / 12, uv.getY(i) * (POD - 8.4) / (TOP - POD));
+    hkEnsureFacadeSide(facade); const m = new THREE.Mesh(geo, facade); m.position.set(front + 0.11, (POD + 8.4) / 2, zmid); m.rotation.y = Math.PI / 2; g.add(m); }
   for (let i = 0; i < 9; i++) { const z = cm.z0 + 3 + i * 6.4 + ckr() * 2; if (Math.abs(z - cm.door) < 4) continue; const w = 1.6 + ckr() * 1.6;
     boxMesh(concDark, 0.2, w * 0.3 + 0.08, w + 0.08, front + 0.2, 9.4 + ckr() * 2.4, z, g).geometry; atlasQuad(signMat, 4, 8, Math.floor(ckr() * 27), w, w * 0.3, front + 0.31, g.children[g.children.length - 1].position.y, z, Math.PI / 2); }
   boxMesh(canopyMat, 2.2, 0.25, LEN, front + 1.0, 4.05, zmid, g);                                             // 簷篷
@@ -5518,11 +5630,13 @@ function extrudeBuildings(list, mat) {
     const h = b.h;
     let acc = 0;
     for (let k = 0; k < n; k++) {
-      const p0 = pts[k], p1 = pts[(k + 1) % n], L = p0.distanceTo(p1), vi = pos.length / 3;
+      const p0 = pts[k], p1 = pts[(k + 1) % n], L = p0.distanceTo(p1);
+      if (L < 0.3) continue;
       const u0 = acc / 3.2, u1 = (acc + L) / 3.2, v1 = h / 3.2; acc += L;
-      pos.push(p0.x, 0, p0.y, p1.x, 0, p1.y, p1.x, h, p1.y, p0.x, h, p0.y); uv.push(u0, 0, u1, 0, u1, v1, u0, v1);
-      for (let q = 0; q < 4; q++) info.push(seed, b.kind, 0);
-      idx.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3);
+      const before = pos.length / 3;
+      hkPushThickWall(pos, uv, idx, p0, p1, 0, h, u0, u1, v1, FACADE_SHELL_D);
+      const added = pos.length / 3 - before;
+      for (let q = 0; q < added; q++) info.push(seed, b.kind, 0);
     }
     const tris = THREE.ShapeUtils.triangulateShape(pts, []), ri = pos.length / 3;
     for (const p of pts) { pos.push(p.x, h, p.y); uv.push(0, 0); info.push(seed, b.kind, 1); }
@@ -8419,7 +8533,7 @@ for (const S9 of SHOP9) {
   const HOSP_MOVED = S9.id === 'hospital' && typeof HKMAP_DATA !== 'undefined'; // 地圖骨架：九龍公立醫院搬去九龍城區（modY 建外景）
   if (!HOSP_MOVED) {
   const tex = shopfrontTex(S9.tex); const m = new THREE.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: new THREE.Color(1, 1, 1), emissiveIntensity: 0.85, roughness: 0.3 });
-  const p = new THREE.Mesh(new THREE.PlaneGeometry(S9.w, 4.0), m); p.position.set(x, 2.0, S9.z); p.rotation.y = rotY; HK9.add(p); shootables.push(p);
+  const p = new THREE.Mesh(new THREE.BoxGeometry(S9.w, 4.0, Math.max(0.5, typeof FACADE_SHELL_D === 'number' ? FACADE_SHELL_D : 0.5)), m); hkEnsureFacadeSide(m); p.position.set(x, 2.0, S9.z); p.rotation.y = rotY; HK9.add(p); shootables.push(p);
   // 門口地面透光
   const spill = new THREE.PointLight(new THREE.Color(S9.tex.glow), 6, 7, 1.6); spill.position.set(S9.s * 9.2, 1.8, S9.z); HK9.add(spill);
   // 伸出街嘅直身霓虹
@@ -9476,9 +9590,15 @@ const EXSQ_MAT = (() => {
 })();
 function hkExtrude(pts, h, mat, y0 = 0, tile = 12, tileV = 14.4) { // pts: [[x,z]…]（世界）
   const pos = [], uv = [], idx = []; let acc = 0; const n = pts.length;
-  for (let k = 0; k < n; k++) { const a = pts[k], b = pts[(k + 1) % n], L = Math.hypot(b[0] - a[0], b[1] - a[1]), vi = pos.length / 3;
-    pos.push(a[0], y0, a[1], b[0], y0, b[1], b[0], y0 + h, b[1], a[0], y0 + h, a[1]); uv.push(acc / tile, 0, (acc + L) / tile, 0, (acc + L) / tile, h / tileV, acc / tile, h / tileV); acc += L; idx.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3); }
+  for (let k = 0; k < n; k++) {
+    const a = pts[k], b = pts[(k + 1) % n], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (L < 0.3) continue;
+    const p0 = new THREE.Vector2(a[0], a[1]), p1 = new THREE.Vector2(b[0], b[1]);
+    const u0 = acc / tile, u1 = (acc + L) / tile, v1 = h / tileV; acc += L;
+    hkPushThickWall(pos, uv, idx, p0, p1, y0, h, u0, u1, v1, FACADE_SHELL_D);
+  }
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeVertexNormals();
+  hkEnsureFacadeSide(mat);
   const walls = new THREE.Mesh(geo, mat); walls.castShadow = walls.receiveShadow = true; walls.material.side = THREE.DoubleSide;
   const sh = new THREE.Shape(pts.map((p) => new THREE.Vector2(p[0], -p[1]))); const rg = new THREE.ShapeGeometry(sh); rg.rotateX(-Math.PI / 2); rg.translate(0, y0 + h, 0);
   const roof = new THREE.Mesh(rg, PM.metalDark || new THREE.MeshStandardMaterial({ color: 0x222222 })); return [walls, roof];
@@ -22140,12 +22260,9 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       const p0 = pts[k], p1 = pts[(k + 1) % n];
       const L = p0.distanceTo(p1);
       if (L < 0.3) continue;
-      const vi = pos.length / 3;
       const u0 = acc / 4.2, u1 = (acc + L) / 4.2, v1 = h / 3.2;
       acc += L;
-      pos.push(p0.x, 0, p0.y, p1.x, 0, p1.y, p1.x, h, p1.y, p0.x, h, p0.y);
-      uv.push(u0, 0, u1, 0, u1, v1, u0, v1);
-      idx.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3);
+      hkPushThickWall(pos, uv, idx, p0, p1, 0, h, u0, u1, v1, FACADE_SHELL_D);
     }
     if (pos.length < 12) return false;
     try {
@@ -22160,6 +22277,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
     g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     g.setIndex(idx);
     g.computeVertexNormals();
+    hkEnsureFacadeSide(mat);
     const mesh = new THREE.Mesh(g, mat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -22517,12 +22635,9 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       const p0 = pts[k], p1 = pts[(k + 1) % n];
       const L = p0.distanceTo(p1);
       if (L < 0.3) continue;
-      const vi = pos.length / 3;
       const u0 = acc / 4.2, u1 = (acc + L) / 4.2, v1 = h / 3.2;
       acc += L;
-      pos.push(p0.x, 0, p0.y, p1.x, 0, p1.y, p1.x, h, p1.y, p0.x, h, p0.y);
-      uv.push(u0, 0, u1, 0, u1, v1, u0, v1);
-      idx.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3);
+      hkPushThickWall(pos, uv, idx, p0, p1, 0, h, u0, u1, v1, FACADE_SHELL_D);
     }
     if (pos.length < 12) return false;
     try {
@@ -22537,6 +22652,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
     g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     g.setIndex(idx);
     g.computeVertexNormals();
+    hkEnsureFacadeSide(mat);
     const mesh = new THREE.Mesh(g, mat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -22900,12 +23016,9 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       const p0 = pts[k], p1 = pts[(k + 1) % n];
       const L = p0.distanceTo(p1);
       if (L < 0.3) continue;
-      const vi = pos.length / 3;
       const u0 = acc / 4.2, u1 = (acc + L) / 4.2, v1 = h / 3.2;
       acc += L;
-      pos.push(p0.x, 0, p0.y, p1.x, 0, p1.y, p1.x, h, p1.y, p0.x, h, p0.y);
-      uv.push(u0, 0, u1, 0, u1, v1, u0, v1);
-      idx.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3);
+      hkPushThickWall(pos, uv, idx, p0, p1, 0, h, u0, u1, v1, FACADE_SHELL_D);
     }
     if (pos.length < 12) return false;
     try {
@@ -22920,6 +23033,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
     g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     g.setIndex(idx);
     g.computeVertexNormals();
+    hkEnsureFacadeSide(mat);
     const mesh = new THREE.Mesh(g, mat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -23293,10 +23407,8 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       for (let k = 0; k < n; k++) {
         const p0 = pts[k], p1 = pts[(k + 1) % n];
         const L = p0.distanceTo(p1); if (L < 0.3) continue;
-        const vi = pos.length / 3, u0 = acc / 4.2, u1 = (acc + L) / 4.2, v1 = h / 3.2; acc += L;
-        pos.push(p0.x, 0, p0.y, p1.x, 0, p1.y, p1.x, h, p1.y, p0.x, h, p0.y);
-        uv.push(u0, 0, u1, 0, u1, v1, u0, v1);
-        idx.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3);
+        const u0 = acc / 4.2, u1 = (acc + L) / 4.2, v1 = h / 3.2; acc += L;
+        hkPushThickWall(pos, uv, idx, p0, p1, 0, h, u0, u1, v1, FACADE_SHELL_D);
       }
       if (pos.length < 12) return false;
       try {
@@ -23309,6 +23421,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
       g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
       g.setIndex(idx); g.computeVertexNormals();
+      hkEnsureFacadeSide(mat);
       const m = new THREE.Mesh(g, mat);
       m.castShadow = true; m.receiveShadow = true; m.userData.noMerge = true; m.userData[cfg.id] = true;
       m.name = name; parent.add(m);
@@ -23631,10 +23744,8 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       for (let k = 0; k < n; k++) {
         const p0 = pts[k], p1 = pts[(k + 1) % n];
         const L = p0.distanceTo(p1); if (L < 0.3) continue;
-        const vi = pos.length / 3, u0 = acc / 4.2, u1 = (acc + L) / 4.2, v1 = h / 3.2; acc += L;
-        pos.push(p0.x, 0, p0.y, p1.x, 0, p1.y, p1.x, h, p1.y, p0.x, h, p0.y);
-        uv.push(u0, 0, u1, 0, u1, v1, u0, v1);
-        idx.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3);
+        const u0 = acc / 4.2, u1 = (acc + L) / 4.2, v1 = h / 3.2; acc += L;
+        hkPushThickWall(pos, uv, idx, p0, p1, 0, h, u0, u1, v1, FACADE_SHELL_D);
       }
       if (pos.length < 12) return false;
       try {
@@ -23647,6 +23758,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
       g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
       g.setIndex(idx); g.computeVertexNormals();
+      hkEnsureFacadeSide(mat);
       const m = new THREE.Mesh(g, mat);
       m.castShadow = true; m.receiveShadow = true; m.userData.noMerge = true; m.userData[cfg.id] = true;
       m.name = name; parent.add(m);
@@ -25766,10 +25878,8 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
       let acc = 0;
       for (let k = 0; k < pts.length; k++) {
         const p0 = pts[k], p1 = pts[(k + 1) % pts.length], L = p0.distanceTo(p1); if (L < 0.3) continue;
-        const vi = B.pos.length / 3, u0 = acc / 12 + du, u1 = (acc + L) / 12 + du, v1 = h / 9.3; acc += L;
-        B.pos.push(p0.x, 0, p0.y, p1.x, 0, p1.y, p1.x, h, p1.y, p0.x, h, p0.y);
-        B.uv.push(u0, 0, u1, 0, u1, v1, u0, v1);
-        B.idx.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3);
+        const u0 = acc / 12 + du, u1 = (acc + L) / 12 + du, v1 = h / 9.3; acc += L;
+        hkPushThickWall(B.pos, B.uv, B.idx, p0, p1, 0, h, u0, u1, v1, FACADE_SHELL_D);
       }
       try { const tris = THREE.ShapeUtils.triangulateShape(pts, []); const ri = R.pos.length / 3; for (const p of pts) R.pos.push(p.x, h, p.y); for (const t of tris) R.idx.push(ri + t[0], ri + t[1], ri + t[2]); } catch (e) { /* */ }
       let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const p of pts) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); z0 = Math.min(z0, p.y); z1 = Math.max(z1, p.y); }
@@ -25786,6 +25896,7 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
   }
   async function c27fProcess(key, D) {
     const g = D.group; if (!g) return false;
+    try { await hkLoadFacadeKit(); } catch (eKit) { /* */ }
     await c27fLayout(); await c27fLayers(); if (C27F_LAYERS) NT.C27F_LAYERS = C27F_LAYERS;
     const pre = key.toLowerCase();
     const gB = g.getObjectByName(pre + '_extrude_buildings'); if (!gB) return false;
@@ -25895,6 +26006,18 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
       const me = new THREE.Mesh(mm, mat); me.receiveShadow = true; me.userData.noMerge = true; me.name = pre + '_shop_' + sk.replace(/\.jpg$/, ''); gS.add(me);
     }
     g.add(gS);
+    /* 厚殼 bay：紙片／單面換 hk-buildings shell（禁 facade_d_* 相板當樓） */
+    try {
+      await hkLoadFacadeKit();
+      let nShell = 0;
+      for (const b of (D.data.buildings || []).slice(0, C27D_LITE ? 12 : 28)) {
+        if (!b || !b.footprint_ring || b.skip_render) continue;
+        if ((b.dist_trunk_m != null && b.dist_trunk_m > 35)) continue;
+        const hh = b.levels > 0 ? b.levels * 3.1 : (b.height_m || 18);
+        nShell += hkDressFootprintShell(g, b.footprint_ring, hh, b.type || b.building || '');
+      }
+      if (nShell) console.info('[hk-facade-kit] ' + key + ' shell bay', nShell);
+    } catch (eShell) { console.warn('[hk-facade-kit]', key, eShell && eShell.message); }
     /* 舖門 stub：地舖帶加凹門洞／鐵閘色塊，至少可辨（禁相板） */
     try {
       const doorMatOpen = new THREE.MeshStandardMaterial({ color: 0x1a1c1e, roughness: 0.55, metalness: 0.15 });
@@ -26902,7 +27025,7 @@ const CROWD = {
   }
   function poseFdw(i, p) {
     const base = _b.set(p.x, 0, p.z); _qy.setFromAxisAngle(UP, p.yaw); const h = 0.96; _sc.set(h, h, h);
-    if (p.pose === 'sit' || p.pose === 'squat') { _m.compose(_v.set(p.x, 0.14, p.z), _qy, ONE); FDW.cardboard.setMatrixAt(i, _m); // 高過行人路／廣場鋪面 }
+    if (p.pose === 'sit' || p.pose === 'squat') { _m.compose(_v.set(p.x, 0.14, p.z), _qy, ONE); FDW.cardboard.setMatrixAt(i, _m); } // 高過行人路／廣場鋪面
     else FDW.cardboard.setMatrixAt(i, _hide);
     const O = (k) => _off.copy(OFF[k]).multiplyScalar(h);
     if (p.pose === 'sit') {

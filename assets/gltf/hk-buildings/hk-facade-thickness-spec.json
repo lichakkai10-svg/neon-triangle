@@ -1,0 +1,52 @@
+{
+  "updated": "2026-10-24T22:19+08",
+  "boss": "樓穿毛／單面——facade 要有厚度／雙面；禁紙片樓",
+  "rules": {
+    "min_wall_depth_m": 0.45,
+    "require_back_face": true,
+    "forbid": [
+      "PlaneGeometry facade",
+      "single-sided photo board",
+      "facade_d_* documentary plane as building"
+    ],
+    "ok": [
+      "BoxGeometry / extruded shell",
+      "front+back+returns",
+      "vertex-color glTF bay"
+    ]
+  },
+  "assets": {
+    "hk-facade-residential-bay.glb": {
+      "w": 8,
+      "h": 18,
+      "depth": 0.55,
+      "note": "beige res + balcony slab"
+    },
+    "hk-facade-ph-panel-bay.glb": {
+      "w": 10,
+      "h": 24,
+      "depth": 0.6,
+      "note": "PH colour strip"
+    },
+    "hk-facade-tonglau-shell.glb": {
+      "w": 9,
+      "h": 16,
+      "arcade_depth": 1.65,
+      "upper_shell": 0.75,
+      "note": "騎樓真深度＋上層殼"
+    },
+    "hk-facade-industrial-shell.glb": {
+      "w": 12,
+      "h": 28,
+      "depth": 0.85,
+      "note": "工廈殼；港口同款已覆寫"
+    },
+    "hk-massing-block-8x22x10.glb": {
+      "w": 8,
+      "h": 22,
+      "d": 10,
+      "note": "實心 massing，街景填充用"
+    }
+  },
+  "handoff_code": "Replace paper/district photo planes with these shells or Box massing; depth≥0.45; always back face. Collider: use outer AABB."
+}

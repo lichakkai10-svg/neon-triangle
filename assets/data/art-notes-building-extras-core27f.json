@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-24T20:45:00+08:00",
+  "updated": "2026-10-24T22:30:00+08:00",
   "for": "core27f 唐樓騎樓／podium 檐口／冷氣／晾衫",
   "module": "assets/js/building-extras-core27f.js",
   "hook": "import('./assets/js/building-extras-core27f.js').then((m) => m.attachAll(THREE));",
@@ -125,5 +125,20 @@
     "hk_arcade_u_pick": "depth 3.0 / clear_h 3.0 / ARC_POST 5.25 — within boss 1.5–2.5／2.7–3.5／柱3.5–5",
     "facade": "公屋色帶跟 facade-pool public_housing",
     "mo_tw": "extras 仍只掛港區 KEYS；澳台 prop 開區另庫"
+  },
+  "boss_fail_facade_container_2026_10_24": {
+    "fail": [
+      "樓宇穿毛／得一面背面透",
+      "貨櫃錯見市區／穿樓"
+    ],
+    "art_lock": {
+      "facade": "厚度／雙面或實心 extrude；禁單面薄片背面透",
+      "containers": "只港區／堆場 instance；市區禁無故櫃；唔穿樓"
+    },
+    "no_bump_v": true,
+    "code": {
+      "facade": "hkPushThickWall + hk-buildings shell kit; DoubleSide",
+      "containers": "kwContainerRoot @ KWAI_GEO.hub; no urban origin"
+    }
   }
 }
