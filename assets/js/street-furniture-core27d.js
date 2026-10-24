@@ -60,7 +60,7 @@ export function buildStreetFurniture(THREE, parent, trunks, opts = {}) {
     bollard(x, z) { put(G.cyl, mat.bollard, x, 0.45, z, 0.22, 0.9, 0.22); },
     bin(x, z, yaw) { put(G.box, mat.bin, x, 0.45, z, 0.42, 0.9, 0.36, yaw); put(G.box, mat.binTop, x, 0.92, z, 0.44, 0.05, 0.38, yaw); }, // 食環署 70L 橙桶（尺寸係遊戲估算）
     binLarge(x, z, yaw) { put(G.box, mat.bin, x, 0.53, z, 0.55, 1.06, 0.46, yaw); put(G.box, mat.binTop, x, 1.09, z, 0.57, 0.06, 0.48, yaw); }, // 食環署 130L 橙桶（取代 660L：660L 唔擺路邊；尺寸係遊戲估算）
-    cone(x, z) { put(G.cone, mat.bin, x, 0.45, z, 0.32, 0.9, 0.32); put(G.box, mat.zebra, x, 0.72, z, 0.34, 0.08, 0.34); }, // 橙錐（遊戲估算；白條用 zebra 白）
+    cone(x, z) { put(G.cone, mat.bin, x, 0.52, z, 0.38, 1.05, 0.38); put(G.box, mat.zebra, x, 0.82, z, 0.4, 0.1, 0.4); }, // 橙錐抬高／略大（禁埋行人路下）
     busStop(x, z, yaw, toRoad) { const L = local({ x, z }, yaw);
       for (const t of [-3.5, 3.5]) { const [px, pz] = L(-toRoad * 0.6, t); put(G.box, mat.pole, px, 1.3, pz, 0.1, 2.6, 0.1, yaw); }
       put(G.box, mat.roof, x, 2.65, z, 2.0, 0.12, 8, yaw); const [gx, gz] = L(-toRoad * 0.9, 0); put(G.box, mat.glass, gx, 1.3, gz, 0.04, 2.0, 7.4, yaw);
@@ -98,7 +98,7 @@ export function buildStreetFurniture(THREE, parent, trunks, opts = {}) {
     for (const [arr, r] of [[pts0.crossings, 6], [pts0.bus_stops, 12]]) for (const q of arr || []) { const k = gk(q.x, q.z); if (!GAP.has(k)) GAP.set(k, []); GAP.get(k).push([q.x, q.z, r]); }
     const nearGap = (x, z) => { const cx = Math.floor(x / 16), cz = Math.floor(z / 16); for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (const [qx, qz, r] of GAP.get((cx + i) + ',' + (cz + j)) || []) if ((qx - x) ** 2 + (qz - z) ** 2 < r * r) return true; return false; };
     for (const t of trunks) { const a = t.points || []; if (a.length < 2) continue;
-      const busy = WIDE.test((t.name_zh || '') + (t.id || '')), width = a._w || (busy ? 14 : 11), kerb = width * 0.5 + 0.5, bk = width * 0.5 + 0.9; let g = 0; // bin 靠路壆 half+0.9（layout JSON）
+      const busy = WIDE.test((t.name_zh || '') + (t.id || '')), width = a._w || (busy ? 14 : 11), kerb = width * 0.5 + 0.85, bk = width * 0.5 + 1.05; let g = 0; // bin／欄杆外移，減車穿模
       for (let i = 0; i + 1 < a.length; i++) { const L = Math.hypot(a[i + 1].dx - a[i].dx, a[i + 1].dz - a[i].dz); if (L < 2) continue;
         const yaw = Math.atan2(a[i + 1].dx - a[i].dx, a[i + 1].dz - a[i].dz), loc = local({ x: a[i].dx, z: a[i].dz }, yaw);
         if (busy) for (const s2 of [-1, 1]) { // 繁忙街：成段連續，淨係過路處、巴士站、上落貨位斷開（霓虹三角2 拍板）
@@ -133,7 +133,7 @@ export function buildStreetFurniture(THREE, parent, trunks, opts = {}) {
           const [kx, kz] = L(s * kerb, d), [fx, fz] = L(s * front, d);
           if (proc && g % Math.round(14 / dens) === (s > 0 ? 0 : 7)) { P.tree(kx, kz, yaw); count++; }
           if (proc && g % 32 === (s > 0 ? 3 : 19)) { P.lamp(kx, kz, yaw, -s); count++; }
-          if (proc && g % (lite ? 36 : 24) === 11 && rnd() < 0.7) { const [rx, rz] = L(s * (width * 0.5 + 0.5), d); P.railing(rx, rz, yaw, 6); count++; }
+          if (proc && g % (lite ? 36 : 24) === 11 && rnd() < 0.7) { const [rx, rz] = L(s * (width * 0.5 + 0.85), d); P.railing(rx, rz, yaw, 6); count++; }
           if (g % 9 === 4 && rnd() < 0.5) { P.bollard(kx, kz); count++; }
           if (proc && g % 70 === (s > 0 ? 40 : 5)) { P.bin(fx, fz, yaw); count++; }
           if (proc && g % 260 === (s > 0 ? 130 : 0)) { P.busStop(kx, kz, yaw, -s); count++; }

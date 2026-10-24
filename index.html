@@ -593,6 +593,7 @@ function mergeStatic(root, opts = {}) {
 }
 
 const scene = new THREE.Scene();
+try { window.scene = scene; } catch (eSc) { /* */ }
 const FOG_COLOR = new THREE.Color(0x181c21);
 scene.background = new THREE.Color(0x0b0c0e); // 固定夜黑底（唔共用 FOG_COLOR，防被改成日頭灰白）
 scene.fog = new THREE.FogExp2(FOG_COLOR.clone(), 0.0105);
@@ -2165,7 +2166,7 @@ function updateCar(dt) {
       else if (D.group && D.group.userData && D.group.userData.railSegments) segs.push(...D.group.userData.railSegments);
     }
     if (segs.length) {
-      const rr = 0.95, cx = car.pos.x, cz = car.pos.z;
+      const rr = 0.48, cx = car.pos.x, cz = car.pos.z; // core28a 街景：縮欄杆 AABB，減穿模／貼身刮
       for (const s of segs) {
         if (Math.abs(((s.x0 + s.x1) * 0.5) - cx) > 12 || Math.abs(((s.z0 + s.z1) * 0.5) - cz) > 12) continue;
         const ax = s.x0, az = s.z0, bx = s.x1 - ax, bz = s.z1 - az, ll = bx * bx + bz * bz || 1;
@@ -18575,7 +18576,7 @@ function kwBuildDensityD1() {
 
   // —— D2 起步：輔路＋丁字＋市政零碎（跟住 D1，draw call 可控）——
   {
-    const asp = new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.95 });
+    const asp = new THREE.MeshStandardMaterial({ color: 0x4a4e52, roughness: 0.9 }); /* apron／堆場：淺過車路，禁一片死灰 */
     // 工廈後平行輔路
     const svc = new THREE.Mesh(new THREE.BoxGeometry(8, 0.06, 70), asp);
     svc.position.set(-58, 0.02, 75); svc.name = 'kt_service_road'; svc.userData.kwaichung = true; root.add(svc);
@@ -18644,7 +18645,7 @@ function kwBuildDensityD2a() {
   if (!KWAI.group) { root.name = 'kwaichung-dock'; KWAI.group = root; scene.add(root); }
   if (typeof kwEnsureGroup === 'function') kwEnsureGroup(); else if (KWAI.group && typeof KWAI_GEO !== 'undefined') KWAI.group.position.set(KWAI_GEO.hubX, 0, KWAI_GEO.hubZ);
 
-  const asp = new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.95 });
+  const asp = new THREE.MeshStandardMaterial({ color: 0x4a4e52, roughness: 0.9 }); /* apron／堆場：淺過車路，禁一片死灰 */
   const yel = new THREE.MeshStandardMaterial({ color: 0xc9a000, roughness: 0.55 });
   const white = new THREE.MeshStandardMaterial({ color: 0xd8d8d0, roughness: 0.8 });
   const conc = new THREE.MeshStandardMaterial({ color: 0x8a8680, roughness: 0.92 });
@@ -20437,7 +20438,7 @@ function kwEnforceElbowDrive() {
   g.userData.noMerge = true;
 
   const wall = new THREE.MeshStandardMaterial({ color: 0x3a4046, roughness: 0.82, metalness: 0.08 });
-  const asp = new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.95 });
+  const asp = new THREE.MeshStandardMaterial({ color: 0x4a4e52, roughness: 0.9 }); /* apron／堆場：淺過車路，禁一片死灰 */
   const yel = new THREE.MeshStandardMaterial({ color: 0xc9a000, roughness: 0.55 });
   const white = new THREE.MeshStandardMaterial({ color: 0xd8d8d0, roughness: 0.8 });
   const kerb = new THREE.MeshStandardMaterial({ color: 0x6d6f70, roughness: 0.8 });
@@ -20679,7 +20680,7 @@ function kwBuildP1Urban() {
     const dx = b.x - a.x, dz = b.z - a.z;
     const len = Math.hypot(dx, dz) || 1;
     const yaw = Math.atan2(dx, dz);
-    const asp = new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.95 });
+    const asp = new THREE.MeshStandardMaterial({ color: 0x4a4e52, roughness: 0.9 }); /* apron／堆場：淺過車路，禁一片死灰 */
     const road = new THREE.Mesh(new THREE.BoxGeometry(16, 0.07, len + 4), asp);
     road.position.set(mx, 0.025, mz); road.rotation.y = yaw;
     road.userData.kwaichung = true; road.name = 'kt_elbow_seg_' + i;
@@ -20689,7 +20690,7 @@ function kwBuildP1Urban() {
   }
   // 轉彎後再加一段內陸延伸（加闊可駛帶）
   {
-    const asp = new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.95 });
+    const asp = new THREE.MeshStandardMaterial({ color: 0x4a4e52, roughness: 0.9 }); /* apron／堆場：淺過車路，禁一片死灰 */
     const arm = new THREE.Mesh(new THREE.BoxGeometry(36, 0.07, 14), asp);
     arm.position.set(-28, 0.022, 48);
     arm.userData.kwaichung = true; arm.name = 'kt_elbow_inland_arm';
@@ -22071,7 +22072,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
     YTM.mats.glass = mk(YTM.tex.glass, 0.35, 0.45);
     YTM.mats.arcade = mk(YTM.tex.arcade, 0.8, 0.05);
     YTM.mats.road = new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.5, metalness: 0.08 });
-    YTM.mats.sidewalk = mk(YTM.tex.sidewalk, 0.92, 0.02, 0x8a8e92);
+    YTM.mats.sidewalk = mk(YTM.tex.sidewalk, 0.92, 0.02, 0xb8b0a0);
     YTM.mats.yel = new THREE.MeshStandardMaterial({ color: 0xc9a000, roughness: 0.55 });
   }
 
@@ -22452,7 +22453,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
     CW.mats.glass = mk(CW.tex.glass, 0.32, 0.5);
     CW.mats.arcade = mk(CW.tex.arcade, 0.8, 0.05);
     CW.mats.road = new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.5, metalness: 0.08 });
-    CW.mats.sidewalk = mk(CW.tex.sidewalk, 0.92, 0.02, 0x8a8e92);
+    CW.mats.sidewalk = mk(CW.tex.sidewalk, 0.92, 0.02, 0xb8b0a0);
     CW.mats.yel = new THREE.MeshStandardMaterial({ color: 0xc9a000, roughness: 0.55 });
   }
 
@@ -22832,7 +22833,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
     KT.mats.container = mk(KT.tex.container, 0.55, 0.22);
     KT.mats.housing = mk(KT.tex.housing || KT.tex.district, 0.88, 0.03);
     KT.mats.road = new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.5, metalness: 0.08 });
-    KT.mats.sidewalk = mk(KT.tex.sidewalk, 0.92, 0.02, 0x7a7e72);
+    KT.mats.sidewalk = mk(KT.tex.sidewalk, 0.92, 0.02, 0xb0a898);
     KT.mats.hazard = mk(KT.tex.hazard, 0.7, 0.06, 0xc9a000);
     KT.mats.yel = new THREE.MeshStandardMaterial({ color: 0xc9a000, emissive: 0x332200, emissiveIntensity: 0.35 });
   }
@@ -23242,7 +23243,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       D.mats.district = mk(T.district || T.tonglau, 0.88, 0.04);
       D.mats.parkwall = mk(T.parkwall || T.district, 0.92, 0.02);
       D.mats.road = new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.5, metalness: 0.08 });
-      D.mats.sidewalk = mk(T.sidewalk, 0.92, 0.02, 0x7a7e72);
+      D.mats.sidewalk = mk(T.sidewalk, 0.92, 0.02, 0xb0a898); // 鋪面色差：行人路淺石 vs 瀝青深灰
       D.mats.yel = new THREE.MeshStandardMaterial({ color: 0xc9a000, emissive: 0x332200, emissiveIntensity: 0.35 });
     }
 
@@ -23580,7 +23581,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       D.mats.district = mk(T.district || T.tonglau, 0.88, 0.04);
       D.mats.parkwall = mk(T.parkwall || T.district, 0.92, 0.02);
       D.mats.road = new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.5, metalness: 0.08 });
-      D.mats.sidewalk = mk(T.sidewalk, 0.92, 0.02, 0x7a7e72);
+      D.mats.sidewalk = mk(T.sidewalk, 0.92, 0.02, 0xb0a898); // 鋪面色差：行人路淺石 vs 瀝青深灰
       D.mats.yel = new THREE.MeshStandardMaterial({ color: 0xc9a000, emissive: 0x332200, emissiveIntensity: 0.35 });
     }
 
@@ -25466,32 +25467,48 @@ body.cine #h2Left{visibility:hidden}`;
       if (typeof scene === 'undefined' || typeof THREE === 'undefined') { setTimeout(boot, 400); return; }
       if (window.NT && NT._c27fTram) return;
       const g = new THREE.Group(); g.name = 'c27f_tram_tracks'; g.userData.noMerge = true;
-      const matRail = new THREE.MeshStandardMaterial({ color: 0x3a3c40, roughness: 0.45, metalness: 0.55 });
-      const matBed = new THREE.MeshStandardMaterial({ color: 0x2e3032, roughness: 0.9, metalness: 0.05 });
-      let segs = 0;
+      const matRail = new THREE.MeshStandardMaterial({ color: 0x6a6e74, roughness: 0.35, metalness: 0.7 });
+      const matBed = new THREE.MeshStandardMaterial({ color: 0x4a4640, roughness: 0.88, metalness: 0.05 }); // 軌床偏褐，對比瀝青
+      const matTram = new THREE.MeshStandardMaterial({ color: 0xe8e4d8, roughness: 0.55, metalness: 0.08 });
+      const matTramBand = new THREE.MeshStandardMaterial({ color: 0x2a6a5a, roughness: 0.5, metalness: 0.1 });
+      const matTramGlass = new THREE.MeshStandardMaterial({ color: 0x1a2830, roughness: 0.2, metalness: 0.4 });
+      let segs = 0, cars = 0;
       for (const did of ['cw', 'wc']) {
         const tracks = (L.districts[did] && L.districts[did].tram_tracks) || [];
         for (const tr of tracks) {
           const P = tr.points || [];
+          let acc = 0;
           for (let i = 0; i + 1 < P.length; i++) {
             const a = P[i], b = P[i + 1];
             const len = Math.hypot(b.dx - a.dx, b.dz - a.dz); if (len < 2) continue;
             const yaw = Math.atan2(b.dx - a.dx, b.dz - a.dz);
             const mx = (a.dx + b.dx) * 0.5, mz = (a.dz + b.dz) * 0.5;
-            const bed = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.04, len), matBed);
-            bed.position.set(mx, 0.05, mz); bed.rotation.y = yaw; g.add(bed);
-            for (const s of [-0.35, 0.35]) {
+            const bed = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.05, len), matBed);
+            bed.position.set(mx, 0.06, mz); bed.rotation.y = yaw; g.add(bed);
+            for (const s of [-0.38, 0.38]) {
               const nx = Math.cos(yaw), nz = -Math.sin(yaw);
-              const rail = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, len), matRail);
-              rail.position.set(mx + nx * s, 0.08, mz + nz * s); rail.rotation.y = yaw; g.add(rail);
+              const rail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.08, len), matRail);
+              rail.position.set(mx + nx * s, 0.1, mz + nz * s); rail.rotation.y = yaw; g.add(rail);
             }
             segs++;
+            /* 每 ~90m 一架叮叮 stub（窄身雙層戲仿，禁真 logo） */
+            const before = acc; acc += len;
+            if (Math.floor(before / 90) !== Math.floor(acc / 90) || (i === 0 && cars < 2)) {
+              const t = Math.min(0.85, Math.max(0.15, (90 - (before % 90)) / len));
+              const cx = a.dx + (b.dx - a.dx) * t, cz = a.dz + (b.dz - a.dz) * t;
+              const tram = new THREE.Group(); tram.name = 'c27f_tram_car_' + cars; tram.position.set(cx, 0, cz); tram.rotation.y = yaw;
+              const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.6, 9.5), matTram); body.position.y = 1.45; tram.add(body);
+              const band = new THREE.Mesh(new THREE.BoxGeometry(2.28, 0.45, 9.4), matTramBand); band.position.y = 1.1; tram.add(band);
+              const top = new THREE.Mesh(new THREE.BoxGeometry(2.05, 1.5, 8.8), matTram); top.position.y = 3.0; tram.add(top);
+              const glass = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.7, 0.08), matTramGlass); glass.position.set(0, 2.0, 4.7); tram.add(glass);
+              g.add(tram); cars++;
+            }
           }
         }
       }
       scene.add(g);
-      Object.assign(window.NT = window.NT || {}, { _c27fTram: true, C27F_TRAM: { segs, group: g } });
-      console.info('[c27f-tram]', segs, 'segs');
+      Object.assign(window.NT = window.NT || {}, { _c27fTram: true, C27F_TRAM: { segs, cars, group: g } });
+      console.info('[c27f-tram]', segs, 'segs /', cars, 'cars');
     };
     // 確保 layers 已 fetch
     const pull = () => {
@@ -25825,7 +25842,15 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
       // 揀門面：有 type 就優先同類 lib 張
       let cand = null;
       if (R && R.type && T2L[R.type]) { const want = T2L[R.type]; const c = []; maps.forEach((x, i) => { if (x.lt && want.includes(x.lt)) c.push(i); }); if (c.length) { cand = c; nTyped++; } }
-      const mi = cand ? cand[hsh % cand.length] : hsh % maps.length;
+      let mi;
+      if (cand) mi = cand[hsh % cand.length];
+      else {
+        /* 樓種單一 FAIL：無 type 時偏唐樓／街市門面（唔永遠 hash 均勻） */
+        const prefer = [];
+        maps.forEach((x, i) => { if (x.lt === 'tonglau' || /tonglau|shopfront|market|awning|verandah/.test(String(pk && pk.facades && pk.facades[i] || ''))) prefer.push(i); });
+        if (prefer.length && (hsh % 10) < 6) mi = prefer[hsh % prefer.length];
+        else mi = hsh % maps.length;
+      }
       const du = ((hsh >>> 12) % 97) / 97, dv = ((hsh >>> 20) % 7) / 7;
       // 窗比例：一張圖闊 12m、高 9.3m（3 層），repeat 1；天台唔用牆貼圖
       for (let i = 0; i < UV.count; i++) { if (Math.abs(N.getY(i)) < 0.4) UV.setXY(i, UV.getX(i) * 4.2 / 12 + du, UV.getY(i) * 3.2 / 9.3 + dv); else UV.setXY(i, 0, 0); }
@@ -25870,6 +25895,39 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
       const me = new THREE.Mesh(mm, mat); me.receiveShadow = true; me.userData.noMerge = true; me.name = pre + '_shop_' + sk.replace(/\.jpg$/, ''); gS.add(me);
     }
     g.add(gS);
+    /* 舖門 stub：地舖帶加凹門洞／鐵閘色塊，至少可辨（禁相板） */
+    try {
+      const doorMatOpen = new THREE.MeshStandardMaterial({ color: 0x1a1c1e, roughness: 0.55, metalness: 0.15 });
+      const doorMatShut = new THREE.MeshStandardMaterial({ color: 0x5a6066, roughness: 0.4, metalness: 0.45 });
+      const doorMatFrame = new THREE.MeshStandardMaterial({ color: 0x3a342e, roughness: 0.7, metalness: 0.1 });
+      const gDoor = new THREE.Group(); gDoor.name = pre + '_c27f_shop_doors'; gDoor.userData.noMerge = true;
+      let nDoor = 0;
+      for (const m of blds) {
+        if (nDoor >= (C27D_LITE ? 24 : 60)) break;
+        const R = rec[m.name] || null;
+        const hsh = c27fHash(m.name || String(nDoor));
+        if ((hsh % 10) < 4 && !(R && R.ground_shop)) continue; // 偏有地舖／部分空鋪
+        const geo = m.geometry; if (!geo || !geo.boundingBox) { try { geo.computeBoundingBox(); } catch (e0) { continue; } }
+        const bb = geo.boundingBox; if (!bb || (bb.max.y - bb.min.y) < 6) continue;
+        const cx = (bb.min.x + bb.max.x) * 0.5, cz = (bb.min.z + bb.max.z) * 0.5;
+        const hx = (bb.max.x - bb.min.x) * 0.5, hz = (bb.max.z - bb.min.z) * 0.5;
+        if (hx < 1.2 && hz < 1.2) continue;
+        /* 揀較長外牆朝向 */
+        const alongX = hx >= hz;
+        const face = alongX ? ((hsh >>> 3) & 1 ? 1 : -1) : ((hsh >>> 3) & 1 ? 1 : -1);
+        const dx = alongX ? 0 : face * (hx + 0.12);
+        const dz = alongX ? face * (hz + 0.12) : 0;
+        const yaw = alongX ? (face > 0 ? 0 : Math.PI) : (face > 0 ? Math.PI / 2 : -Math.PI / 2);
+        const shut = !!((R && /shutter|closed/.test(String(R.ground_shop || ''))) || (hsh % 7) === 0);
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(1.35, 2.35, 0.12), doorMatFrame);
+        frame.position.set(cx + dx, bb.min.y + 1.2, cz + dz); frame.rotation.y = yaw;
+        const panel = new THREE.Mesh(new THREE.BoxGeometry(1.15, 2.1, 0.06), shut ? doorMatShut : doorMatOpen);
+        panel.position.set(cx + dx * 1.02, bb.min.y + 1.15, cz + dz * 1.02); panel.rotation.y = yaw;
+        frame.userData.noMerge = true; panel.userData.noMerge = true;
+        gDoor.add(frame); gDoor.add(panel); nDoor++;
+      }
+      if (nDoor) { g.add(gDoor); console.info('[core27f] ' + key + ' 舖門 stub', nDoor); }
+    } catch (eDoor) { console.warn('[core27f-shop-door]', key, eDoor && eDoor.message); }
     // 主幹道：深灰瀝青 #3A3D40＋貼 kerb 雙黃線 #E8B820（0.1m 闊、相隔 0.12m）
     const roadMats = new Set();
     g.traverse((o) => { if (o.isMesh && /_drive_trunk$/.test(o.name) && o.material) roadMats.add(o.material); });
@@ -25931,6 +25989,7 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
       }
       if (sp.length) {
         const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.Float32BufferAttribute(sp, 3)); gg.setAttribute('normal', new THREE.Float32BufferAttribute(sn, 3)); gg.setAttribute('uv', new THREE.Float32BufferAttribute(su, 2));
+        try { if (swMat.color) swMat.color.setHex(0xb0a898); swMat.roughness = 0.92; swMat.metalness = 0.02; swMat.needsUpdate = true; } catch (eSw) { /* */ }
         swMat.side = THREE.DoubleSide; const me = new THREE.Mesh(gg, swMat); me.receiveShadow = true; me.userData.noMerge = true; me.name = pre + '_c27f_sidewalk'; g.add(me);
       }
     }
@@ -26843,7 +26902,7 @@ const CROWD = {
   }
   function poseFdw(i, p) {
     const base = _b.set(p.x, 0, p.z); _qy.setFromAxisAngle(UP, p.yaw); const h = 0.96; _sc.set(h, h, h);
-    if (p.pose === 'sit' || p.pose === 'squat') { _m.compose(_v.set(p.x, 0.02, p.z), _qy, ONE); FDW.cardboard.setMatrixAt(i, _m); }
+    if (p.pose === 'sit' || p.pose === 'squat') { _m.compose(_v.set(p.x, 0.14, p.z), _qy, ONE); FDW.cardboard.setMatrixAt(i, _m); // 高過行人路／廣場鋪面 }
     else FDW.cardboard.setMatrixAt(i, _hide);
     const O = (k) => _off.copy(OFF[k]).multiplyScalar(h);
     if (p.pose === 'sit') {
