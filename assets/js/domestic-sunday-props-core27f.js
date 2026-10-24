@@ -40,7 +40,14 @@ export function buildDomesticSundayProps(THREE, parent, gather, opts = {}) {
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
       geo.setIndex(idx); geo.computeVertexNormals();
+      /* 原點移去多邊形中心——QA getWorldPosition／近景探，唔留喺 scene(0,0,0) */
+      geo.computeBoundingBox();
+      const c = new THREE.Vector3();
+      geo.boundingBox.getCenter(c);
+      geo.translate(-c.x, -c.y, -c.z);
+      geo.computeBoundingSphere();
       const mesh = new THREE.Mesh(geo, pi % 2 ? mat.plazaAlt : mat.plaza);
+      mesh.position.copy(c);
       mesh.receiveShadow = true; mesh.userData.noMerge = true;
       mesh.name = 'cw_fdw_plaza_' + (polys[pi].name_zh || pi);
       grp.add(mesh);

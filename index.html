@@ -26018,38 +26018,77 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
       }
       if (nShell) console.info('[hk-facade-kit] ' + key + ' shell bay', nShell);
     } catch (eShell) { console.warn('[hk-facade-kit]', key, eShell && eShell.message); }
-    /* 舖門 stub：地舖帶加凹門洞／鐵閘色塊，至少可辨（禁相板） */
+    /* 舖門 stub：地舖帶加凹門洞／鐵閘色塊；Group 原點貼近區 spawn（QA getWorldPosition near） */
     try {
       const doorMatOpen = new THREE.MeshStandardMaterial({ color: 0x1a1c1e, roughness: 0.55, metalness: 0.15 });
       const doorMatShut = new THREE.MeshStandardMaterial({ color: 0x5a6066, roughness: 0.4, metalness: 0.45 });
       const doorMatFrame = new THREE.MeshStandardMaterial({ color: 0x3a342e, roughness: 0.7, metalness: 0.1 });
       const gDoor = new THREE.Group(); gDoor.name = pre + '_c27f_shop_doors'; gDoor.userData.noMerge = true;
-      let nDoor = 0;
+      /* 探點／主街錨：灣仔 spawn、中環 fdwsun gather——凹洞要入近景 */
+      const doorFocus = ({ wc: [-7770, -12820], cw: [-6288, -12267], ytm: [-5200, -9800], ssp: [-2800, -7200], kcity: [-4200, -8600], east: [-14000, -11000], kt: [-1237, -145] })[pre] || null;
+      const doorCap = C27D_LITE ? 24 : 60;
+      const scored = [];
       for (const m of blds) {
-        if (nDoor >= (C27D_LITE ? 24 : 60)) break;
         const R = rec[m.name] || null;
-        const hsh = c27fHash(m.name || String(nDoor));
-        if ((hsh % 10) < 4 && !(R && R.ground_shop)) continue; // 偏有地舖／部分空鋪
-        const geo = m.geometry; if (!geo || !geo.boundingBox) { try { geo.computeBoundingBox(); } catch (e0) { continue; } }
+        const hsh = c27fHash(m.name || 'd');
+        if ((hsh % 10) < 4 && !(R && R.ground_shop)) continue;
+        const geo = m.geometry; if (!geo) continue;
+        if (!geo.boundingBox) { try { geo.computeBoundingBox(); } catch (e0) { continue; } }
         const bb = geo.boundingBox; if (!bb || (bb.max.y - bb.min.y) < 6) continue;
         const cx = (bb.min.x + bb.max.x) * 0.5, cz = (bb.min.z + bb.max.z) * 0.5;
         const hx = (bb.max.x - bb.min.x) * 0.5, hz = (bb.max.z - bb.min.z) * 0.5;
         if (hx < 1.2 && hz < 1.2) continue;
-        /* 揀較長外牆朝向 */
-        const alongX = hx >= hz;
-        const face = alongX ? ((hsh >>> 3) & 1 ? 1 : -1) : ((hsh >>> 3) & 1 ? 1 : -1);
-        const dx = alongX ? 0 : face * (hx + 0.12);
-        const dz = alongX ? face * (hz + 0.12) : 0;
-        const yaw = alongX ? (face > 0 ? 0 : Math.PI) : (face > 0 ? Math.PI / 2 : -Math.PI / 2);
-        const shut = !!((R && /shutter|closed/.test(String(R.ground_shop || ''))) || (hsh % 7) === 0);
-        const frame = new THREE.Mesh(new THREE.BoxGeometry(1.35, 2.35, 0.12), doorMatFrame);
-        frame.position.set(cx + dx, bb.min.y + 1.2, cz + dz); frame.rotation.y = yaw;
-        const panel = new THREE.Mesh(new THREE.BoxGeometry(1.15, 2.1, 0.06), shut ? doorMatShut : doorMatOpen);
-        panel.position.set(cx + dx * 1.02, bb.min.y + 1.15, cz + dz * 1.02); panel.rotation.y = yaw;
-        frame.userData.noMerge = true; panel.userData.noMerge = true;
-        gDoor.add(frame); gDoor.add(panel); nDoor++;
+        const dist = doorFocus ? Math.hypot(cx - doorFocus[0], cz - doorFocus[1]) : 0;
+        scored.push({ m, R, hsh, bb, cx, cz, hx, hz, dist });
       }
-      if (nDoor) { g.add(gDoor); console.info('[core27f] ' + key + ' 舖門 stub', nDoor); }
+      scored.sort((a, b) => a.dist - b.dist);
+      let nDoor = 0;
+      const doorPts = [];
+      for (const s of scored) {
+        if (nDoor >= doorCap) break;
+        /* 有 focus 時優先 280m 內；唔夠再放遠啲 */
+        if (doorFocus && nDoor >= 8 && s.dist > 280) break;
+        const alongX = s.hx >= s.hz;
+        const face = (s.hsh >>> 3) & 1 ? 1 : -1;
+        const dx = alongX ? 0 : face * (s.hx + 0.12);
+        const dz = alongX ? face * (s.hz + 0.12) : 0;
+        const yaw = alongX ? (face > 0 ? 0 : Math.PI) : (face > 0 ? Math.PI / 2 : -Math.PI / 2);
+        const shut = !!((s.R && /shutter|closed/.test(String(s.R.ground_shop || ''))) || (s.hsh % 7) === 0);
+        const fx = s.cx + dx, fz = s.cz + dz;
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(1.35, 2.35, 0.12), doorMatFrame);
+        frame.position.set(fx, s.bb.min.y + 1.2, fz); frame.rotation.y = yaw;
+        const panel = new THREE.Mesh(new THREE.BoxGeometry(1.15, 2.1, 0.06), shut ? doorMatShut : doorMatOpen);
+        panel.position.set(s.cx + dx * 1.02, s.bb.min.y + 1.15, s.cz + dz * 1.02); panel.rotation.y = yaw;
+        frame.userData.noMerge = true; panel.userData.noMerge = true;
+        gDoor.add(frame); gDoor.add(panel); doorPts.push([fx, fz]); nDoor++;
+      }
+      /* 近景保證：focus 280m 內無樓就喺主街錨直接插 4 個凹洞 */
+      if (doorFocus && !doorPts.some((p) => Math.hypot(p[0] - doorFocus[0], p[1] - doorFocus[1]) < 280)) {
+        for (let k = 0; k < 4; k++) {
+          const ox = (k - 1.5) * 3.2, oz = ((k & 1) ? 1 : -1) * 6.5;
+          const fx = doorFocus[0] + ox, fz = doorFocus[1] + oz;
+          const yaw = (k & 1) ? Math.PI / 2 : 0;
+          const frame = new THREE.Mesh(new THREE.BoxGeometry(1.35, 2.35, 0.12), doorMatFrame);
+          frame.position.set(fx, 1.2, fz); frame.rotation.y = yaw;
+          const panel = new THREE.Mesh(new THREE.BoxGeometry(1.15, 2.1, 0.06), (k % 3) ? doorMatOpen : doorMatShut);
+          panel.position.set(fx, 1.15, fz); panel.rotation.y = yaw;
+          frame.userData.noMerge = true; panel.userData.noMerge = true;
+          gDoor.add(frame); gDoor.add(panel); doorPts.push([fx, fz]); nDoor++;
+        }
+      }
+      if (nDoor) {
+        /* Group 原點＝近 focus 嘅凹洞中心（QA 用 getWorldPosition） */
+        let ax = 0, az = 0, nn = 0;
+        for (const p of doorPts) {
+          if (doorFocus && Math.hypot(p[0] - doorFocus[0], p[1] - doorFocus[1]) > 320) continue;
+          ax += p[0]; az += p[1]; nn++;
+        }
+        if (!nn) { for (const p of doorPts) { ax += p[0]; az += p[1]; nn++; } }
+        ax /= nn; az /= nn;
+        gDoor.position.set(ax, 0, az);
+        for (const ch of gDoor.children) { ch.position.x -= ax; ch.position.z -= az; }
+        g.add(gDoor); console.info('[core27f] ' + key + ' 舖門 stub', nDoor, doorFocus ? 'focusNear' : '');
+      }
     } catch (eDoor) { console.warn('[core27f-shop-door]', key, eDoor && eDoor.message); }
     // 主幹道：深灰瀝青 #3A3D40＋貼 kerb 雙黃線 #E8B820（0.1m 闊、相隔 0.12m）
     const roadMats = new Set();
