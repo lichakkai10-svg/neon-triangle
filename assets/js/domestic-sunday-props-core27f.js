@@ -32,10 +32,11 @@ export function buildDomesticSundayProps(THREE, parent, gather, opts = {}) {
       const ox = (rnd() - 0.5) * 1.2, oz = (rnd() - 0.5) * 1.2;
       put(G.box, rnd() < 0.5 ? mat.card : mat.cardDark, p.x + ox, 0.2, p.z + oz, 0.45 + rnd() * 0.2, 0.35 + rnd() * 0.15, 0.35 + rnd() * 0.2, yaw + rnd());
     }
-    /* 臨時牌柱（戲仿；字喺 canvas 掛一次） */
+    /* 臨時牌：戲仿「休憩用地 · 請保持通道暢通」 */
     if (i === 0 || (i === 2 && !lite)) {
       put(G.box, mat.cardDark, p.x + 0.9, 0.55, p.z - 0.6, 0.06, 1.1, 0.06, yaw);
       put(G.box, mat.matGrey, p.x + 0.9, 1.25, p.z - 0.6, 0.7, 0.45, 0.04, yaw);
+      if (!opts._signAt) opts._signAt = { x: p.x + 0.9, z: p.z - 0.6, yaw };
     }
     n++;
   }
@@ -48,6 +49,24 @@ export function buildDomesticSundayProps(THREE, parent, gather, opts = {}) {
     grp.add(im);
   }
   parent.add(grp);
+  if (opts._signAt && typeof document !== 'undefined') {
+    try {
+      const c = document.createElement('canvas'); c.width = 512; c.height = 256;
+      const g = c.getContext('2d');
+      g.fillStyle = '#e8e6e0'; g.fillRect(0, 0, 512, 256);
+      g.strokeStyle = '#333'; g.lineWidth = 8; g.strokeRect(8, 8, 496, 240);
+      g.fillStyle = '#1a1a1a'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.font = 'bold 36px "PingFang HK","Noto Sans TC",sans-serif';
+      g.fillText('休憩用地', 256, 100);
+      g.font = '28px "PingFang HK","Noto Sans TC",sans-serif';
+      g.fillText('請保持通道暢通', 256, 160);
+      const tex = new THREE.CanvasTexture(c);
+      const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 0.42), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85 }));
+      const s = opts._signAt;
+      plate.position.set(s.x, 1.25, s.z); plate.rotation.y = s.yaw + Math.PI;
+      plate.userData.noMerge = true; grp.add(plate);
+    } catch (e) { /* */ }
+  }
   return { group: grp, props: n, drawCalls: buckets.size };
 }
 
