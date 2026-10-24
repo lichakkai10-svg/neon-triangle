@@ -1,0 +1,947 @@
+{
+ "project": "neon-triangle",
+ "for_version": "core27f",
+ "owner_zh": "關卡與地圖設計師",
+ "updated": "2026-10-19 HKT",
+ "doc": "docs/core27f-sidewalk-railing-bin-layout.md",
+ "units": {
+  "K": 1.5,
+  "rule_zh": "沿路長度／間距／行人路闊度：遊戲單位 u = 真米 × 1.5（同 hkGeo、OSM 樓腳一致）。細淨空（≤1m：欄杆離 kerb、桶離 kerb、柱距、石墩距）係 prop 尺度，唔乘 K（車同 prop 係 1:1 模）。"
+ },
+ "colours_dims": {
+  "source": "docs/hk-street-reality-checklist-core27f.md 上半部＋§政府補充：尺寸與標線（政府提供，唔喺度另定顏色）",
+  "railing": "HyD Type 2 熱浸鍍鋅銀灰（H2130I）；Type 7/8 炭灰 RAL 7021 只限翻新段",
+  "litter_bin": "食環署橙色廢屑箱 70/100/130L（約 0.5×0.45×1.0m）",
+  "lamp": "灰色鋼柱、LED 3000K",
+  "recycling": "市區路邊冇三色回收箱（2022 年底移除）→ 只准 estate_only"
+ },
+ "sources": {
+  "HKPSG8": "https://www.pland.gov.hk/file/tech_doc/hkpsg/full/pdf/ch8_en.pdf",
+  "TPDM_V2": "https://www.td.gov.hk/filemanager/en/content_5055/V2_08_2026.pdf",
+  "TPDM_V6": "https://www.td.gov.hk/filemanager/en/content_5055/V6_08_2026.pdf",
+  "TC0217": "https://www.hyd.gov.hk/en/technical_references/technical_document/hyd_technical_circulars/doc/2017/02/TC0217.pdf",
+  "FEHD2016": "https://www.fehd.gov.hk/tc_chi/news/details/20160606_0682.html",
+  "FEHD_CW_DC2017": "https://www.districtcouncils.gov.hk/central/doc/2016_2019/en/committee_meetings_doc/FEHWC/11742/20170209_FEHWC_Paper_7_2017_Annex_I.pdf",
+  "FEHD_KC_DC2026": "https://www.districtcouncils.gov.hk/kc/doc/2024_2027/en/committee_meetings_doc/FEHC/31922/15.pdf",
+  "LEGCO_BIN_RATIO_2019": "https://www.legco.gov.hk/yr18-19/cn/bc/bc02/papers/bc0220190430cb1-956-1-c.pdf",
+  "LEGCO_KERBSIDE_RECYCLE_2024": "https://www.info.gov.hk/gia/general/202402/21/P2024022100290.htm",
+  "GOV_CHECKLIST": "docs/hk-street-reality-checklist-core27f.md",
+  "SHOP_MIX": "docs/core27f-district-building-shop-mix.md"
+ },
+ "official_facts": [
+  {
+   "fact": "Through Zone 最少淨闊 3m（市區）；做唔到三區就最少 3m",
+   "src": "HKPSG8 §5.4.21 + Table 8 註[3]"
+  },
+  {
+   "fact": "Table 8：商業/住宅1（極高人流）Through 4.5m；住宅1 3.5m；住宅2/3 3m；鄉郊 2m；General Industrial 4.5m；Special Industrial 3.5m；SF&GZ 2.0m(P1/P2)，大樹 3–4m；Building Frontage 0.5m(P1)/1.0m(P2,P3)",
+   "src": "HKPSG8 Table 8（= TPDM V6 Table 10.5.5.1）"
+  },
+  {
+   "fact": "人流分級：Very High >100 人/分鐘；High 81–100；Medium 71–80；Low-Med 61–70；Low <60",
+   "src": "TPDM_V2 Table 3.4.11.1"
+  },
+  {
+   "fact": "欄杆係引導／控制行人，唔係擋車；唔好淨係為咗阻泊車而裝；有花槽或凸起中央分隔就唔裝",
+   "src": "TPDM_V2 3.9.2.1–3.9.2.4; TC0217 §3–4"
+  },
+  {
+   "fact": "過路處兩邊用 guidance 欄杆引去過路處，長度通常限 6m 一邊",
+   "src": "TPDM_V2 3.9.2.10"
+  },
+  {
+   "fact": "人流接近/超過 Through Zone 預計量 → 用 control 欄杆防行出車路；但行人路 <2m 要酌情（裝咗反而更窄）",
+   "src": "TPDM_V2 3.9.2.9"
+  },
+  {
+   "fact": "錯位過路處中島用 control 欄杆，要留位等",
+   "src": "TPDM_V2 3.9.2.14"
+  },
+  {
+   "fact": "雙程分隔路（區域/地方幹路）冇花槽或凸起中央分隔，可喺中央分隔裝 control 欄杆",
+   "src": "TPDM_V2 3.9.2.12"
+  },
+  {
+   "fact": "路口／過路處用唔阻視線嘅欄杆（Type 2 Railings at Junctions and Crossings）；上游約 30m 唔准掛廣告橫額",
+   "src": "TPDM_V2 3.9.2.16"
+  },
+  {
+   "fact": "快速路／主要幹路旁唔用行人欄杆，用防撞欄",
+   "src": "TPDM_V2 3.9.2.18"
+  },
+  {
+   "fact": "行人路高過旁邊 ≥1.5m 或後面係斜坡 → 一定要 Type 2 control 欄杆",
+   "src": "TPDM_V2 3.9.2.7"
+  },
+  {
+   "fact": "橫向淨空（≤50km/h，物件 <3m）：500mm；物件 ≥3m：500–800mm；50–80km/h：600–1000mm；舊路可減至 200mm，行人路有效闊唔夠 1.5m 時用 200mm",
+   "src": "TPDM_V2 Table 3.5.2.1, 3.5.2.2, 3.9.2.19"
+  },
+  {
+   "fact": "石墩間距：行人路 ≤2m 用 2.5m；>2m 用 2m；唔好濫用",
+   "src": "TPDM_V2 3.9.2.15"
+  },
+  {
+   "fact": "的士站欄杆要加開口",
+   "src": "HKPSG8 §4.3.5"
+  },
+  {
+   "fact": "食環署冇公開統一間距；按行人流量、行人路闊度、垃圾量擺；位置：主要行人路口、交通交匯處、巴士站、碼頭；阻街就移位或換細桶",
+   "src": "FEHD2016; FEHD_CW_DC2017"
+  },
+  {
+   "fact": "九龍城區約 586 個廢屑箱＋47 個煙蒂箱（2026-09）；中西區 2016 年約 1200 個，2015–16 年減約 15%",
+   "src": "FEHD_KC_DC2026; FEHD_CW_DC2017; FEHD2016"
+  },
+  {
+   "fact": "政策方向：減廢屑箱；放十字路口、場地出入口等策略位置",
+   "src": "LEGCO_BIN_RATIO_2019"
+  },
+  {
+   "fact": "市區路邊三色回收箱 2022 年底前移除",
+   "src": "LEGCO_KERBSIDE_RECYCLE_2024"
+  }
+ ],
+ "estimates_zh": "design_estimate／非官方·遊戲建議：每條街實際行人路闊度、桶間距（40/45/50/60m，跟政府 40–60m 建議）、每 100m 上限、欄杆覆蓋 %、Lite 數、snap 規則、車路口缺口。官方：欄杆高 1.0m、柱距 ≤1.5m、直枝 ≤125mm、離車路 500mm（最少 200）、過路處每邊 6m（遊戲當最少）、kerb 125mm、Through Zone 4.5/3.5/3m、巴士站 13/26/39m、桶 70/130L。",
+ "bin_spacing_by_ped_level_m": {
+  "5": 40,
+  "4": 45,
+  "3": 50,
+  "2": 60,
+  "1": null
+ },
+ "bin_spacing_by_ped_level_u": {
+  "5": 60.0,
+  "4": 67.5,
+  "3": 75.0,
+  "2": 90.0,
+  "1": null
+ },
+ "generic_types": [
+  {
+   "id": "main_road",
+   "name_zh": "主幹道（primary/secondary）",
+   "district": "*",
+   "ped_level_day": 4,
+   "footway_m": {
+    "min": 3.0,
+    "target": 4.0,
+    "max": 5.0,
+    "label": "design_estimate"
+   },
+   "footway_u": {
+    "min": 4.5,
+    "target": 6.0,
+    "max": 7.5
+   },
+   "railing_mode_zh": "junction+crossing+busstop; midblock control only if ped_level>=4 and footway>=3m",
+   "bin_spacing_m": 45,
+   "bin_spacing_u": 67.5,
+   "bins_max_per_100m_per_side": {
+    "full": 3,
+    "lite": 1
+   },
+   "notes_zh": "官方 Through Zone 最少：商業 4.5m、住宅 3.5/3m（政府補充 F）；舊區做唔到，遊戲取 4m",
+   "railing_coverage": {
+    "kerb_coverage_pct": [
+     70,
+     85
+    ],
+    "mode": "continuous_control",
+    "gaps": [
+     "crossing",
+     "bus_stop_boarding",
+     "loading_bay",
+     "driveway",
+     "taxi_stand_opening"
+    ],
+    "crossing_guidance_min_u": 9.0,
+    "lite_kerb_coverage_pct": [
+     70,
+     85
+    ]
+   }
+  },
+  {
+   "id": "secondary",
+   "name_zh": "次要街（tertiary/unclassified）",
+   "district": "*",
+   "ped_level_day": 3,
+   "footway_m": {
+    "min": 2.0,
+    "target": 3.0,
+    "max": 3.5,
+    "label": "design_estimate"
+   },
+   "footway_u": {
+    "min": 3.0,
+    "target": 4.5,
+    "max": 5.25
+   },
+   "railing_mode_zh": "junction+crossing only",
+   "bin_spacing_m": 50,
+   "bin_spacing_u": 75.0,
+   "bins_max_per_100m_per_side": {
+    "full": 2,
+    "lite": 1
+   },
+   "notes_zh": "HKPSG 註[3]：做唔到三區就最少 3m 淨闊；舊區實際 2–3m",
+   "railing_coverage": {
+    "kerb_coverage_pct": [
+     20,
+     35
+    ],
+    "mode": "crossing_approaches+key_stretches",
+    "gaps": [
+     "crossing",
+     "bus_stop_boarding",
+     "loading_bay",
+     "driveway",
+     "taxi_stand_opening"
+    ],
+    "crossing_guidance_min_u": 9.0,
+    "lite_kerb_coverage_pct": [
+     20,
+     35
+    ],
+    "also": [
+     "signal junction corners",
+     "school/clinic frontage"
+    ]
+   }
+  },
+  {
+   "id": "narrow_market",
+   "name_zh": "窄街市街（攤檔佔路）",
+   "district": "*",
+   "ped_level_day": 4,
+   "footway_m": {
+    "min": 1.5,
+    "target": 2.0,
+    "max": 2.5,
+    "label": "design_estimate"
+   },
+   "footway_u": {
+    "min": 2.25,
+    "target": 3.0,
+    "max": 3.75
+   },
+   "railing_mode_zh": "none midblock (footway<2m discretion, TPDM 3.9.2.9); corner stubs only",
+   "bin_spacing_m": 50,
+   "bin_spacing_u": 75.0,
+   "bins_max_per_100m_per_side": {
+    "full": 2,
+    "lite": 1
+   },
+   "notes_zh": "攤檔區唔放桶；桶只放街口",
+   "railing_coverage": {
+    "kerb_coverage_pct": [
+     0,
+     5
+    ],
+    "mode": "corner_stubs_only",
+    "gaps": [
+     "entire_stall_zone"
+    ],
+    "crossing_guidance_min_u": 9.0,
+    "lite_kerb_coverage_pct": [
+     0,
+     5
+    ]
+   }
+  },
+  {
+   "id": "industrial",
+   "name_zh": "工業區路",
+   "district": "*",
+   "ped_level_day": 2,
+   "footway_m": {
+    "min": 2.0,
+    "target": 3.0,
+    "max": 4.5,
+    "label": "design_estimate"
+   },
+   "footway_u": {
+    "min": 3.0,
+    "target": 4.5,
+    "max": 6.75
+   },
+   "railing_mode_zh": "crossing+junction only; many driveway gaps",
+   "bin_spacing_m": 60,
+   "bin_spacing_u": 90.0,
+   "bins_max_per_100m_per_side": {
+    "full": 2,
+    "lite": 1
+   },
+   "notes_zh": "HKPSG General Industrial Through Zone 4.5m 係新區標準；舊工業區實際 2–3.5m",
+   "railing_coverage": {
+    "kerb_coverage_pct": [
+     15,
+     25
+    ],
+    "mode": "crossing_approaches+junctions",
+    "gaps": [
+     "crossing",
+     "bus_stop_boarding",
+     "loading_bay",
+     "driveway",
+     "taxi_stand_opening",
+     "vehicle_repair_frontage"
+    ],
+    "crossing_guidance_min_u": 9.0,
+    "lite_kerb_coverage_pct": [
+     15,
+     25
+    ]
+   }
+  },
+  {
+   "id": "port_terminal",
+   "name_zh": "碼頭／堆場路",
+   "district": "*",
+   "ped_level_day": 1,
+   "footway_m": {
+    "min": 0.0,
+    "target": 1.5,
+    "max": 2.0,
+    "label": "design_estimate"
+   },
+   "footway_u": {
+    "min": 0.0,
+    "target": 2.25,
+    "max": 3.0
+   },
+   "railing_mode_zh": "NO pedestrian railings; barrier fence only (TPDM 3.9.2.18)",
+   "bin_spacing_m": null,
+   "bin_spacing_u": null,
+   "bins_max_per_100m_per_side": {
+    "full": 0,
+    "lite": 0
+   },
+   "notes_zh": "冇行人（地道人人流 1）；只閘口崗亭旁 1 個桶",
+   "railing_coverage": {
+    "kerb_coverage_pct": [
+     0,
+     0
+    ],
+    "mode": "none_pedestrian (barrier fence only)",
+    "gaps": [],
+    "crossing_guidance_min_u": 9.0,
+    "lite_kerb_coverage_pct": [
+     0,
+     0
+    ]
+   }
+  }
+ ],
+ "streets": [
+  {
+   "id": "ytm_nathan_rd",
+   "name_zh": "彌敦道",
+   "district": "yau_tsim_mong",
+   "ped_level_day": 5,
+   "footway_m": {
+    "min": 4.0,
+    "target": 5.0,
+    "max": 6.0,
+    "label": "design_estimate"
+   },
+   "footway_u": {
+    "min": 6.0,
+    "target": 7.5,
+    "max": 9.0
+   },
+   "railing_mode_zh": "main_road + continuous midblock control railing (≤60% length) with functional gaps",
+   "bin_spacing_m": 40,
+   "bin_spacing_u": 60.0,
+   "bins_max_per_100m_per_side": {
+    "full": 3,
+    "lite": 2
+   },
+   "notes_zh": "尖沙咀／旺角 5 級、佐敦 4 級；現有 nathanBins 手放 4 個要併入規則",
+   "railing_coverage": {
+    "kerb_coverage_pct": [
+     85,
+     95
+    ],
+    "mode": "continuous_control",
+    "gaps": [
+     "crossing",
+     "bus_stop_boarding",
+     "loading_bay",
+     "driveway",
+     "taxi_stand_opening",
+     "mtr_exit_mouth"
+    ],
+    "crossing_guidance_min_u": 9.0,
+    "lite_kerb_coverage_pct": [
+     85,
+     95
+    ]
+   },
+   "match_name_zh": "彌敦",
+   "spine_ids": [
+    "ytm_drive_彌敦道",
+    "ssp_nathan_rd_north_link"
+   ]
+  },
+  {
+   "id": "ssp_cheung_sha_wan_rd",
+   "name_zh": "長沙灣道",
+   "district": "sham_shui_po",
+   "ped_level_day": 3,
+   "footway_m": {
+    "min": 3.0,
+    "target": 3.5,
+    "max": 4.0,
+    "label": "design_estimate"
+   },
+   "footway_u": {
+    "min": 4.5,
+    "target": 5.25,
+    "max": 6.0
+   },
+   "railing_mode_zh": "main_road (junction+crossing+busstop), midblock none",
+   "bin_spacing_m": 50,
+   "bin_spacing_u": 75.0,
+   "bins_max_per_100m_per_side": {
+    "full": 2,
+    "lite": 1
+   },
+   "notes_zh": "",
+   "railing_coverage": {
+    "kerb_coverage_pct": [
+     80,
+     90
+    ],
+    "mode": "continuous_control",
+    "gaps": [
+     "crossing",
+     "bus_stop_boarding",
+     "loading_bay",
+     "driveway",
+     "taxi_stand_opening"
+    ],
+    "crossing_guidance_min_u": 9.0,
+    "lite_kerb_coverage_pct": [
+     80,
+     90
+    ]
+   },
+   "match_name_zh": "長沙灣道",
+   "spine_ids": [
+    "ssp_cheung_sha_wan_rd"
+   ]
+  },
+  {
+   "id": "ssp_apliu_st",
+   "name_zh": "鴨寮街",
+   "district": "sham_shui_po",
+   "ped_level_day": 4,
+   "footway_m": {
+    "min": 1.5,
+    "target": 2.0,
+    "max": 2.5,
+    "label": "design_estimate"
+   },
+   "footway_u": {
+    "min": 2.25,
+    "target": 3.0,
+    "max": 3.75
+   },
+   "railing_mode_zh": "narrow_market",
+   "bin_spacing_m": 50,
+   "bin_spacing_u": 75.0,
+   "bins_max_per_100m_per_side": {
+    "full": 2,
+    "lite": 1
+   },
+   "notes_zh": "路中地攤段兩端街口先放桶；夜晚收檔人流 2",
+   "railing_coverage": {
+    "kerb_coverage_pct": [
+     0,
+     5
+    ],
+    "mode": "corner_stubs_only",
+    "gaps": [
+     "entire_stall_zone"
+    ],
+    "crossing_guidance_min_u": 9.0,
+    "lite_kerb_coverage_pct": [
+     0,
+     5
+    ]
+   },
+   "match_name_zh": "鴨寮街",
+   "spine_ids": [
+    "ssp_apliu_st"
+   ]
+  },
+  {
+   "id": "ssp_pei_ho_st",
+   "name_zh": "北河街",
+   "district": "sham_shui_po",
+   "ped_level_day": 4,
+   "footway_m": {
+    "min": 1.5,
+    "target": 2.0,
+    "max": 2.5,
+    "label": "design_estimate"
+   },
+   "footway_u": {
+    "min": 2.25,
+    "target": 3.0,
+    "max": 3.75
+   },
+   "railing_mode_zh": "narrow_market",
+   "bin_spacing_m": 50,
+   "bin_spacing_u": 75.0,
+   "bins_max_per_100m_per_side": {
+    "full": 2,
+    "lite": 1
+   },
+   "notes_zh": "街市段；晏晝後人流 3",
+   "railing_coverage": {
+    "kerb_coverage_pct": [
+     0,
+     5
+    ],
+    "mode": "corner_stubs_only",
+    "gaps": [
+     "entire_stall_zone",
+     "market_building_entrance"
+    ],
+    "crossing_guidance_min_u": 9.0,
+    "lite_kerb_coverage_pct": [
+     0,
+     5
+    ]
+   },
+   "match_name_zh": "北河街",
+   "spine_ids": [
+    "ssp_pei_ho_st"
+   ]
+  },
+  {
+   "id": "kc_nga_tsin_wai_rd",
+   "name_zh": "衙前圍道",
+   "district": "kowloon_city",
+   "ped_level_day": 3,
+   "footway_m": {
+    "min": 2.0,
+    "target": 2.5,
+    "max": 3.0,
+    "label": "design_estimate"
+   },
+   "footway_u": {
+    "min": 3.0,
+    "target": 3.75,
+    "max": 4.5
+   },
+   "railing_mode_zh": "secondary (corner stubs + crossings)",
+   "bin_spacing_m": 50,
+   "bin_spacing_u": 75.0,
+   "bins_max_per_100m_per_side": {
+    "full": 2,
+    "lite": 1
+   },
+   "notes_zh": "街市／泰菜段；夜晚人流 4，夜晚桶旁加外賣盒（gov 清單 15% 有旁置垃圾）",
+   "railing_coverage": {
+    "kerb_coverage_pct": [
+     15,
+     25
+    ],
+    "mode": "crossing_approaches+corners",
+    "gaps": [
+     "crossing",
+     "bus_stop_boarding",
+     "loading_bay",
+     "driveway",
+     "taxi_stand_opening"
+    ],
+    "crossing_guidance_min_u": 9.0,
+    "lite_kerb_coverage_pct": [
+     15,
+     25
+    ],
+    "also": [
+     "market building frontage at Nga Tsin Wai Rd market"
+    ]
+   },
+   "match_name_zh": "衙前圍",
+   "spine_ids": [
+    "kc_nga_tsin_wai_rd"
+   ]
+  },
+  {
+   "id": "kc_nam_kok_rd",
+   "name_zh": "南角道",
+   "district": "kowloon_city",
+   "ped_level_day": 3,
+   "footway_m": {
+    "min": 1.5,
+    "target": 2.0,
+    "max": 2.5,
+    "label": "design_estimate"
+   },
+   "footway_u": {
+    "min": 2.25,
+    "target": 3.0,
+    "max": 3.75
+   },
+   "railing_mode_zh": "secondary (corner stubs only)",
+   "bin_spacing_m": 50,
+   "bin_spacing_u": 75.0,
+   "bins_max_per_100m_per_side": {
+    "full": 2,
+    "lite": 1
+   },
+   "notes_zh": "城南道（South Wall Road）同規則",
+   "railing_coverage": {
+    "kerb_coverage_pct": [
+     5,
+     15
+    ],
+    "mode": "corner_stubs+crossings",
+    "gaps": [
+     "crossing",
+     "bus_stop_boarding",
+     "loading_bay",
+     "driveway",
+     "taxi_stand_opening",
+     "restaurant_frontage"
+    ],
+    "crossing_guidance_min_u": 9.0,
+    "lite_kerb_coverage_pct": [
+     5,
+     15
+    ]
+   },
+   "match_name_zh": "南角道",
+   "spine_ids": [
+    "kc_nam_kok_rd",
+    "kc_shing_nam_rd"
+   ]
+  },
+  {
+   "id": "kc_prince_edward_rd_e",
+   "name_zh": "太子道東（啟德段）",
+   "district": "kowloon_city",
+   "ped_level_day": 2,
+   "footway_m": {
+    "min": 3.0,
+    "target": 4.0,
+    "max": 5.0,
+    "label": "design_estimate"
+   },
+   "footway_u": {
+    "min": 4.5,
+    "target": 6.0,
+    "max": 7.5
+   },
+   "railing_mode_zh": "crossing+busstop guidance; central-median control railing only where no planter (TPDM 3.9.2.12); 6 個 design_not_osm 燈位照 crossing 規則",
+   "bin_spacing_m": 60,
+   "bin_spacing_u": 90.0,
+   "bins_max_per_100m_per_side": {
+    "full": 2,
+    "lite": 1
+   },
+   "notes_zh": "有行道樹 SF&GZ；疏",
+   "railing_coverage": {
+    "kerb_coverage_pct": [
+     30,
+     45
+    ],
+    "mode": "crossing_approaches+key_stretches",
+    "gaps": [
+     "crossing",
+     "bus_stop_boarding",
+     "loading_bay",
+     "driveway",
+     "taxi_stand_opening"
+    ],
+    "crossing_guidance_min_u": 9.0,
+    "lite_kerb_coverage_pct": [
+     30,
+     45
+    ],
+    "also": [
+     "6 design_not_osm signal points: full 9u+ each side",
+     "central median control where no planter",
+     "bus stops & sports/government frontage"
+    ]
+   },
+   "match_name_zh": "太子道東",
+   "spine_ids": [
+    "kc_prince_edward_rd_e"
+   ]
+  },
+  {
+   "id": "kt_industrial",
+   "name_zh": "葵涌工業區路（葵富路／興芳路等）",
+   "district": "kwai_tsing",
+   "ped_level_day": 2,
+   "footway_m": {
+    "min": 2.0,
+    "target": 3.0,
+    "max": 3.5,
+    "label": "design_estimate"
+   },
+   "footway_u": {
+    "min": 3.0,
+    "target": 4.5,
+    "max": 5.25
+   },
+   "railing_mode_zh": "industrial",
+   "bin_spacing_m": 60,
+   "bin_spacing_u": 90.0,
+   "bins_max_per_100m_per_side": {
+    "full": 2,
+    "lite": 1
+   },
+   "notes_zh": "午飯 3 級；貨台／車房出入口位一律斷欄杆；冇旺角密度",
+   "railing_coverage": {
+    "kerb_coverage_pct": [
+     15,
+     25
+    ],
+    "mode": "crossing_approaches+junctions",
+    "gaps": [
+     "crossing",
+     "bus_stop_boarding",
+     "loading_bay",
+     "driveway",
+     "taxi_stand_opening",
+     "vehicle_repair_frontage"
+    ],
+    "crossing_guidance_min_u": 9.0,
+    "lite_kerb_coverage_pct": [
+     15,
+     25
+    ]
+   },
+   "match_name_zh": "葵富路|興芳路|大連排道|葵喜街|業成街"
+  },
+  {
+   "id": "kt_kwai_chung_rd",
+   "name_zh": "葵涌道（葵芳市區側）",
+   "district": "kwai_tsing",
+   "ped_level_day": 4,
+   "footway_m": {
+    "min": 3.0,
+    "target": 3.5,
+    "max": 4.5,
+    "label": "design_estimate"
+   },
+   "footway_u": {
+    "min": 4.5,
+    "target": 5.25,
+    "max": 6.75
+   },
+   "railing_mode_zh": "main_road",
+   "bin_spacing_m": 45,
+   "bin_spacing_u": 67.5,
+   "bins_max_per_100m_per_side": {
+    "full": 3,
+    "lite": 1
+   },
+   "notes_zh": "葵芳（戲仿）站一側 4 級；碼頭一側照 port_terminal",
+   "railing_coverage": {
+    "kerb_coverage_pct": [
+     70,
+     85
+    ],
+    "mode": "continuous_control",
+    "gaps": [
+     "crossing",
+     "bus_stop_boarding",
+     "loading_bay",
+     "driveway",
+     "taxi_stand_opening"
+    ],
+    "crossing_guidance_min_u": 9.0,
+    "lite_kerb_coverage_pct": [
+     70,
+     85
+    ],
+    "also": [
+     "only 葵芳（戲仿）urban side; terminal side = port_terminal"
+    ]
+   },
+   "match_name_zh": "葵涌道"
+  },
+  {
+   "id": "kt_terminal",
+   "name_zh": "貨櫃碼頭路",
+   "district": "kwai_tsing",
+   "ped_level_day": 1,
+   "footway_m": {
+    "min": 0.0,
+    "target": 1.5,
+    "max": 2.0,
+    "label": "design_estimate"
+   },
+   "footway_u": {
+    "min": 0.0,
+    "target": 2.25,
+    "max": 3.0
+   },
+   "railing_mode_zh": "port_terminal",
+   "bin_spacing_m": null,
+   "bin_spacing_u": null,
+   "bins_max_per_100m_per_side": {
+    "full": 0,
+    "lite": 0
+   },
+   "notes_zh": "冇行人、冇路邊桶；用現有 barrier_yb／水馬，唔加行人欄杆",
+   "railing_coverage": {
+    "kerb_coverage_pct": [
+     0,
+     0
+    ],
+    "mode": "none_pedestrian (barrier fence only)",
+    "gaps": [],
+    "crossing_guidance_min_u": 9.0,
+    "lite_kerb_coverage_pct": [
+     0,
+     0
+    ]
+   },
+   "match_name_zh": "貨櫃碼頭路"
+  }
+ ],
+ "placement": {
+  "cross_section_u": {
+   "kerb_edge": "half=_w/2；kerb 高 0.125（H1101E；現有 c27f 行人路 y=0.12 OK，舊 kerb box 0.18 要改）",
+   "railing_outer_face": "half+0.5（500mm，TPDM Table 3.5.2.1）；有效行人路 <1.5m 時 half+0.2（最近 200mm）",
+   "lamp_signal_sign_post": "half+0.6",
+   "bin_centre": "half+0.8（SF&GZ 靠 kerb；唔准喺 Through Zone 中間或貼舖面）；有連續欄杆時放欄杆內側 half+0.9",
+   "bus_shelter": "half+1.2",
+   "tree": "half+1.0（footway_target≥3m）",
+   "footway_outer": "min(half+footway_u.target, 樓面線距離−0.2)，最少 half+footway_u.min"
+  },
+  "railing": {
+   "spec_official": {
+    "type": "HyD Type 2（control）",
+    "height_m": 1.0,
+    "post_spacing_max_m": 1.5,
+    "vertical_bar_spacing_max_m": 0.125,
+    "panel_height_m": 0.9,
+    "panel_bottom_clear_max_m": 0.11,
+    "post": "40mm 方柱",
+    "finish": "熱浸鍍鋅銀灰，唔髹色",
+    "src": "hk-street-reality-checklist-core27f.md §政府補充 B（H2130I）"
+   },
+   "code_vs_spec": {
+    "top_rail_y": "而家 1.08 → 1.0",
+    "post_spacing": "而家 2.0 → 1.5",
+    "bars": "而家 0.45 → ≤0.125（full 用貼圖/alphaTest 板代替逐枝 instanced；lite 用實心淺灰板）",
+    "green_mat_rail": "刪除，全部 railG"
+   },
+   "coverage_rule_zh": "每條街跟 railing_coverage.kerb_coverage_pct（佔 kerb 長度 %）。continuous_control：由路口沿 kerb 連續鋪，只喺 gaps 斷；crossing_approaches：每個過路處兩邊最少 9u（6m×K，TPDM 3.9.2.10 嘅 6m 當最少值）＋key stretches；corner_stubs_only：只轉角 ≤3u。",
+   "tpdm_note_zh": "TPDM 3.9.2.10 原文係過路處 guidance 欄杆『通常限每邊 6m』；繁忙街連續欄杆屬 3.9.2.9 control 類（人流接近容量），兩樣唔衝突。遊戲取地道人做法：6m 係最少，繁忙街連續。",
+   "gaps_u": {
+    "crossing": "crossing_width×1.5（斑馬 2.5–9m 官方）+2×0.5",
+    "bus_stop_boarding": "站長 13/26/39m（官方）×1.5 = 19.5/39/58.5u；彌敦道用 26 或 39，其餘 13",
+    "loading_bay": "bay_width×1.5+1.0",
+    "driveway": "width×1.5+1.0（住宅/商業 3.5–6m，工業 7–9m [估]）",
+    "taxi_stand_opening": "每車位 2.0u（HKPSG 4.3.5）",
+    "mtr_exit_mouth": "出口闊+2u",
+    "min_piece_u": 3.0
+   },
+   "central_median_control": "雙程路冇花槽：太子道東／亞皆老街候選；燈位兩邊斷 9u",
+   "never": [
+    "port_terminal 路（用防撞欄）",
+    "快速路/主要幹路旁（TPDM 3.9.2.18）",
+    "有花槽/凸起中央分隔嗰邊",
+    "淨係為阻泊車",
+    "narrow_market 攤檔段"
+   ]
+  },
+  "bins": {
+   "label": "非官方·遊戲建議：食環署冇公開間距；政府清單建議 40–60m，下面按人流分",
+   "types_official": "70L 同 130L（試用 100L）；130L 外形約 0.5×0.45×1.0m 係遊戲估值",
+   "mandatory": [
+    "每個燈位路口：人流≥4 對角 2 個，≤3 1 個；離轉角切點 3–6u",
+    "每個巴士站：站尾後 2–4u 1 個",
+    "地鐵出口（通稱）旁 1 個"
+   ],
+   "regular": "之後每 bin_spacing_u 一個，左右錯開半個間距",
+   "merge": "同側 0.5×spacing 內已有桶就唔放",
+   "exclusions": [
+    "過路缺口 ±3u",
+    "車路口/貨台",
+    "narrow_market 攤檔段（只兩端街口）",
+    "port_terminal（只閘口崗亭 1 個）"
+   ],
+   "litter_beside": "人流≥4 約 15% 桶旁放膠袋／外賣盒",
+   "large_660L": "唔准放主幹行人路；只垃圾站、後巷、工廈貨台、屋苑內",
+   "recycling": "estate_only：市區街道一律唔放三色桶；要表現回收就用『回收便利點（戲仿）』舖面（跟政府 §D）",
+   "district_count_reference_official": {
+    "sham_shui_po": 535,
+    "kowloon_city": 678,
+    "yau_tsim_mong": 666,
+    "kwai_tsing": 605,
+    "wan_chai": 800,
+    "eastern": 634,
+    "src": "立法會 EEB(F)105（2024-25），全區數，非遊戲範圍"
+   }
+  },
+  "bollards": {
+   "where": "只轉角凸出位、行人路車輛出入口兩端",
+   "spacing_u": "行人路 ≤2m：2.5；>2m：2.0（官方 3.9.2.15，prop 尺度）",
+   "remove": "取消『每 9u 50% 隨機石墩』"
+  },
+  "roadworks_sign": {
+   "rule_zh": "『前面修路』係政府通用告示：照真 HyD／運輸署路牌樣式畫（唔做戲仿、唔加（戲仿）字），配水馬。只係唔印部門徽號。用喺 core28 封路引道口代替 72 個路障。"
+  },
+  "markings_ref": {
+   "src": "hk-street-reality-checklist-core27f.md §政府補充 E",
+   "key": "分線劃 1m 空 5m 闊 100mm；停車線 200mm；斑馬白間 500–700mm；鋸齒 8×2m；巴士站 13/26/39m；巴士線唔塗紅"
+  }
+ },
+ "lite": {
+  "flag": "NT.safariLite",
+  "fix": "index.html 第 1943 行（window.NT = {...} 之後）：NT.safariLite = IS_SAFARI || IS_IPHONE || LOW_MEM;  → working tree 已有、HEAD 970a6e7 未有，Grok Bot 合 core27f 時一齊 commit",
+  "caps": {
+   "bins_factor": 0.6,
+   "keep_mandatory_bins": true,
+   "railing_coverage": "照 lite_kerb_coverage_pct（=full；用戶投訴冇欄杆，唔可以減）",
+   "railing_render": "lite 用實心板＋柱（唔畫直枝），每 1.5u 一柱",
+   "per_district_max": {
+    "bins": {
+     "full": 400,
+     "lite": 200
+    },
+    "railing_panels": {
+     "full": 4000,
+     "lite": 4000,
+     "note": "單一 InstancedMesh，draw call 唔變"
+    },
+    "bollards": {
+     "full": 300,
+     "lite": 100
+    }
+   }
+  },
+  "label": "design_estimate；要 iPhone 實機量 FPS 先調（跟 gta core27f-crowd-traffic-density.md）"
+ },
+ "current_game": {
+  "measured_from": "index.html（working tree）, assets/js/street-furniture-core27d.js, assets/data/osm-street-furniture-core27d.json",
+  "carriageway_u": "_w = 14（wide regex）或 11；wide regex 喺 ribbon cfg／furniture WIDE／c27f wideRe 三處唔一致",
+  "footway_u": "3.2 全部街一樣（c27f 合併 mesh，index.html ~24973；≈2.1 真米）",
+  "railing": "OSM 點區（ytm/ssp/cw）：55% 長度隨機 18–40u 段、3–9u 隨機缺口、唔對齊過路處，offset half+0.35；程序區（kt/kcity）：每 24u（lite 36）6u 一段 70% 機率；20% 用綠色 0x3f6a4e（唔跟 gov Type 2 銀灰）；OSM railings polyline ytm25/ssp84/cw82/kt171/kcity92",
+  "bins": "OSM 點區：每 55u（≈37m）一側，offset half+2.7（貼舖面＝錯區）；Lite 用 dens 0.45 → 122u；另每 300u 一個 660L 大桶；程序區：每 70u 兩邊 offset half+2.9；彌敦道 scape 手放 4 個（lite 2）約 50m；OSM bins 實數 ytm2/ssp0/cw29/kt4/kcity10",
+  "bollards": "每 9u 50% 隨機，成條主幹都有（太多）",
+  "bus_stops": "OSM 點或程序每 260u",
+  "safariLite": "HEAD 從未設定 → 所有 lite 上限冇生效；working tree 已加第 1943 行"
+ },
+ "railing_collision": {
+  "type": "static",
+  "on_vehicle_hit": "stop_or_bounce_slow + vehicle scratch + optional single-panel dent state",
+  "scatter": false,
+  "rigid_debris": false,
+  "lite": "solid panel, one InstancedMesh draw call per type",
+  "approved_by": "gta"
+ }
+}

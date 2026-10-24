@@ -1,0 +1,123 @@
+{
+  "updated": "2026-10-24T20:45:00+08:00",
+  "for": "core27f 唐樓騎樓／podium 檐口／冷氣／晾衫",
+  "module": "assets/js/building-extras-core27f.js",
+  "hook": "import('./assets/js/building-extras-core27f.js').then((m) => m.attachAll(THREE));",
+  "rule": "純程序 InstancedMesh，禁相板／真商標／Google mesh",
+  "scale_zh": "水平（深度／柱距／晾衫伸出）u=m×1.5；高度／淨空／細 prop（冷氣尺寸、mount_y）1:1 唔×1.5",
+  "dims_u": {
+    "arcade": {
+      "depth": 3.0,
+      "clear_h": 3.0,
+      "post_spacing": 6.0,
+      "concrete": "#8A8C8E"
+    },
+    "ac": {
+      "w": 0.85,
+      "h": 0.6,
+      "d": 0.35,
+      "mount_y": [
+        1.5,
+        2.5
+      ]
+    },
+    "laundry_protrude": [
+      1.5,
+      2.25
+    ],
+    "podium_ledge": {
+      "thick": 0.3,
+      "out": 0.4
+    },
+    "K": 1.5,
+    "floor_h_game": 3.1
+  },
+  "podium_scale_note_zh": "buildings[].podium.height_m 係研究稿米（10／15），模組內 ×1.5 做遊戲 Y。building.height_m 喺 extrude 直當世界 Y。",
+  "colliders": {
+    "field": "NT[區].arcadeColliders 同 group.userData.arcadeColliders",
+    "shape": {
+      "x0": "minX",
+      "z0": "minZ",
+      "x1": "maxX",
+      "z1": "maxZ",
+      "y0": 0,
+      "y1": 3.0,
+      "id": "arc_<osm_id>_<n>"
+    },
+    "meaning_zh": "有蓋廊行走 AABB；玩家行入廊底（視覺＋碰撞）"
+  },
+  "podiumHeights": "NT[區].podiumHeights = [{osm_id, height}]；height 已係遊戲單位",
+  "caps": {
+    "arcade_buildings": {
+      "full": 80,
+      "lite": 40
+    },
+    "ac": {
+      "full": 2000,
+      "lite": 600
+    },
+    "laundry": "ac/2"
+  },
+  "attach": "NT.YTM/CW/KT/SSP/KCITY/WC/EAST/TW/ST .group；讀 assets/data/osm-*-drive-extrude-*.json",
+  "smoke_node": {
+    "ytm_full": {
+      "district": "ytm",
+      "lite": false,
+      "arcade": 47,
+      "podium": 5,
+      "ac": 2000,
+      "laundry": 984,
+      "instances": 8145,
+      "drawCalls": 8,
+      "colliders": 141,
+      "y1": 3,
+      "podiumH": 22.5
+    },
+    "ssp_full": {
+      "district": "ssp",
+      "lite": false,
+      "arcade": 31,
+      "podium": 20,
+      "ac": 2000,
+      "laundry": 1000,
+      "instances": 8074,
+      "drawCalls": 8,
+      "colliders": 93,
+      "y1": 3,
+      "podiumH": 22.5
+    },
+    "ytm_lite": {
+      "district": "ytm",
+      "lite": true,
+      "arcade": 40,
+      "podium": 5,
+      "ac": 600,
+      "laundry": 252,
+      "instances": 2405,
+      "drawCalls": 7,
+      "colliders": 120,
+      "y1": 3,
+      "podiumH": 22.5
+    },
+    "ssp_lite": {
+      "district": "ssp",
+      "lite": true,
+      "arcade": 31,
+      "podium": 20,
+      "ac": 600,
+      "laundry": 291,
+      "instances": 2547,
+      "drawCalls": 7,
+      "colliders": 93,
+      "y1": 3,
+      "podiumH": 22.5
+    }
+  },
+  "furniture_todo_zh": "street-furniture-core27d.js header 已加 TODO：欄杆覆蓋率尚未改讀 core27f-sidewalk-railing-bin-layout.json match_name_zh",
+  "deferred_zh": [
+    "天橋",
+    "中環扶梯",
+    "叮叮車身",
+    "街市檔帆布 prop"
+  ]
+}

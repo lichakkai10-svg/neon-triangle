@@ -1,0 +1,460 @@
+{
+  "project": "neon-triangle",
+  "id": "hk18_district_core",
+  "updated": "2026-10-24",
+  "purpose_zh": "18 區核心表：2021 普查人口約數、骨架 hub／入區點、樓種／massing 標籤（美術用）。",
+  "sources_zh": [
+    "人口：政府統計處 2021 年人口普查區議會分區 DC_21C",
+    "hub 座標：data/osm-hk18-skeleton-core23.json",
+    "密度帶：docs/drive-rhythm-hk18-density-bands.md",
+    "入區點：骨架 landmark＋core27f／28／29 research stubs"
+  ],
+  "massing_key_zh": {
+    "舊區唐樓": "油尖旺／深水埗／灣仔／東區舊段",
+    "新市鎮 podium": "沙田／荃灣／屯門／將軍澳",
+    "葵青工業": "貨櫃碼頭／工廈；葵涌≠葵芳"
+  },
+  "districts": [
+    {
+      "id": "central_west",
+      "name_zh": "中西區",
+      "name_en": "Central and Western",
+      "pop_2021": 235953,
+      "pop_source": "Census and Statistics Department 2021 Population Census (DC_21C)",
+      "pop_source_url": "https://www.census2021.gov.hk/doc/DC_21C.zip",
+      "hub": {
+        "lat": 22.2819,
+        "lon": 114.1585,
+        "x": -6100.0,
+        "z": -12124.4,
+        "landmark_hint": [
+          "中環",
+          "上環"
+        ]
+      },
+      "entry_points_zh": [
+        "中環 hub",
+        "上環",
+        "假日：皇后像廣場／遮打花園 gather"
+      ],
+      "density_band_zh": "舊區混雜",
+      "massing_label_zh": "舊區唐樓＋商業塔",
+      "massing_note_zh": "中環商業／上環唐樓",
+      "pack_status": "core25/27f"
+    },
+    {
+      "id": "wan_chai",
+      "name_zh": "灣仔區",
+      "name_en": "Wan Chai",
+      "pop_2021": 166695,
+      "pop_source": "Census and Statistics Department 2021 Population Census (DC_21C)",
+      "pop_source_url": "https://www.census2021.gov.hk/doc/DC_21C.zip",
+      "hub": {
+        "lat": 22.277,
+        "lon": 114.1733,
+        "x": -8385.6,
+        "z": -12937.2,
+        "landmark_hint": [
+          "灣仔海傍"
+        ]
+      },
+      "entry_points_zh": [
+        "灣仔海傍",
+        "接中西／銅鑼灣轉向"
+      ],
+      "density_band_zh": "高密度舊區",
+      "massing_label_zh": "舊區唐樓",
+      "massing_note_zh": "軒尼詩／灣仔海傍",
+      "pack_status": "core28"
+    },
+    {
+      "id": "eastern",
+      "name_zh": "東區",
+      "name_en": "Eastern",
+      "pop_2021": 529603,
+      "pop_source": "Census and Statistics Department 2021 Population Census (DC_21C)",
+      "pop_source_url": "https://www.census2021.gov.hk/doc/DC_21C.zip",
+      "hub": {
+        "lat": 22.284,
+        "lon": 114.224,
+        "x": -16215.2,
+        "z": -11776.1,
+        "landmark_hint": []
+      },
+      "entry_points_zh": [
+        "北角／英皇道",
+        "接灣仔"
+      ],
+      "density_band_zh": "高密度舊區",
+      "massing_label_zh": "舊區唐樓",
+      "massing_note_zh": "英皇道／北角舊段；部分新樓",
+      "pack_status": "core28"
+    },
+    {
+      "id": "southern",
+      "name_zh": "南區",
+      "name_en": "Southern",
+      "pop_2021": 263278,
+      "pop_source": "Census and Statistics Department 2021 Population Census (DC_21C)",
+      "pop_source_url": "https://www.census2021.gov.hk/doc/DC_21C.zip",
+      "hub": {
+        "lat": 22.247,
+        "lon": 114.16,
+        "x": -6331.7,
+        "z": -17913.0,
+        "landmark_hint": []
+      },
+      "entry_points_zh": [
+        "香港仔／鴨脷洲遠景",
+        "山路入"
+      ],
+      "density_band_zh": "疏",
+      "massing_label_zh": "山路／海岸",
+      "massing_note_zh": "唔開長直高速觀光線",
+      "pack_status": "skeleton only"
+    },
+    {
+      "id": "yau_tsim_mong",
+      "name_zh": "油尖旺區",
+      "name_en": "Yau Tsim Mong",
+      "pop_2021": 310647,
+      "pop_source": "Census and Statistics Department 2021 Population Census (DC_21C)",
+      "pop_source_url": "https://www.census2021.gov.hk/doc/DC_21C.zip",
+      "hub": {
+        "lat": 22.311,
+        "lon": 114.17,
+        "x": -7876.0,
+        "z": -7297.9,
+        "landmark_hint": [
+          "彌敦道",
+          "尖沙咀碼頭",
+          "旺角"
+        ]
+      },
+      "entry_points_zh": [
+        "尖沙咀碼頭",
+        "彌敦道",
+        "旺角／太子北出"
+      ],
+      "density_band_zh": "高密度舊區",
+      "massing_label_zh": "舊區唐樓",
+      "massing_note_zh": "街道導向；主題街＋騎樓",
+      "pack_status": "core24/27f"
+    },
+    {
+      "id": "sham_shui_po",
+      "name_zh": "深水埗區",
+      "name_en": "Sham Shui Po",
+      "pop_2021": 431090,
+      "pop_source": "Census and Statistics Department 2021 Population Census (DC_21C)",
+      "pop_source_url": "https://www.census2021.gov.hk/doc/DC_21C.zip",
+      "hub": {
+        "lat": 22.33,
+        "lon": 114.162,
+        "x": -6640.5,
+        "z": -4146.5,
+        "landmark_hint": [
+          "鴨寮街"
+        ]
+      },
+      "entry_points_zh": [
+        "太子入",
+        "鴨寮街",
+        "南昌"
+      ],
+      "density_band_zh": "高密度舊區",
+      "massing_label_zh": "舊區唐樓",
+      "massing_note_zh": "街道導向；鴨寮／南昌",
+      "pack_status": "core27/27f"
+    },
+    {
+      "id": "kowloon_city",
+      "name_zh": "九龍城區",
+      "name_en": "Kowloon City",
+      "pop_2021": 410634,
+      "pop_source": "Census and Statistics Department 2021 Population Census (DC_21C)",
+      "pop_source_url": "https://www.census2021.gov.hk/doc/DC_21C.zip",
+      "hub": {
+        "lat": 22.328,
+        "lon": 114.192,
+        "x": -11273.4,
+        "z": -4478.2,
+        "landmark_hint": []
+      },
+      "entry_points_zh": [
+        "土瓜灣／九龍城道",
+        "啟德邊"
+      ],
+      "density_band_zh": "舊區混雜",
+      "massing_label_zh": "舊區唐樓＋局部新樓",
+      "massing_note_zh": "窄街＋主幹",
+      "pack_status": "core27"
+    },
+    {
+      "id": "wong_tai_sin",
+      "name_zh": "黃大仙區",
+      "name_en": "Wong Tai Sin",
+      "pop_2021": 406802,
+      "pop_source": "Census and Statistics Department 2021 Population Census (DC_21C)",
+      "pop_source_url": "https://www.census2021.gov.hk/doc/DC_21C.zip",
+      "hub": {
+        "lat": 22.342,
+        "lon": 114.195,
+        "x": -11736.7,
+        "z": -2156.2,
+        "landmark_hint": []
+      },
+      "entry_points_zh": [
+        "黃大仙站／龍翔道"
+      ],
+      "density_band_zh": "舊區混雜",
+      "massing_label_zh": "公屋為主＋局部唐樓",
+      "massing_note_zh": "公屋色帶塔",
+      "pack_status": "skeleton only"
+    },
+    {
+      "id": "kwun_tong",
+      "name_zh": "觀塘區",
+      "name_en": "Kwun Tong",
+      "pop_2021": 673166,
+      "pop_source": "Census and Statistics Department 2021 Population Census (DC_21C)",
+      "pop_source_url": "https://www.census2021.gov.hk/doc/DC_21C.zip",
+      "hub": {
+        "lat": 22.313,
+        "lon": 114.226,
+        "x": -16524.1,
+        "z": -6966.2,
+        "landmark_hint": []
+      },
+      "entry_points_zh": [
+        "觀塘道",
+        "牛頭角舊段"
+      ],
+      "density_band_zh": "舊區混雜",
+      "massing_label_zh": "舊區唐樓＋工廈轉型",
+      "massing_note_zh": "觀塘舊段＋商廈",
+      "pack_status": "core25"
+    },
+    {
+      "id": "kwai_tsing",
+      "name_zh": "葵青區",
+      "name_en": "Kwai Tsing",
+      "pop_2021": 495798,
+      "pop_source": "Census and Statistics Department 2021 Population Census (DC_21C)",
+      "pop_source_url": "https://www.census2021.gov.hk/doc/DC_21C.zip",
+      "hub": {
+        "lat": 22.357,
+        "lon": 114.128,
+        "x": -1389.9,
+        "z": 331.7,
+        "landmark_hint": [
+          "葵芳站",
+          "貨櫃碼頭",
+          "葵涌道肘"
+        ]
+      },
+      "entry_points_zh": [
+        "葵芳站",
+        "葵涌道肘",
+        "貨櫃碼頭南路"
+      ],
+      "density_band_zh": "工業",
+      "massing_label_zh": "葵青工業",
+      "massing_note_zh": "貨櫃碼頭／工廈；葵涌≠葵芳",
+      "pack_status": "skeleton only"
+    },
+    {
+      "id": "tsuen_wan",
+      "name_zh": "荃灣區",
+      "name_en": "Tsuen Wan",
+      "pop_2021": 320094,
+      "pop_source": "Census and Statistics Department 2021 Population Census (DC_21C)",
+      "pop_source_url": "https://www.census2021.gov.hk/doc/DC_21C.zip",
+      "hub": {
+        "lat": 22.371,
+        "lon": 114.114,
+        "x": 772.2,
+        "z": 2653.8,
+        "landmark_hint": []
+      },
+      "entry_points_zh": [
+        "荃灣廣場",
+        "如心廣場",
+        "荃灣站",
+        "荃灣西站"
+      ],
+      "density_band_zh": "podium 新市鎮",
+      "massing_label_zh": "新市鎮 podium",
+      "massing_note_zh": "商場平台導向",
+      "pack_status": "core29 stub"
+    },
+    {
+      "id": "tuen_mun",
+      "name_zh": "屯門區",
+      "name_en": "Tuen Mun",
+      "pop_2021": 506879,
+      "pop_source": "Census and Statistics Department 2021 Population Census (DC_21C)",
+      "pop_source_url": "https://www.census2021.gov.hk/doc/DC_21C.zip",
+      "hub": {
+        "lat": 22.391,
+        "lon": 113.977,
+        "x": 21929.1,
+        "z": 5971.0,
+        "landmark_hint": []
+      },
+      "entry_points_zh": [
+        "屯門市中心／站（待 OSM）"
+      ],
+      "density_band_zh": "podium 新市鎮",
+      "massing_label_zh": "新市鎮 podium",
+      "massing_note_zh": "商場／屋苑平台",
+      "pack_status": "skeleton only"
+    },
+    {
+      "id": "yuen_long",
+      "name_zh": "元朗區",
+      "name_en": "Yuen Long",
+      "pop_2021": 668080,
+      "pop_source": "Census and Statistics Department 2021 Population Census (DC_21C)",
+      "pop_source_url": "https://www.census2021.gov.hk/doc/DC_21C.zip",
+      "hub": {
+        "lat": 22.445,
+        "lon": 114.027,
+        "x": 14207.6,
+        "z": 14927.5,
+        "landmark_hint": [
+          "大橋街市"
+        ]
+      },
+      "entry_points_zh": [
+        "大橋街市一帶（戲仿）",
+        "元朗市中心"
+      ],
+      "density_band_zh": "疏／市鎮",
+      "massing_label_zh": "新市鎮＋鄉郊",
+      "massing_note_zh": "市中心密、外圍疏",
+      "pack_status": "skeleton only"
+    },
+    {
+      "id": "north",
+      "name_zh": "北區",
+      "name_en": "North",
+      "pop_2021": 309631,
+      "pop_source": "Census and Statistics Department 2021 Population Census (DC_21C)",
+      "pop_source_url": "https://www.census2021.gov.hk/doc/DC_21C.zip",
+      "hub": {
+        "lat": 22.495,
+        "lon": 114.138,
+        "x": -2934.2,
+        "z": 23220.5,
+        "landmark_hint": []
+      },
+      "entry_points_zh": [
+        "上水／粉嶺市中心（待 OSM）"
+      ],
+      "density_band_zh": "疏",
+      "massing_label_zh": "鄉郊／新市鎮邊",
+      "massing_note_zh": "山路／市鎮點",
+      "pack_status": "skeleton only"
+    },
+    {
+      "id": "tai_po",
+      "name_zh": "大埔區",
+      "name_en": "Tai Po",
+      "pop_2021": 316470,
+      "pop_source": "Census and Statistics Department 2021 Population Census (DC_21C)",
+      "pop_source_url": "https://www.census2021.gov.hk/doc/DC_21C.zip",
+      "hub": {
+        "lat": 22.45,
+        "lon": 114.169,
+        "x": -7721.5,
+        "z": 15756.8,
+        "landmark_hint": []
+      },
+      "entry_points_zh": [
+        "大埔墟／大埔中心（待 OSM）"
+      ],
+      "density_band_zh": "疏",
+      "massing_label_zh": "新市鎮＋疏",
+      "massing_note_zh": "市中心商場；外圍疏",
+      "pack_status": "skeleton only"
+    },
+    {
+      "id": "sha_tin",
+      "name_zh": "沙田區",
+      "name_en": "Sha Tin",
+      "pop_2021": 692806,
+      "pop_source": "Census and Statistics Department 2021 Population Census (DC_21C)",
+      "pop_source_url": "https://www.census2021.gov.hk/doc/DC_21C.zip",
+      "hub": {
+        "lat": 22.382,
+        "lon": 114.188,
+        "x": -10655.7,
+        "z": 4478.2,
+        "landmark_hint": [
+          "沙田市中心"
+        ]
+      },
+      "entry_points_zh": [
+        "沙田站 A",
+        "新城市廣場",
+        "沙田中心"
+      ],
+      "density_band_zh": "podium 新市鎮",
+      "massing_label_zh": "新市鎮 podium",
+      "massing_note_zh": "商場平台導向；地面街靜",
+      "pack_status": "core29 stub"
+    },
+    {
+      "id": "sai_kung",
+      "name_zh": "西貢區",
+      "name_en": "Sai Kung",
+      "pop_2021": 489037,
+      "pop_source": "Census and Statistics Department 2021 Population Census (DC_21C)",
+      "pop_source_url": "https://www.census2021.gov.hk/doc/DC_21C.zip",
+      "hub": {
+        "lat": 22.382,
+        "lon": 114.272,
+        "x": -23627.9,
+        "z": 4478.2,
+        "landmark_hint": []
+      },
+      "entry_points_zh": [
+        "將軍澳市中心／坑口（待 OSM）",
+        "西貢市疏"
+      ],
+      "density_band_zh": "podium 新市鎮／疏",
+      "massing_label_zh": "將軍澳 podium＋西貢疏",
+      "massing_note_zh": "TKO 商場導向；西貢市疏",
+      "pack_status": "skeleton only"
+    },
+    {
+      "id": "islands",
+      "name_zh": "離島區",
+      "name_en": "Islands",
+      "pop_2021": 185282,
+      "pop_source": "Census and Statistics Department 2021 Population Census (DC_21C)",
+      "pop_source_url": "https://www.census2021.gov.hk/doc/DC_21C.zip",
+      "hub": {
+        "lat": 22.286,
+        "lon": 113.943,
+        "x": 27179.8,
+        "z": -11444.4,
+        "landmark_hint": [
+          "大嶼山／東涌遠景"
+        ]
+      },
+      "entry_points_zh": [
+        "東涌／大嶼山遠景"
+      ],
+      "density_band_zh": "疏",
+      "massing_label_zh": "離島／機場帶",
+      "massing_note_zh": "大嶼山／東涌遠景",
+      "pack_status": "skeleton only"
+    }
+  ],
+  "counts": {
+    "districts": 18,
+    "hk_land_total_pop_2021": 7411945
+  }
+}

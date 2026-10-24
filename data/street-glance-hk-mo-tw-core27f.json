@@ -1,0 +1,165 @@
+{
+  "version": "core27f",
+  "source": [
+    "老闆三地一眼錯 2026-10-24：港唐樓騎樓1.5–2.5／2.7–3.5／柱3.5–5＋晾衫密＋公屋色帶＋瀝青；澳拱廊更深更高＋圓拱＋粉黃白＋石仔路＋中葡招牌＋欄杆少；台磁磚＋鐵窗＋機車佔行人路＋夜市棚＋罰鍰TWD",
+    "docs/drive-rhythm-macau-taiwan.md §老闆三地一眼錯表",
+    "docs/hk-macau-taiwan-street-acceptance-core27f.md"
+  ],
+  "scale": {
+    "horizontal": "u=m×1.5",
+    "height_and_le1m_clear": "1:1"
+  },
+  "hk": {
+    "arcade": {
+      "depth_m": [
+        1.5,
+        2.5
+      ],
+      "clear_h_m": [
+        2.7,
+        3.5
+      ],
+      "post_m": [
+        3.5,
+        5.0
+      ],
+      "style": "戰前柱廊＋混凝土／鐵花欄杆，實用淺廊"
+    },
+    "ground": {
+      "main_footway_m": [
+        2.0,
+        3.5
+      ],
+      "side_footway_m": [
+        1.5,
+        2.5
+      ],
+      "kerb_cm": [
+        10,
+        15
+      ],
+      "paving": "瀝青／行人路磚"
+    },
+    "signs": {
+      "protrude_m": [
+        0.5,
+        1.2
+      ],
+      "note": "戲仿店名；不可侵車路；禁真品牌"
+    },
+    "vehicles_dominant": [
+      "red_taxi",
+      "red_green_minibus",
+      "double_decker"
+    ],
+    "must_have": [
+      "唐樓騎樓 1.5–2.5／2.7–3.5／柱 3.5–5",
+      "晾衫密",
+      "公屋色帶",
+      "瀝青／行人路磚",
+      "窄街地舖",
+      "冷氣外機密度"
+    ],
+    "must_not": [
+      "歐式拱廊",
+      "成排長椅遮蔭",
+      "超跑街",
+      "澳門拱券比例"
+    ],
+    "public_housing": {
+      "facade": "色帶（harmony／slab stripe／corridor 黃綠藍粉橘紫）",
+      "pool": "facade-pool-core27f.json type=public_housing"
+    }
+  },
+  "mo": {
+    "arcade": {
+      "depth_m": [
+        3.0,
+        4.0
+      ],
+      "clear_h_m": [
+        4.0,
+        5.0
+      ],
+      "style": "拱廊更深更高＋圓拱葡式；粉黃白牆；黑白石仔路"
+    },
+    "ground": {
+      "old_town": "窄石仔／石板、單行、行人優先",
+      "cotai": "大馬路＋賭場 podium"
+    },
+    "signs": {
+      "lang": [
+        "zh",
+        "pt"
+      ],
+      "pairs": [
+        "禁止吸煙／Proibido fumar",
+        "請勿停車／Não estacionar",
+        "入口／Entrada",
+        "出口／Saída"
+      ]
+    },
+    "vehicles_dominant": [
+      "local_bus",
+      "taxi_black_cream"
+    ],
+    "must_have": [
+      "拱廊更深更高＋圓拱",
+      "粉黃白牆",
+      "石仔路",
+      "中葡招牌成對",
+      "欄杆少"
+    ],
+    "must_not": [
+      "港式騎樓 1.5–2.5／2.7–3.5 比例",
+      "旺角式霓虹主題街"
+    ],
+    "railing": {
+      "density": "low",
+      "note": "舊城欄杆少；唔抄港 busy continuous"
+    }
+  },
+  "tw": {
+    "arcade": {
+      "style": "連續騎樓＋鐵窗；常有機車停廊內／廊外"
+    },
+    "ground": {
+      "scooter_bay": true,
+      "paving": "舊公寓磁磚；騎樓地面連續；機車佔行人路"
+    },
+    "signs": {
+      "lang": [
+        "zh-TW"
+      ],
+      "note": "繁中；罰鍰用語跟法律；夜市叫賣口吻交對白",
+      "fine_term": "罰鍰",
+      "currency": "TWD"
+    },
+    "vehicles_dominant": [
+      "scooter",
+      "car_minority"
+    ],
+    "night_stall_m": {
+      "depth": [
+        2.0,
+        3.0
+      ],
+      "canopy_h": [
+        2.0,
+        2.5
+      ]
+    },
+    "must_have": [
+      "磁磚＋鐵窗",
+      "機車佔行人路／騎樓",
+      "夜市棚",
+      "罰鍰 TWD 告示口吻"
+    ],
+    "must_not": [
+      "香港的士／小巴主導車流",
+      "一條大道貫穿舊區"
+    ]
+  },
+  "open_region_gate": "開澳門／台灣區前驗收：一個鏡頭要一眼分得出邊度",
+  "boss_lock": "2026-10-24 老闆三地一眼錯對照表（Grok 轉）"
+}

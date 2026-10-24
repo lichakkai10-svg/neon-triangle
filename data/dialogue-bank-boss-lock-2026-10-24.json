@@ -1,0 +1,414 @@
+{
+ "version": "boss-lock-2026-10-24",
+ "rules": [
+  "no_real_shop_names",
+  "no_real_agency_full_names",
+  "no_photo_boards",
+  "tram_bus_short_next_stop_only",
+  "macau_cantonese_primary_light_pt",
+  "taiwan_mandarin_primary_light_tw",
+  "helper_sunday_central_boss_approved_ordinary_clothes_no_accent_joke"
+ ],
+ "theme_streets": [
+  {
+   "nickname": "女人街",
+   "real": "通菜街",
+   "span": "亞皆老街→登打士街"
+  },
+  {
+   "nickname": "波鞋街",
+   "real": "花園街",
+   "span": "登打士街→亞皆老街"
+  },
+  {
+   "nickname": "金魚街",
+   "real": "通菜街北段",
+   "span": "近弼街"
+  },
+  {
+   "nickname": "雀仔街",
+   "real": "園圃街",
+   "span": "雀鳥花園"
+  },
+  {
+   "nickname": "鴨寮街",
+   "real": "鴨寮街",
+   "span": "深水埗"
+  },
+  {
+   "nickname": "春秧街",
+   "real": "春秧街",
+   "span": "北角"
+  }
+ ],
+ "pools": {
+  "hk_old_town": {
+   "lang": "zh-HK",
+   "lines": [
+    "騎樓底下行過先",
+    "落地面先",
+    "借借呀"
+   ]
+  },
+  "hk_new_town": {
+   "lang": "zh-HK",
+   "lines": [
+    "返屋企經商場落",
+    "落商場先啦",
+    "平台入口喺嗰邊",
+    "搭電梯上商場",
+    "商場地下出街啦"
+   ]
+  },
+  "hk_cha_chaan_teng": {
+   "lang": "zh-HK",
+   "lines": [
+    "兩件多士、凍奶茶",
+    "唔該埋單",
+    "加蛋唔加？"
+   ]
+  },
+  "hk_wet_market": {
+   "lang": "zh-HK",
+   "lines": [
+    "呢啲幾錢呀？",
+    "秤重啲",
+    "新鮮㗎"
+   ]
+  },
+  "hk_pawn_fx": {
+   "lang": "zh-HK",
+   "lines": [
+    "而家匯率幾多？",
+    "押住先"
+   ]
+  },
+  "hk_crossing": {
+   "lang": "zh-HK",
+   "lines": [
+    "行快啲"
+   ]
+  },
+  "hk_tram_short": {
+   "lang": "zh-HK",
+   "lines": [
+    "下一站……"
+   ],
+   "note": "後接戲仿站名；唔抄真站廣播全文"
+  },
+  "mac_street": {
+   "lang": "zh-HK",
+   "lines": [
+    "行慢啲啦",
+    "而家幾點？",
+    "歡迎光臨",
+    "入嚟睇吓"
+   ],
+   "pt_tags": [
+    "obrigado",
+    "boa viagem"
+   ]
+  },
+  "mac_signs": {
+   "lang": "zh-HK+pt-PT",
+   "pairs": [
+    {
+     "zh": "禁止吸煙",
+     "pt": "Proibido fumar"
+    },
+    {
+     "zh": "請勿停車",
+     "pt": "Não estacionar"
+    },
+    {
+     "zh": "入口",
+     "pt": "Entrada"
+    },
+    {
+     "zh": "出口",
+     "pt": "Saída"
+    },
+    {
+     "zh": "開放",
+     "pt": "Aberto"
+    },
+    {
+     "zh": "關閉",
+     "pt": "Fechado"
+    }
+   ]
+  },
+  "tw_vendor": {
+   "lang": "zh-TW",
+   "lines": [
+    "來喔！熱騰騰的！",
+    "塩酥雞一包"
+   ]
+  },
+  "tw_mrt": {
+   "lang": "zh-TW",
+   "lines": [
+    "下一站……請小心月台間隙"
+   ],
+   "note": "戲仿；唔抄真捷運全文"
+  },
+  "tw_street": {
+   "lang": "zh-TW",
+   "lines": [
+    "好熱喔",
+    "塞車啦"
+   ]
+  },
+  "tw_sign_generics": {
+   "lang": "zh-TW",
+   "labels": [
+    "飲料",
+    "手搖",
+    "塩酥雞",
+    "夾娃娃"
+   ]
+  },
+  "hk_helper_sunday_central": {
+   "lang": "zh-HK",
+   "note": "外傭假日中環·普通市民口吻·唔做口音笑位；禁真 NGO／領事館名",
+   "lines": [
+    "借借呀，我影張相。",
+    "呢度遮陽啲，坐陣先。",
+    "午後先去超市買餸。",
+    "今日放假，慢慢行。",
+    "朋友喺對面等緊我。",
+    "唔好意思，膠袋唔好踩親。"
+   ],
+   "signs_parody": [
+    "休息區（戲仿）",
+    "請保持通道暢通",
+    "請勿阻塞行人路"
+   ]
+  },
+  "hk_helper_sunday_stalls": {
+   "lang": "zh-HK",
+   "note": "$1 檔戲仿攤；唔報港幣「十蚊」——要報價就講遊戲銀 $1，否則只講熱騰騰／帶走",
+   "stalls": [
+    {
+     "name": "遮打園小食",
+     "lines": [
+      "熱辣辣飯盒，買咗帶走啦！",
+      "咖喱雞仲有，快啲嚟。"
+     ]
+    },
+    {
+     "name": "周日飯盒",
+     "lines": [
+      "今日特餐，買兩盒平啲。",
+      "辣唔辣自己揀，熱騰騰。"
+     ]
+    },
+    {
+     "name": "中環草地咖喱",
+     "lines": [
+      "咖喱熱辣辣，唔好掂倒。",
+      "要叉定匙？帶走得㗎。"
+     ]
+    },
+    {
+     "name": "島嶼甜品車",
+     "lines": [
+      "甜品熱賣，試吓啦。",
+      "雪糕易溶，快啲食。"
+     ]
+    },
+    {
+     "name": "碼頭旁烤雞",
+     "lines": [
+      "烤雞腿要唔要？熱辣辣！",
+      "剩返幾件，收檔前平賣。"
+     ]
+    }
+   ]
+  },
+  "hk_kwai_chung_terminal": {
+   "lang": "zh-HK",
+   "note": "葵涌碼頭 ambient·工業／貨車／少行人；禁真營運商名（現代貨櫃等）",
+   "lines": [
+    "貨櫃車駛過，企後啲。",
+    "碼頭風大，戴實安全帽。",
+    "呢度行人少，過馬路睇清楚。",
+    "貨車響緊喇叭，唔好衝。",
+    "收工啦，閘口慢慢行。",
+    "貨倉門口唔好企耐。"
+   ],
+   "density": "sparse",
+   "archetypes_prefer": [
+    "office",
+    "auntie"
+   ],
+   "avoid": [
+    "helper_sunday_boost",
+    "tourist_heavy"
+   ]
+  },
+  "hk_hospital_ae": {
+   "lang": "zh-HK",
+   "note": "toast 顯示真港幣 EP400／NEP2100；扣款 game 10／53",
+   "toasts": {
+    "ep": "廣華坊醫院急症費 · 合資格港幣四百元",
+    "nep": "廣華坊醫院急症費 · 非合資格港幣二千一百元",
+    "cssa": "綜援證明有效 · 今次可申請減免",
+    "alt_name": "九龍公立醫院"
+   },
+   "lines": [
+    "攞籌、坐低等——費用櫃枱收。",
+    "唔好阻住急症入口。",
+    "請讓路畀救護車。"
+   ]
+  },
+  "hk_public_building_ambient": {
+   "lang": "zh-HK",
+   "lines": [
+    "學校範圍請安靜。",
+    "公眾街市，唔好跑。",
+    "政務處告示——請勿阻塞通道。",
+    "文娛中心入口喺前面。"
+   ]
+  },
+  "hk_sparse_waterfront": {
+   "lang": "zh-HK",
+   "lines": [
+    "海風大，慢慢行。",
+    "碼頭嗰邊人少啲。",
+    "睇住啲石級濕滑。",
+    "今日好靜。"
+   ]
+  },
+  "mac_arcade": {
+   "lang": "zh-HK",
+   "lines": [
+    "行慢啲啦，石仔路滑。",
+    "拱廊底下陰涼啲。",
+    "入嚟睇吓。"
+   ]
+  },
+  "tw_arcade_scooter": {
+   "lang": "zh-TW",
+   "lines": [
+    "機車來了，靠進去一點。",
+    "騎樓停滿車，側身過。",
+    "小心機車！"
+   ]
+  }
+ },
+ "district_default_pool": {
+  "ssp": "hk_old_town",
+  "mk": "hk_old_town",
+  "kc": "hk_old_town",
+  "wanchai": "hk_old_town",
+  "eastern": "hk_old_town",
+  "sha_tin": "hk_new_town",
+  "tsuen_wan": "hk_new_town",
+  "central": "hk_new_town"
+ },
+ "density_bands": {
+  "high_old": {
+   "label": "高密舊區",
+   "districts": [
+    "mk",
+    "ssp",
+    "ytm",
+    "wanchai",
+    "causeway_bay",
+    "kc",
+    "north_point",
+    "yau_ma_tei",
+    "jordan"
+   ],
+   "pools": [
+    "hk_old_town",
+    "hk_wet_market",
+    "hk_cha_chaan_teng",
+    "hk_crossing"
+   ],
+   "note": "騎樓／街市／茶餐廳句；主題街花名可用"
+  },
+  "podium_new_town": {
+   "label": "podium 新市鎮",
+   "districts": [
+    "sha_tin",
+    "tsuen_wan",
+    "tseung_kwan_o",
+    "ma_on_shan",
+    "tin_shui_wai",
+    "tuen_mun",
+    "hang_hau"
+   ],
+   "pools_street": [
+    "hk_new_town"
+   ],
+   "pools_mall": [
+    "hk_new_town",
+    "hk_cha_chaan_teng"
+   ],
+   "lines_extra": [
+    "返屋企經商場落",
+    "落商場先啦",
+    "平台入口喺嗰邊",
+    "搭電梯上商場"
+   ],
+   "note": "地面街疏→hk_new_town；商場／平台密→可夾茶餐廳短句"
+  },
+  "industrial": {
+   "label": "工業／碼頭",
+   "districts": [
+    "kwai_chung",
+    "kwai_tsing",
+    "tuen_mun_industrial",
+    "fotan",
+    "kwun_tong_industrial"
+   ],
+   "pools": [
+    "hk_kwai_chung_terminal"
+   ],
+   "note": "少行人、貨車、閘口；禁真營運商"
+  },
+  "sparse_waterfront": {
+   "label": "疏臨海",
+   "districts": [
+    "sai_kung",
+    "stanley",
+    "discovery_bay",
+    "south_horizon",
+    "apo_lei_chau_waterfront"
+   ],
+   "pools": [
+    "hk_crossing"
+   ],
+   "lines_extra": [
+    "海風大，慢慢行。",
+    "碼頭嗰邊人少啲。",
+    "睇住啲石級濕滑。"
+   ],
+   "note": "短、靜、風景向；唔好旺角叫賣"
+  }
+ },
+ "region_language": {
+  "hk": {
+   "spoken": "zh-HK",
+   "sign": "zh-HK",
+   "fine_word": "罰款",
+   "fine_toast_pattern": "……定額罰款 ${HKD}"
+  },
+  "mo": {
+   "spoken": "zh-HK",
+   "sign": "zh-HK+pt-PT",
+   "fine_word": "罰款",
+   "fine_pt": "multa",
+   "sign_pairs_pool": "mac_signs"
+  },
+  "tw": {
+   "spoken": "zh-TW",
+   "sign": "zh-TW",
+   "fine_word": "罰鍰",
+   "fine_toast_pattern": "……罰鍰新台幣 ${TWD}",
+   "note": "唔用港式「罰款」做主句"
+  }
+ }
+}

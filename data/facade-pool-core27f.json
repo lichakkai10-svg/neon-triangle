@@ -1,0 +1,686 @@
+{
+  "updated": "2026-10-19T20:30:00+08:00",
+  "for": "core27f 樓宇多樣化",
+  "ban": [
+    "photo plates",
+    "Google mesh",
+    "real brands"
+  ],
+  "rule_for_coder": {
+    "pick": "每幢樓 hash(osm_id) 揀 pools[district].facades 一張；有 type 欄就優先同 type 嘅 lib 張（tonglau/public_housing/composite/office/industrial）",
+    "tint": "material.color 用 HSL 偏移：h ±0.03、s ±0.10、l 0.88–1.04（唔好低過 0.85，否則似爛尾）",
+    "window_lit": "夜晚每幢 lit 比例 0.15–0.55 隨機，暖 #FFD9A0／冷 #CFE6FF／日光燈 #F0FFF4 三色隨機；日頭 0",
+    "repeat": "texture.repeat=1；UV u=m/12、v=m/9.3（一張圖約 3 層、3–4 個開間）；天台用淨色石屎 #8A8C8E，唔好用牆身貼圖",
+    "roof": "天台用 lib_industrial 或 #8A8C8E 平色，加水箱 box"
+  },
+  "lib": [
+    {
+      "file": "lib_tonglau_arcade_verandah.jpg",
+      "type": "tonglau"
+    },
+    {
+      "file": "lib_composite_ac_laundry_grille.jpg",
+      "type": "composite"
+    },
+    {
+      "file": "lib_publichousing_slab_stripe.jpg",
+      "type": "public_housing"
+    },
+    {
+      "file": "lib_publichousing_harmony_green.jpg",
+      "type": "public_housing"
+    },
+    {
+      "file": "lib_private70s_iron_grille.jpg",
+      "type": "residential_old"
+    },
+    {
+      "file": "lib_composite_mosaic_cage_balcony.jpg",
+      "type": "composite"
+    },
+    {
+      "file": "lib_private90s_bay_window.jpg",
+      "type": "residential_private"
+    },
+    {
+      "file": "lib_office80s_brown_glass.jpg",
+      "type": "office"
+    },
+    {
+      "file": "lib_office_blue_curtain.jpg",
+      "type": "office"
+    },
+    {
+      "file": "lib_industrial_ribbon_cargo.jpg",
+      "type": "industrial"
+    },
+    {
+      "file": "lib_walkup60s_pink_louvre.jpg",
+      "type": "residential_old"
+    },
+    {
+      "file": "lib_publichousing_corridor_yellow.jpg",
+      "type": "public_housing"
+    },
+    {
+      "file": "lib_publichousing_harmony_blue.jpg",
+      "type": "public_housing"
+    },
+    {
+      "file": "lib_publichousing_harmony_pink.jpg",
+      "type": "public_housing"
+    },
+    {
+      "file": "lib_publichousing_harmony_orange.jpg",
+      "type": "public_housing"
+    },
+    {
+      "file": "lib_publichousing_harmony_lilac.jpg",
+      "type": "public_housing"
+    },
+    {
+      "file": "lib_publichousing_slab_blue.jpg",
+      "type": "public_housing"
+    },
+    {
+      "file": "lib_publichousing_slab_green.jpg",
+      "type": "public_housing"
+    }
+  ],
+  "pools": {
+    "central_west": {
+      "kind": "cbd",
+      "count": 13,
+      "facades": [
+        "tex/facade/cw/cw_sheungwan_tonglau.jpg",
+        "tex/facade/cw/cw_central_glass.jpg",
+        "tex/facade/cw/cw_midlevels_balcony.jpg",
+        "tex/facade/cw/cw_desvoeux_granite.jpg",
+        "tex/facade/cw/cw_hollywood_brick.jpg",
+        "tex/facade/lib/lib_office80s_brown_glass.jpg",
+        "tex/facade/lib/lib_office_blue_curtain.jpg",
+        "tex/facade/lib/lib_composite_ac_laundry_grille.jpg",
+        "tex/facade/lib/lib_composite_mosaic_cage_balcony.jpg",
+        "tex/facade/lib/lib_tonglau_arcade_verandah.jpg",
+        "tex/facade/lib/lib_private90s_bay_window.jpg",
+        "tex/facade/lib/lib_private70s_iron_grille.jpg",
+        "tex/facade/lib/lib_walkup60s_pink_louvre.jpg"
+      ],
+      "accent": "#8A9AA8"
+    },
+    "wan_chai": {
+      "kind": "cbd",
+      "count": 12,
+      "facades": [
+        "tex/facade/wc/wc_tonglau_verandah_green.jpg",
+        "tex/facade/wc/wc_composite_mosaic_60s.jpg",
+        "tex/facade/wc/wc_office_glass_curtain.jpg",
+        "tex/facade/wc/wc_market_shopfront_awning.jpg",
+        "tex/facade/lib/lib_office80s_brown_glass.jpg",
+        "tex/facade/lib/lib_office_blue_curtain.jpg",
+        "tex/facade/lib/lib_composite_ac_laundry_grille.jpg",
+        "tex/facade/lib/lib_composite_mosaic_cage_balcony.jpg",
+        "tex/facade/lib/lib_tonglau_arcade_verandah.jpg",
+        "tex/facade/lib/lib_private90s_bay_window.jpg",
+        "tex/facade/lib/lib_private70s_iron_grille.jpg",
+        "tex/facade/lib/lib_walkup60s_pink_louvre.jpg"
+      ],
+      "accent": "#C4A574"
+    },
+    "eastern": {
+      "kind": "urban_old",
+      "count": 20,
+      "facades": [
+        "tex/facade/east/east_northpoint_composite_ac.jpg",
+        "tex/facade/east/east_quarrybay_industrial_strip.jpg",
+        "tex/facade/east/east_taikooshing_bay_window.jpg",
+        "tex/facade/east/east_skw_tonglau_shopfront.jpg",
+        "tex/facade/lib/lib_tonglau_arcade_verandah.jpg",
+        "tex/facade/lib/lib_composite_ac_laundry_grille.jpg",
+        "tex/facade/lib/lib_composite_mosaic_cage_balcony.jpg",
+        "tex/facade/lib/lib_private70s_iron_grille.jpg",
+        "tex/facade/lib/lib_walkup60s_pink_louvre.jpg",
+        "tex/facade/lib/lib_publichousing_slab_stripe.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_green.jpg",
+        "tex/facade/lib/lib_publichousing_corridor_yellow.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_blue.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_pink.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_orange.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_lilac.jpg",
+        "tex/facade/lib/lib_publichousing_slab_blue.jpg",
+        "tex/facade/lib/lib_publichousing_slab_green.jpg",
+        "tex/facade/lib/lib_office80s_brown_glass.jpg",
+        "tex/facade/lib/lib_office_blue_curtain.jpg"
+      ],
+      "accent": "#B8A888"
+    },
+    "southern": {
+      "kind": "newtown",
+      "count": 15,
+      "facades": [
+        "tex/facade/lib/lib_publichousing_slab_stripe.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_green.jpg",
+        "tex/facade/lib/lib_publichousing_corridor_yellow.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_blue.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_pink.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_orange.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_lilac.jpg",
+        "tex/facade/lib/lib_publichousing_slab_blue.jpg",
+        "tex/facade/lib/lib_publichousing_slab_green.jpg",
+        "tex/facade/lib/lib_private90s_bay_window.jpg",
+        "tex/facade/lib/lib_industrial_ribbon_cargo.jpg",
+        "tex/facade/lib/lib_composite_ac_laundry_grille.jpg",
+        "tex/facade/lib/lib_composite_mosaic_cage_balcony.jpg",
+        "tex/facade/lib/lib_office80s_brown_glass.jpg",
+        "tex/facade/lib/lib_office_blue_curtain.jpg"
+      ],
+      "accent": "#D8D0C4"
+    },
+    "yau_tsim_mong": {
+      "kind": "urban_old",
+      "count": 21,
+      "facades": [
+        "tex/facade/ytm/ytm_gf_shop_mosaic.jpg",
+        "tex/facade/ytm/ytm_mk_window_ac.jpg",
+        "tex/facade/ytm/ytm_tst_glass_podium.jpg",
+        "tex/facade/ytm/ytm_arcade_teal.jpg",
+        "tex/facade/ytm/ytm_neon_box_blank.jpg",
+        "tex/facade/lib/lib_tonglau_arcade_verandah.jpg",
+        "tex/facade/lib/lib_composite_ac_laundry_grille.jpg",
+        "tex/facade/lib/lib_composite_mosaic_cage_balcony.jpg",
+        "tex/facade/lib/lib_private70s_iron_grille.jpg",
+        "tex/facade/lib/lib_walkup60s_pink_louvre.jpg",
+        "tex/facade/lib/lib_publichousing_slab_stripe.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_green.jpg",
+        "tex/facade/lib/lib_publichousing_corridor_yellow.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_blue.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_pink.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_orange.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_lilac.jpg",
+        "tex/facade/lib/lib_publichousing_slab_blue.jpg",
+        "tex/facade/lib/lib_publichousing_slab_green.jpg",
+        "tex/facade/lib/lib_office80s_brown_glass.jpg",
+        "tex/facade/lib/lib_office_blue_curtain.jpg"
+      ],
+      "accent": "#3A3E44"
+    },
+    "sham_shui_po": {
+      "kind": "urban_old",
+      "count": 20,
+      "facades": [
+        "tex/facade/ssp/ssp_tonglau_grille.jpg",
+        "tex/facade/ssp/ssp_old_industrial_shutter.jpg",
+        "tex/facade/ssp/ssp_electronics_shopfront.jpg",
+        "tex/facade/ssp/ssp_publichousing_corridor.jpg",
+        "tex/facade/lib/lib_tonglau_arcade_verandah.jpg",
+        "tex/facade/lib/lib_composite_ac_laundry_grille.jpg",
+        "tex/facade/lib/lib_composite_mosaic_cage_balcony.jpg",
+        "tex/facade/lib/lib_private70s_iron_grille.jpg",
+        "tex/facade/lib/lib_walkup60s_pink_louvre.jpg",
+        "tex/facade/lib/lib_publichousing_slab_stripe.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_green.jpg",
+        "tex/facade/lib/lib_publichousing_corridor_yellow.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_blue.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_pink.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_orange.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_lilac.jpg",
+        "tex/facade/lib/lib_publichousing_slab_blue.jpg",
+        "tex/facade/lib/lib_publichousing_slab_green.jpg",
+        "tex/facade/lib/lib_office80s_brown_glass.jpg",
+        "tex/facade/lib/lib_office_blue_curtain.jpg"
+      ],
+      "accent": "#C9A84A"
+    },
+    "kowloon_city": {
+      "kind": "urban_old",
+      "count": 20,
+      "facades": [
+        "tex/facade/kcity/kcity_tonglau_brick_balcony.jpg",
+        "tex/facade/kcity/kcity_thai_shopfront_wood.jpg",
+        "tex/facade/kcity/kcity_kaitak_1960s_pastel.jpg",
+        "tex/facade/kcity/kcity_pewr_midrise_ac.jpg",
+        "tex/facade/lib/lib_tonglau_arcade_verandah.jpg",
+        "tex/facade/lib/lib_composite_ac_laundry_grille.jpg",
+        "tex/facade/lib/lib_composite_mosaic_cage_balcony.jpg",
+        "tex/facade/lib/lib_private70s_iron_grille.jpg",
+        "tex/facade/lib/lib_walkup60s_pink_louvre.jpg",
+        "tex/facade/lib/lib_publichousing_slab_stripe.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_green.jpg",
+        "tex/facade/lib/lib_publichousing_corridor_yellow.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_blue.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_pink.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_orange.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_lilac.jpg",
+        "tex/facade/lib/lib_publichousing_slab_blue.jpg",
+        "tex/facade/lib/lib_publichousing_slab_green.jpg",
+        "tex/facade/lib/lib_office80s_brown_glass.jpg",
+        "tex/facade/lib/lib_office_blue_curtain.jpg"
+      ],
+      "accent": "#8B4A3A"
+    },
+    "wong_tai_sin": {
+      "kind": "newtown",
+      "count": 15,
+      "facades": [
+        "tex/facade/lib/lib_publichousing_slab_stripe.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_green.jpg",
+        "tex/facade/lib/lib_publichousing_corridor_yellow.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_blue.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_pink.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_orange.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_lilac.jpg",
+        "tex/facade/lib/lib_publichousing_slab_blue.jpg",
+        "tex/facade/lib/lib_publichousing_slab_green.jpg",
+        "tex/facade/lib/lib_private90s_bay_window.jpg",
+        "tex/facade/lib/lib_industrial_ribbon_cargo.jpg",
+        "tex/facade/lib/lib_composite_ac_laundry_grille.jpg",
+        "tex/facade/lib/lib_composite_mosaic_cage_balcony.jpg",
+        "tex/facade/lib/lib_office80s_brown_glass.jpg",
+        "tex/facade/lib/lib_office_blue_curtain.jpg"
+      ],
+      "accent": "#D4B8B0"
+    },
+    "kwun_tong": {
+      "kind": "industrial",
+      "count": 16,
+      "facades": [
+        "tex/facade/lib/lib_industrial_ribbon_cargo.jpg",
+        "tex/facade/lib/lib_publichousing_slab_stripe.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_green.jpg",
+        "tex/facade/lib/lib_publichousing_corridor_yellow.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_blue.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_pink.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_orange.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_lilac.jpg",
+        "tex/facade/lib/lib_publichousing_slab_blue.jpg",
+        "tex/facade/lib/lib_publichousing_slab_green.jpg",
+        "tex/facade/lib/lib_composite_ac_laundry_grille.jpg",
+        "tex/facade/lib/lib_composite_mosaic_cage_balcony.jpg",
+        "tex/facade/lib/lib_office80s_brown_glass.jpg",
+        "tex/facade/lib/lib_office_blue_curtain.jpg",
+        "tex/facade/lib/lib_private70s_iron_grille.jpg",
+        "tex/facade/lib/lib_walkup60s_pink_louvre.jpg"
+      ],
+      "accent": "#6A7A88"
+    },
+    "kwai_tsing": {
+      "kind": "industrial",
+      "count": 21,
+      "facades": [
+        "tex/facade/kc/kc_industrial_concrete.jpg",
+        "tex/facade/kc/kc_corrugated_warehouse.jpg",
+        "tex/facade/kc/kc_container_accent.jpg",
+        "tex/facade/kc/kc_publichousing_green.jpg",
+        "tex/facade/kc/kc_weigh_hazard_curb.jpg",
+        "tex/facade/lib/lib_industrial_ribbon_cargo.jpg",
+        "tex/facade/lib/lib_publichousing_slab_stripe.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_green.jpg",
+        "tex/facade/lib/lib_publichousing_corridor_yellow.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_blue.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_pink.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_orange.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_lilac.jpg",
+        "tex/facade/lib/lib_publichousing_slab_blue.jpg",
+        "tex/facade/lib/lib_publichousing_slab_green.jpg",
+        "tex/facade/lib/lib_composite_ac_laundry_grille.jpg",
+        "tex/facade/lib/lib_composite_mosaic_cage_balcony.jpg",
+        "tex/facade/lib/lib_office80s_brown_glass.jpg",
+        "tex/facade/lib/lib_office_blue_curtain.jpg",
+        "tex/facade/lib/lib_private70s_iron_grille.jpg",
+        "tex/facade/lib/lib_walkup60s_pink_louvre.jpg"
+      ],
+      "accent": "#7A8088"
+    },
+    "tsuen_wan": {
+      "kind": "newtown",
+      "count": 19,
+      "facades": [
+        "tex/facade/tw/tw_publichousing_yellow.jpg",
+        "tex/facade/tw/tw_newtown_mall_glass.jpg",
+        "tex/facade/tw/tw_old_industrial_shutter.jpg",
+        "tex/facade/tw/tw_village_house_balcony.jpg",
+        "tex/facade/lib/lib_publichousing_slab_stripe.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_green.jpg",
+        "tex/facade/lib/lib_publichousing_corridor_yellow.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_blue.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_pink.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_orange.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_lilac.jpg",
+        "tex/facade/lib/lib_publichousing_slab_blue.jpg",
+        "tex/facade/lib/lib_publichousing_slab_green.jpg",
+        "tex/facade/lib/lib_private90s_bay_window.jpg",
+        "tex/facade/lib/lib_industrial_ribbon_cargo.jpg",
+        "tex/facade/lib/lib_composite_ac_laundry_grille.jpg",
+        "tex/facade/lib/lib_composite_mosaic_cage_balcony.jpg",
+        "tex/facade/lib/lib_office80s_brown_glass.jpg",
+        "tex/facade/lib/lib_office_blue_curtain.jpg"
+      ],
+      "accent": "#9AA4AE"
+    },
+    "tuen_mun": {
+      "kind": "newtown",
+      "count": 15,
+      "facades": [
+        "tex/facade/lib/lib_publichousing_slab_stripe.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_green.jpg",
+        "tex/facade/lib/lib_publichousing_corridor_yellow.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_blue.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_pink.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_orange.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_lilac.jpg",
+        "tex/facade/lib/lib_publichousing_slab_blue.jpg",
+        "tex/facade/lib/lib_publichousing_slab_green.jpg",
+        "tex/facade/lib/lib_private90s_bay_window.jpg",
+        "tex/facade/lib/lib_industrial_ribbon_cargo.jpg",
+        "tex/facade/lib/lib_composite_ac_laundry_grille.jpg",
+        "tex/facade/lib/lib_composite_mosaic_cage_balcony.jpg",
+        "tex/facade/lib/lib_office80s_brown_glass.jpg",
+        "tex/facade/lib/lib_office_blue_curtain.jpg"
+      ],
+      "accent": "#E8E0D0"
+    },
+    "yuen_long": {
+      "kind": "rural",
+      "count": 14,
+      "facades": [
+        "tex/facade/lib/lib_publichousing_slab_stripe.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_green.jpg",
+        "tex/facade/lib/lib_publichousing_corridor_yellow.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_blue.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_pink.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_orange.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_lilac.jpg",
+        "tex/facade/lib/lib_publichousing_slab_blue.jpg",
+        "tex/facade/lib/lib_publichousing_slab_green.jpg",
+        "tex/facade/lib/lib_private90s_bay_window.jpg",
+        "tex/facade/lib/lib_private70s_iron_grille.jpg",
+        "tex/facade/lib/lib_walkup60s_pink_louvre.jpg",
+        "tex/facade/lib/lib_composite_ac_laundry_grille.jpg",
+        "tex/facade/lib/lib_composite_mosaic_cage_balcony.jpg"
+      ],
+      "accent": "#2E8B57"
+    },
+    "north": {
+      "kind": "rural",
+      "count": 14,
+      "facades": [
+        "tex/facade/lib/lib_publichousing_slab_stripe.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_green.jpg",
+        "tex/facade/lib/lib_publichousing_corridor_yellow.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_blue.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_pink.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_orange.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_lilac.jpg",
+        "tex/facade/lib/lib_publichousing_slab_blue.jpg",
+        "tex/facade/lib/lib_publichousing_slab_green.jpg",
+        "tex/facade/lib/lib_private90s_bay_window.jpg",
+        "tex/facade/lib/lib_private70s_iron_grille.jpg",
+        "tex/facade/lib/lib_walkup60s_pink_louvre.jpg",
+        "tex/facade/lib/lib_composite_ac_laundry_grille.jpg",
+        "tex/facade/lib/lib_composite_mosaic_cage_balcony.jpg"
+      ],
+      "accent": "#C4B090"
+    },
+    "tai_po": {
+      "kind": "newtown",
+      "count": 15,
+      "facades": [
+        "tex/facade/lib/lib_publichousing_slab_stripe.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_green.jpg",
+        "tex/facade/lib/lib_publichousing_corridor_yellow.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_blue.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_pink.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_orange.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_lilac.jpg",
+        "tex/facade/lib/lib_publichousing_slab_blue.jpg",
+        "tex/facade/lib/lib_publichousing_slab_green.jpg",
+        "tex/facade/lib/lib_private90s_bay_window.jpg",
+        "tex/facade/lib/lib_industrial_ribbon_cargo.jpg",
+        "tex/facade/lib/lib_composite_ac_laundry_grille.jpg",
+        "tex/facade/lib/lib_composite_mosaic_cage_balcony.jpg",
+        "tex/facade/lib/lib_office80s_brown_glass.jpg",
+        "tex/facade/lib/lib_office_blue_curtain.jpg"
+      ],
+      "accent": "#7A9A7A"
+    },
+    "sha_tin": {
+      "kind": "newtown",
+      "count": 19,
+      "facades": [
+        "tex/facade/st/st_publichousing_blue.jpg",
+        "tex/facade/st/st_newtown_mall_stone.jpg",
+        "tex/facade/st/st_fotan_industrial_shutter.jpg",
+        "tex/facade/st/st_village_house_pink.jpg",
+        "tex/facade/lib/lib_publichousing_slab_stripe.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_green.jpg",
+        "tex/facade/lib/lib_publichousing_corridor_yellow.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_blue.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_pink.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_orange.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_lilac.jpg",
+        "tex/facade/lib/lib_publichousing_slab_blue.jpg",
+        "tex/facade/lib/lib_publichousing_slab_green.jpg",
+        "tex/facade/lib/lib_private90s_bay_window.jpg",
+        "tex/facade/lib/lib_industrial_ribbon_cargo.jpg",
+        "tex/facade/lib/lib_composite_ac_laundry_grille.jpg",
+        "tex/facade/lib/lib_composite_mosaic_cage_balcony.jpg",
+        "tex/facade/lib/lib_office80s_brown_glass.jpg",
+        "tex/facade/lib/lib_office_blue_curtain.jpg"
+      ],
+      "accent": "#6BA88A"
+    },
+    "sai_kung": {
+      "kind": "rural",
+      "count": 14,
+      "facades": [
+        "tex/facade/lib/lib_publichousing_slab_stripe.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_green.jpg",
+        "tex/facade/lib/lib_publichousing_corridor_yellow.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_blue.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_pink.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_orange.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_lilac.jpg",
+        "tex/facade/lib/lib_publichousing_slab_blue.jpg",
+        "tex/facade/lib/lib_publichousing_slab_green.jpg",
+        "tex/facade/lib/lib_private90s_bay_window.jpg",
+        "tex/facade/lib/lib_private70s_iron_grille.jpg",
+        "tex/facade/lib/lib_walkup60s_pink_louvre.jpg",
+        "tex/facade/lib/lib_composite_ac_laundry_grille.jpg",
+        "tex/facade/lib/lib_composite_mosaic_cage_balcony.jpg"
+      ],
+      "accent": "#F0F4F8"
+    },
+    "islands": {
+      "kind": "rural",
+      "count": 14,
+      "facades": [
+        "tex/facade/lib/lib_publichousing_slab_stripe.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_green.jpg",
+        "tex/facade/lib/lib_publichousing_corridor_yellow.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_blue.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_pink.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_orange.jpg",
+        "tex/facade/lib/lib_publichousing_harmony_lilac.jpg",
+        "tex/facade/lib/lib_publichousing_slab_blue.jpg",
+        "tex/facade/lib/lib_publichousing_slab_green.jpg",
+        "tex/facade/lib/lib_private90s_bay_window.jpg",
+        "tex/facade/lib/lib_private70s_iron_grille.jpg",
+        "tex/facade/lib/lib_walkup60s_pink_louvre.jpg",
+        "tex/facade/lib/lib_composite_ac_laundry_grille.jpg",
+        "tex/facade/lib/lib_composite_mosaic_cage_balcony.jpg"
+      ],
+      "accent": "#6B5A48"
+    }
+  },
+  "shopfronts": {
+    "path": "tex/facade/shopfront/",
+    "items": [
+      {
+        "file": "gf_chachanteng.jpg",
+        "blank": "gf_chachanteng_blank.jpg",
+        "kind": "chachanteng",
+        "parody_zh": "霓記冰室",
+        "parody_en": "NEI KEI CAFE",
+        "closed": false,
+        "ground_shop": "cha_chaan_teng"
+      },
+      {
+        "file": "gf_pharmacy.jpg",
+        "blank": "gf_pharmacy_blank.jpg",
+        "kind": "pharmacy",
+        "parody_zh": "百安藥房",
+        "parody_en": "PAK ON DISPENSARY",
+        "closed": false,
+        "ground_shop": "pharmacy"
+      },
+      {
+        "file": "gf_goldsmith.jpg",
+        "blank": "gf_goldsmith_blank.jpg",
+        "kind": "goldsmith",
+        "parody_zh": "金滿樓珠寶金行",
+        "parody_en": "KAM MUN LAU JEWELLERY",
+        "closed": false,
+        "ground_shop": "goldsmith"
+      },
+      {
+        "file": "gf_realestate.jpg",
+        "blank": "gf_realestate_blank.jpg",
+        "kind": "realestate",
+        "parody_zh": "樂居地產",
+        "parody_en": "LOK KUI PROPERTY",
+        "closed": false,
+        "ground_shop": "estate_agency"
+      },
+      {
+        "file": "gf_roastmeat.jpg",
+        "blank": "gf_roastmeat_blank.jpg",
+        "kind": "roastmeat",
+        "parody_zh": "三角燒臘",
+        "parody_en": "SAM KOK BBQ",
+        "closed": false,
+        "ground_shop": "roast_meat"
+      },
+      {
+        "file": "gf_hardware.jpg",
+        "blank": "gf_hardware_blank.jpg",
+        "kind": "hardware",
+        "parody_zh": "永興五金",
+        "parody_en": "WING HING HARDWARE",
+        "closed": false,
+        "ground_shop": "hardware"
+      },
+      {
+        "file": "gf_shutter_closed.jpg",
+        "blank": "gf_shutter_closed_blank.jpg",
+        "kind": "shutter_closed",
+        "parody_zh": null,
+        "parody_en": null,
+        "closed": true,
+        "ground_shop": "shuttered"
+      },
+      {
+        "file": "gf_irongate_closed.jpg",
+        "blank": "gf_irongate_closed_blank.jpg",
+        "kind": "irongate_closed",
+        "parody_zh": null,
+        "parody_en": null,
+        "closed": true,
+        "ground_shop": "shuttered"
+      },
+      {
+        "file": "gf_herbaltea.jpg",
+        "blank": "gf_herbaltea_blank.jpg",
+        "kind": "herbaltea",
+        "parody_zh": "三角涼茶",
+        "parody_en": "HERBAL TEA",
+        "closed": false,
+        "ground_shop": "other"
+      },
+      {
+        "file": "gf_store.jpg",
+        "blank": "gf_store_blank.jpg",
+        "kind": "store",
+        "parody_zh": "好運士多",
+        "parody_en": "HO WAN STORE",
+        "closed": false,
+        "ground_shop": "other"
+      },
+      {
+        "file": "gf_driedseafood.jpg",
+        "blank": "gf_driedseafood_blank.jpg",
+        "kind": "driedseafood",
+        "parody_zh": "海味南北行",
+        "parody_en": "DRIED SEAFOOD",
+        "closed": false,
+        "ground_shop": "other"
+      },
+      {
+        "file": "gf_mahjong.jpg",
+        "blank": "gf_mahjong_blank.jpg",
+        "kind": "mahjong",
+        "parody_zh": "雀友娛樂",
+        "parody_en": "MAHJONG CLUB",
+        "closed": false,
+        "ground_shop": "other"
+      }
+    ],
+    "rule": "地舖帶 4.5m 高一段用 gf_*；每幢隨機 1–3 款，closed 款(鐵閘) 夜晚比例提高到 40%；招牌字已經畫入圖（戲仿名），要動態字就用 *_blank.jpg 嘅頂 20% 做招牌位；按 building.ground_shop 揀同 key 嘅 gf_*，名用 docs/shopfront-parody-names-core27f.json 隨機出喺 *_blank 頂 20%，other 隨機揀"
+  },
+  "palette": {
+    "road": "#3A3D40 深灰瀝青，roughness 0.92",
+    "double_yellow": "#E8B820 寬 0.1m 兩條間距 0.12m，貼 kerb 0.3m 內",
+    "kerb": "#9A9C98",
+    "bin_small": "#E8701E",
+    "railing_green": "#3F6A4E（少數 20%）",
+    "railing_grey": "#A9AFB3 鍍鋅 Type 2（預設 80%）"
+  },
+  "type_to_lib": {
+    "tong_lau": [
+      "tonglau"
+    ],
+    "public_housing": [
+      "public_housing"
+    ],
+    "private_estate": [
+      "residential_private"
+    ],
+    "composite_resi_comm": [
+      "composite",
+      "residential_old"
+    ],
+    "commercial_office": [
+      "office"
+    ],
+    "industrial": [
+      "industrial"
+    ],
+    "village_house": [
+      "residential_old"
+    ],
+    "institutional": [
+      "office",
+      "public_housing"
+    ],
+    "other": [
+      "composite",
+      "residential_old",
+      "residential_private"
+    ]
+  },
+  "type_to_lib_note": "building.type（爬蟲）→ lib[].type；village_house 先用本區模組入面 village 張（tw/st），冇就用 residential_old",
+  "blacklist_zh": [
+    "7-Eleven",
+    "OK",
+    "Circle K",
+    "VanGO",
+    "周大福",
+    "六福",
+    "謝瑞麟",
+    "中原",
+    "美聯",
+    "利嘉閣",
+    "天仁",
+    "春水堂",
+    "貢茶"
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "updated": "2026-10-19T19:40:00+08:00",
+  "for": "core29",
+  "ban": [
+    "photo plates",
+    "Google mesh",
+    "real brands"
+  ],
+  "tsuen_wan": {
+    "path": "tex/facade/tw/",
+    "modules": [
+      "tw_publichousing_yellow.jpg",
+      "tw_newtown_mall_glass.jpg",
+      "tw_old_industrial_shutter.jpg",
+      "tw_village_house_balcony.jpg",
+      "tw_waterfront_railing.jpg",
+      "tw_sidewalk_redbrick.jpg"
+    ],
+    "hint": "publichousing_yellow 公屋；newtown_mall_glass 荃新天地式商場（冇招牌）；waterfront_railing 海濱長廊"
+  },
+  "sha_tin": {
+    "path": "tex/facade/st/",
+    "modules": [
+      "st_publichousing_blue.jpg",
+      "st_newtown_mall_stone.jpg",
+      "st_fotan_industrial_shutter.jpg",
+      "st_village_house_pink.jpg",
+      "st_shingmun_river_railing.jpg",
+      "st_sidewalk_tactile.jpg"
+    ],
+    "hint": "fotan_industrial_shutter 火炭工廈；shingmun_river_railing 城門河畔；sidewalk_tactile 有導盲磚"
+  }
+}

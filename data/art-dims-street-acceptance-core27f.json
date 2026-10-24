@@ -1,0 +1,452 @@
+{
+  "project": "neon-triangle",
+  "for_version": "core27f",
+  "source": "user research 2026-10-24",
+  "K": 1.5,
+  "hk_arcade_u": {
+    "depth": [
+      2.25,
+      3.75
+    ],
+    "depth_note": "1.5–2.5m ×1.5 水平",
+    "clear_h": [
+      2.7,
+      3.5
+    ],
+    "clear_h_note": "2.7–3.5m 高度 1:1，唔好再×1.5",
+    "post_spacing": [
+      5.25,
+      7.5
+    ],
+    "post_spacing_note": "3.5–5m ×1.5 水平",
+    "pick": {
+      "depth": 3.0,
+      "clear_h": 3.0,
+      "post_spacing": 5.25,
+      "col_from_kerb": 2.25,
+      "column_from_shop": 2.0
+    },
+    "column_from_shop_m": [
+      1.0,
+      1.8
+    ],
+    "column_from_shop_u": [
+      1.5,
+      2.7
+    ],
+    "column_from_curb_m": [
+      1.2,
+      2.0
+    ],
+    "column_from_curb_u": [
+      1.8,
+      3.0
+    ],
+    "column_note": "老闆實測鎖：舖門 1.0–1.8m、路壆 1.2–2.0m（水平×1.5）",
+    "shop_clear_h_m": [
+      2.8,
+      3.5
+    ],
+    "upper_clear_h_m": [
+      2.7,
+      3.2
+    ],
+    "window_w_m": [
+      1.2,
+      1.8
+    ],
+    "window_w_u": [
+      1.8,
+      2.7
+    ]
+  },
+  "hk_ac_u": {
+    "w": 0.85,
+    "h": 0.6,
+    "d": 0.35,
+    "note": "細 prop 1:1（≈85×60×35cm）",
+    "mount_y": [
+      1.5,
+      2.5
+    ],
+    "mount_note": "離地高度 1:1",
+    "per_floor_face": [
+      1,
+      2
+    ],
+    "from_window_m": 0.15
+  },
+  "hk_laundry_u": {
+    "protrude": [
+      1.5,
+      2.25
+    ],
+    "protrude_note": "1–1.5m 水平 ×1.5",
+    "colors": [
+      11120563,
+      2763306,
+      4155982
+    ],
+    "material": "metal_or_bamboo",
+    "clear_below_ac_m": [
+      0.5,
+      1.0
+    ],
+    "clear_below_ac_note": "P0：晾衫避外機正下方 0.5–1m 淨空（高度 1:1）；改側移同層"
+  },
+  "hk_podium_floor_u": [
+    6.0,
+    9.0
+  ],
+  "macau_arcade_u": {
+    "depth": [
+      4.5,
+      6.0
+    ],
+    "clear_h": [
+      4.0,
+      5.0
+    ],
+    "note": "拱券葡式；深×1.5、高 1:1；唔抄香港"
+  },
+  "tw_night_stall_u": {
+    "depth": [
+      3.0,
+      4.5
+    ],
+    "canopy_h": [
+      2.0,
+      2.5
+    ],
+    "canopy_note": "棚高 2–2.5m 1:1",
+    "scooter_required": true
+  },
+  "doc": "docs/hk-macau-taiwan-street-acceptance-core27f.md",
+  "scale_rule_zh": "水平（OSM／行人路／騎樓深度／柱距）u=m×1.5；角色同細 prop 高度／≤1m 淨空 1:1（代碼工程師 2026-10-24）",
+  "hk_podium_floor_note": "商業層高 4–6m ×1.5 水平／質量高度跟建物 height_m 慣例；確認前以 coder extrude 為準",
+  "boss_p0": {
+    "project": "neon-triangle",
+    "for_version": "core27f",
+    "locked": "boss P0 2026-10-24",
+    "scale_rule_zh": "水平 u=m×1.5；角色／細 prop 高度／≤1m 淨空 1:1",
+    "hk_arcade": {
+      "col_from_kerb_m": [
+        1.2,
+        2.0
+      ],
+      "col_from_kerb_u": [
+        1.8,
+        3.0
+      ],
+      "col_from_shop_m": [
+        1.0,
+        1.8
+      ],
+      "col_from_shop_u": [
+        1.5,
+        2.7
+      ],
+      "gf_h_m": [
+        2.8,
+        3.5
+      ],
+      "gf_h_u": [
+        2.8,
+        3.5
+      ],
+      "upper_h_m": [
+        2.7,
+        3.2
+      ],
+      "upper_h_u": [
+        2.7,
+        3.2
+      ],
+      "window_w_m": [
+        1.2,
+        1.8
+      ],
+      "window_w_u": [
+        1.8,
+        2.7
+      ],
+      "clear_h_u": [
+        2.7,
+        3.5
+      ],
+      "depth_u": [
+        2.25,
+        3.75
+      ],
+      "post_u": [
+        5.25,
+        7.5
+      ],
+      "pick": {
+        "depth": 3.0,
+        "clear_h": 3.0,
+        "post": 5.25,
+        "col_from_kerb": 2.25,
+        "col_from_shop": 2.0
+      }
+    },
+    "hk_housing_floor_h_u": [
+      2.7,
+      2.9
+    ],
+    "hk_ac": {
+      "window_unit_share_old": [
+        0.4,
+        0.6
+      ],
+      "split_share_newtown": 0.8,
+      "bracket_cm": [
+        [
+          20,
+          40
+        ],
+        [
+          30,
+          50
+        ]
+      ],
+      "outdoor_from_window_m": 0.15,
+      "outdoor_from_ground_m": [
+        1.5,
+        2.5
+      ],
+      "split_box_u": {
+        "w": 0.85,
+        "h": 0.6,
+        "d": 0.35
+      }
+    },
+    "hk_laundry": {
+      "floors": [
+        2,
+        8
+      ],
+      "avoid_under_canopy_longterm": true,
+      "protrude_u": [
+        1.5,
+        2.25
+      ]
+    },
+    "hk_canopy": {
+      "extend_m": [
+        0.8,
+        1.5
+      ],
+      "extend_u": [
+        1.2,
+        2.25
+      ],
+      "clear_h_u": 2.5
+    },
+    "hk_sign": {
+      "extend_m": [
+        0.5,
+        1.2
+      ],
+      "extend_u": [
+        0.75,
+        1.8
+      ],
+      "no_carriageway": true
+    },
+    "hk_footway_m": {
+      "main": [
+        2.0,
+        3.5
+      ],
+      "side": [
+        1.5,
+        2.5
+      ]
+    },
+    "hk_kerb_m": [
+      0.1,
+      0.15
+    ],
+    "hk_kerb_pick": 0.125,
+    "hk_bin_spacing_main_m": [
+      20,
+      50
+    ],
+    "hk_bin_spacing_main_u": [
+      30,
+      75
+    ],
+    "hk_railing_h_m": {
+      "iron": [
+        0.9,
+        1.1
+      ],
+      "concrete": [
+        0.9,
+        1.0
+      ],
+      "pick": 1.0
+    },
+    "hk_market": {
+      "canvas_colors_zh": "藍綠紅白",
+      "pipe_mm": [
+        40,
+        60
+      ]
+    },
+    "hk_mtr_kiosk_m": {
+      "w": [
+        2.5,
+        3.5
+      ],
+      "h": [
+        2.8,
+        3.5
+      ],
+      "d": [
+        1.5,
+        2.5
+      ],
+      "glass_pct": [
+        0.6,
+        0.7
+      ]
+    },
+    "vehicles_m": {
+      "dd_bus": [
+        12,
+        2.5,
+        4.4
+      ],
+      "minibus": [
+        [
+          7,
+          7.5
+        ],
+        [
+          2.0,
+          2.2
+        ],
+        [
+          2.5,
+          2.8
+        ]
+      ],
+      "taxi": [
+        [
+          4.5,
+          5
+        ],
+        [
+          1.7,
+          1.8
+        ],
+        1.5
+      ],
+      "tram_double": [
+        20,
+        2.4,
+        3.5
+      ],
+      "tram_gauge_mm": 1067
+    },
+    "bus_shelter_m": {
+      "l": [
+        4,
+        6
+      ],
+      "w": [
+        2.5,
+        3.0
+      ]
+    },
+    "pole_spacing_main_m": [
+      20,
+      40
+    ],
+    "blacklist_zh": [
+      "7-Eleven",
+      "OK",
+      "Circle K",
+      "VanGO",
+      "周大福",
+      "六福",
+      "謝瑞麟",
+      "中原",
+      "美聯",
+      "利嘉閣",
+      "天仁",
+      "春水堂",
+      "貢茶"
+    ],
+    "doc": "docs/boss-p0-street-dims-core27f.md"
+  },
+  "blacklist_zh": [
+    "7-Eleven",
+    "OK",
+    "Circle K",
+    "VanGO",
+    "周大福",
+    "六福",
+    "謝瑞麟",
+    "中原",
+    "美聯",
+    "利嘉閣",
+    "天仁",
+    "春水堂",
+    "貢茶"
+  ],
+  "hk_vehicle_u": {
+    "double_decker_m": {
+      "l": 12.0,
+      "w": 2.5,
+      "h": 4.4
+    },
+    "minibus_m": {
+      "l": 7.0,
+      "w": 2.2,
+      "h": 2.8
+    },
+    "taxi_m": {
+      "l": 4.6,
+      "w": 1.8,
+      "h": 1.6
+    },
+    "tram_m": {
+      "l": 12.0,
+      "w": 2.4,
+      "h": 4.66,
+      "gauge": 1.067
+    },
+    "note": "真米；車身長闊水平×1.5 視專案，crowd 現用 1:1 遊戲單位＝米"
+  },
+  "p0_boss_2026_10_24": "column shop/curb + laundry clear under AC",
+  "public_buildings_doc": "docs/boss-p0-batch-and-public-buildings-2026-10-24.md",
+  "hk_storey_h_m": {
+    "public_housing": [
+      2.7,
+      2.9
+    ],
+    "private_tower": [
+      2.8,
+      3.3
+    ],
+    "note": "高度 1:1"
+  },
+  "glance_table": "assets/data/street-glance-hk-mo-tw-core27f.json",
+  "boss_glance_lock": {
+    "date": "2026-10-24",
+    "table": "assets/data/street-glance-hk-mo-tw-core27f.json",
+    "hk": "唐樓騎樓 1.5–2.5／2.7–3.5／柱 3.5–5、晾衫密、公屋色帶、瀝青",
+    "mo": "拱廊更深更高＋圓拱、粉黃白、石仔路、中葡招牌、欄杆少",
+    "tw": "磁磚＋鐵窗、機車佔行人路、夜市棚、罰鍰 TWD",
+    "hk_extras_aligned": true,
+    "hk_extras_pick": {
+      "depth": 3.0,
+      "clear_h": 3.0,
+      "post": 5.25
+    },
+    "mo_tw_props": "開區前分庫；唔混用港 extras"
+  }
+}

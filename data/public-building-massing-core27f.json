@@ -1,0 +1,157 @@
+{
+  "version": "core27f",
+  "source": "docs/boss-p0-batch-and-public-buildings-2026-10-24.md",
+  "ban": "禁相板／真十字／真港鐵 logo／真院名校名／署徽同部門全稱",
+  "types": {
+    "gov_office": {
+      "massing": "tower_or_block",
+      "facade": [
+        "glass_curtain",
+        "concrete",
+        "colonial_stone_arch"
+      ],
+      "colors": [
+        "0xd8d8d4",
+        "0xc8c0b4",
+        "0xa8b0b8"
+      ],
+      "props": [
+        "flagpole_generic",
+        "notice_board_parody",
+        "gate"
+      ]
+    },
+    "hospital": {
+      "massing": "podium_plus_ward_block",
+      "facade": [
+        "white_grey_bands",
+        "glass_strip_windows"
+      ],
+      "colors": [
+        "0xf2f2f0",
+        "0xd0d4d8",
+        "0xb8c4cc"
+      ],
+      "props": [
+        "ae_dropoff_canopy",
+        "ambulance_bay_marking"
+      ],
+      "forbid": [
+        "red_cross_mark",
+        "real_ha_name"
+      ]
+    },
+    "school": {
+      "massing": "slab_6_to_8_storey",
+      "facade": [
+        "painted_band",
+        "mosaic_tile_band"
+      ],
+      "colors": [
+        "0xe8d8c0",
+        "0x7a9ab0",
+        "0xc8a070",
+        "0xd0d8c8"
+      ],
+      "props": [
+        "covered_playground",
+        "open_court"
+      ],
+      "forbid": [
+        "real_school_name"
+      ]
+    },
+    "market": {
+      "massing": "low_2_to_4_storey",
+      "facade": [
+        "concrete",
+        "large_eaves",
+        "vents"
+      ],
+      "colors": [
+        "0xc8c4bc",
+        "0xb0a898",
+        "0x8a9098"
+      ],
+      "props": [
+        "canvas_stall",
+        "wide_canopy"
+      ]
+    },
+    "public_housing": {
+      "massing": [
+        "cross_block",
+        "y_block",
+        "slab"
+      ],
+      "facade": [
+        "colour_band",
+        "window_grille"
+      ],
+      "colors": [
+        "0xe8b080",
+        "0x7a9a88",
+        "0xc8d0e0",
+        "0xd8a0a0",
+        "0xb0b8a0"
+      ],
+      "props": [
+        "podium_mall_garden_parking"
+      ]
+    },
+    "transit": {
+      "massing": "pavilion",
+      "facade": [
+        "glass_metal_parody"
+      ],
+      "colors": [
+        "0xc8d0d8",
+        "0x2a2a2e",
+        "0xe8e4d8"
+      ],
+      "props": [
+        "covered_bus_deck",
+        "pier_rail_bollard",
+        "crane_container_kwai"
+      ],
+      "forbid": [
+        "mtr_logo",
+        "real_operator_logo"
+      ]
+    },
+    "civic_leisure": {
+      "massing": "low_concrete_glass",
+      "colors": [
+        "0xd0d0cc",
+        "0xb8c0c8"
+      ],
+      "props": [
+        "park_rail",
+        "bench",
+        "bin"
+      ]
+    }
+  },
+  "district_rule": "舊區可加歷史窗楣／騎樓；新市鎮公屋／醫院跟 podium-tower",
+  "legal": {
+    "ok": [
+      "外形",
+      "色帶",
+      "戲仿院名校名街市名",
+      "通稱校名"
+    ],
+    "ban": [
+      "署徽",
+      "食物環境衛生署全稱",
+      "教育局全稱",
+      "房屋署全稱",
+      "建築署全稱",
+      "醫管局全稱／logo",
+      "真十字標誌",
+      "真港鐵 logo"
+    ],
+    "market_sign": "××街市（戲仿）",
+    "school_sign": "通稱（某某中學／官立／津貼）",
+    "hospital_sign": "戲仿院名（廣華坊／九龍公立等）"
+  }
+}

@@ -1,0 +1,331 @@
+diff --git a/index.html b/index.html
+index 27c3672..daec74c 100644
+--- a/index.html
++++ b/index.html
+@@ -9341,6 +9341,208 @@ const ZINFO = { ssp: ['深水埗', '九龍 · 深水埗區'], kcity: ['九龍城
+ for (const [id, zd] of Object.entries(HKMAP_DATA.zones)) HKM.zones[id] = { id, c: zd.c, H: zd.H, d: zd, built: false, visible: false, group: null, grid: null, polys: [], roads: [], colliders: [], lights: [] };
+ const NEON_W2 = ['大押', '茶餐廳', '麻雀', '賓館', '金行', '跌打', '酒家', '藥房', '涼茶', '桌球', '燒臘', '按摩', '找換', '時鐘酒店', '雀館', '粥麵'];
+ const NEON_C2 = ['#ff3b6b', '#ffcc33', '#33e0ff', '#7dff6a', '#ff7a2e', '#c76bff', '#ff4040'];
++/* =========================================================================
++ * core27c2 · SPCLR 主幹淨空（spine clearance）
++ *  · 讀 core27（＋之後 core28）spines：每條主幹 = 走廊（闊/2 + 1.5 m 邊）
++ *  · 任何樓腳多邊形踩入走廊 → 唔起樓、唔加碰撞（HKM 舊區 OSM 樓、extrude 樓、hk18 hub 方塊）
++ *  · 樓冇踩路但 AABB 碰撞盒蓋到路面 → 改用 2 m 條狀碰撞，踩路嗰幾條唔要
++ *  · HKM 舊區圍牆：主幹穿牆位開缺口
++ *  · 晚到嘅 spines（SPCLR.add）會回溯處理已起好嘅樓同 HKM 區
++ *  · 唔郁葵涌；燈位／安全島／迴旋島（設計障礙）唔經呢度
++ * ========================================================================= */
++const SPCLR = (() => {
++  const S = {
++    segs: [], grid: new Map(), cell: 32, reg: [], files: {}, ready: null, readyDone: false,
++    stats: { spines: 0, segs: 0, bldCull: 0, bldStrip: 0, stripDrop: 0, zoneCull: 0, wallCut: 0, hubCut: 0, retro: 0 }
++  };
++  const M_CULL = 1.5, M_EDGE = 0.2;
++  const key = (i, j) => i * 65536 + j;
++  function spineHalfW(sp) {
++    if (sp.width > 0) return sp.width / 2;
++    const k = sp.kind || '';
++    return (/osm_arterial|arterial/.test(k) ? 11 : (sp.speed === 'walk' ? 6 : 8)) / 2;
++  }
++  function addSeg(ax, az, bx, bz, hw, id) {
++    const s = { ax, az, bx, bz, hw, id };
++    S.segs.push(s);
++    const pad = hw + M_CULL + 2, c = S.cell;
++    const i0 = Math.floor((Math.min(ax, bx) - pad) / c), i1 = Math.floor((Math.max(ax, bx) + pad) / c);
++    const j0 = Math.floor((Math.min(az, bz) - pad) / c), j1 = Math.floor((Math.max(az, bz) + pad) / c);
++    for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { const k = key(i, j); let a = S.grid.get(k); if (!a) S.grid.set(k, (a = [])); a.push(s); }
++  }
++  function near(minx, maxx, minz, maxz) {
++    const c = S.cell, out = new Set();
++    const i0 = Math.floor(minx / c), i1 = Math.floor(maxx / c), j0 = Math.floor(minz / c), j1 = Math.floor(maxz / c);
++    if ((i1 - i0 + 1) * (j1 - j0 + 1) > 4000) { for (const s of S.segs) out.add(s); return out; }
++    for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { const a = S.grid.get(key(i, j)); if (a) for (const s of a) out.add(s); }
++    return out;
++  }
++  function pSeg(px, pz, ax, az, bx, bz) {
++    const vx = bx - ax, vz = bz - az, L = vx * vx + vz * vz;
++    const t = L > 0 ? Math.max(0, Math.min(1, ((px - ax) * vx + (pz - az) * vz) / L)) : 0;
++    return Math.hypot(px - ax - t * vx, pz - az - t * vz);
++  }
++  function segSeg(ax, az, bx, bz, cx, cz, dx, dz) {
++    const o = (px, pz, qx, qz, rx, rz) => (qx - px) * (rz - pz) - (qz - pz) * (rx - px);
++    const d1 = o(cx, cz, dx, dz, ax, az), d2 = o(cx, cz, dx, dz, bx, bz), d3 = o(ax, az, bx, bz, cx, cz), d4 = o(ax, az, bx, bz, dx, dz);
++    if (((d1 > 0) !== (d2 > 0)) && ((d3 > 0) !== (d4 > 0))) return 0;
++    return Math.min(pSeg(ax, az, cx, cz, dx, dz), pSeg(bx, bz, cx, cz, dx, dz), pSeg(cx, cz, ax, az, bx, bz), pSeg(dx, dz, ax, az, bx, bz));
++  }
++  function inFlat(x, z, F) {
++    let ins = false; const n = F.length / 2;
++    for (let i = 0, j = n - 1; i < n; j = i++) {
++      const ax = F[j * 2], az = F[j * 2 + 1], bx = F[i * 2], bz = F[i * 2 + 1];
++      if ((bz > z) !== (az > z) && x < (ax - bx) * (z - bz) / (az - bz) + bx) ins = !ins;
++    }
++    return ins;
++  }
++  function toFlat(pts) { // Vector2[]／{x,y}[]／{dx,dz}[]／Float32Array
++    if (pts instanceof Float32Array || (Array.isArray(pts) && typeof pts[0] === 'number')) return pts;
++    const F = new Float32Array(pts.length * 2);
++    pts.forEach((p, i) => { F[i * 2] = p.x != null ? p.x : p.dx; F[i * 2 + 1] = p.y != null ? p.y : (p.z != null ? p.z : p.dz); });
++    return F;
++  }
++  /** 樓腳多邊形同任何主幹走廊（hw + margin）相交？ */
++  function ringHit(pts, margin = M_CULL) {
++    if (!S.segs.length) return false;
++    const F = toFlat(pts), n = F.length / 2; if (n < 3) return false;
++    let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
++    for (let k = 0; k < n; k++) { const x = F[k * 2], z = F[k * 2 + 1]; if (x < x0) x0 = x; if (x > x1) x1 = x; if (z < z0) z0 = z; if (z > z1) z1 = z; }
++    for (const s of near(x0 - 8, x1 + 8, z0 - 8, z1 + 8)) {
++      const lim = s.hw + margin;
++      if (Math.max(s.ax, s.bx) < x0 - lim || Math.min(s.ax, s.bx) > x1 + lim || Math.max(s.az, s.bz) < z0 - lim || Math.min(s.az, s.bz) > z1 + lim) continue;
++      if (inFlat(s.ax, s.az, F) || inFlat(s.bx, s.bz, F)) return s;
++      for (let i = 0, j = n - 1; i < n; j = i++) if (segSeg(F[j * 2], F[j * 2 + 1], F[i * 2], F[i * 2 + 1], s.ax, s.az, s.bx, s.bz) < lim) return s;
++    }
++    return false;
++  }
++  function segBox(s, minx, maxx, minz, maxz) {
++    const ins = (x, z) => x >= minx && x <= maxx && z >= minz && z <= maxz;
++    if (ins(s.ax, s.az) || ins(s.bx, s.bz)) return 0;
++    const c = [[minx, minz], [maxx, minz], [maxx, maxz], [minx, maxz]];
++    let d = 1e9;
++    for (let k = 0; k < 4; k++) { const p = c[k], q = c[(k + 1) % 4]; d = Math.min(d, segSeg(s.ax, s.az, s.bx, s.bz, p[0], p[1], q[0], q[1])); if (d === 0) return 0; }
++    return d;
++  }
++  function boxHit(minx, maxx, minz, maxz, margin = M_EDGE) {
++    if (!S.segs.length) return false;
++    for (const s of near(minx - 8, maxx + 8, minz - 8, maxz + 8)) if (segBox(s, minx, maxx, minz, maxz) < s.hw + margin) return s;
++    return false;
++  }
++  function pointHit(x, z, margin = 0) {
++    for (const s of near(x - 1, x + 1, z - 1, z + 1)) if (pSeg(x, z, s.ax, s.az, s.bx, s.bz) < s.hw + margin) return s;
++    return false;
++  }
++  /** 2 m 條狀碰撞：沿長軸切片，每片取多邊形喺片內嘅另一軸範圍；踩路面（hw+0.2）嗰片唔要 */
++  function stripCols(F, minx, maxx, minz, maxz, h) {
++    const n = F.length / 2, alongX = (maxx - minx) >= (maxz - minz);
++    const a0 = alongX ? minx : minz, a1 = alongX ? maxx : maxz, N = Math.max(1, Math.ceil((a1 - a0) / 2)), w = (a1 - a0) / N;
++    const out = [];
++    for (let k = 0; k < N; k++) {
++      const s0 = a0 + k * w, s1 = s0 + w; let lo = 1e9, hi = -1e9;
++      for (let i = 0, j = n - 1; i < n; j = i++) {
++        const pa = alongX ? F[j * 2] : F[j * 2 + 1], po = alongX ? F[j * 2 + 1] : F[j * 2];
++        const qa = alongX ? F[i * 2] : F[i * 2 + 1], qo = alongX ? F[i * 2 + 1] : F[i * 2];
++        const ea = Math.min(pa, qa), eb = Math.max(pa, qa);
++        if (eb < s0 || ea > s1) continue;
++        const t0 = Math.max(s0, ea), t1 = Math.min(s1, eb);
++        for (const t of [t0, t1]) { const u = Math.abs(qa - pa) < 1e-6 ? 0 : (t - pa) / (qa - pa); const o = po + (qo - po) * Math.max(0, Math.min(1, u)); if (o < lo) lo = o; if (o > hi) hi = o; }
++        if (Math.abs(qa - pa) < 1e-6) { lo = Math.min(lo, po, qo); hi = Math.max(hi, po, qo); }
++      }
++      if (hi - lo < 0.2) continue;
++      const c = alongX ? { minX: s0, maxX: s1, minZ: lo, maxZ: hi, maxY: h } : { minX: lo, maxX: hi, minZ: s0, maxZ: s1, maxY: h };
++      if (boxHit(c.minX, c.maxX, c.minZ, c.maxZ, M_EDGE)) { S.stats.stripDrop++; continue; }
++      out.push(c);
++    }
++    return out;
++  }
++  function busy() { return (typeof INT !== 'undefined' && INT.active) || (typeof AREA !== 'undefined' && AREA.active); }
++  function dropCol(c) { const k = colliders.indexOf(c); if (k >= 0) colliders.splice(k, 1); }
++  function cullMesh(mesh) {
++    if (!mesh) return;
++    mesh.visible = false;
++    if (mesh.parent) mesh.parent.remove(mesh);
++    const k = typeof shootables !== 'undefined' ? shootables.indexOf(mesh) : -1; if (k >= 0) shootables.splice(k, 1);
++    if (mesh.geometry) mesh.geometry.dispose();
++  }
++  /** 處理一棟（新起或回溯） */
++  function apply(e) {
++    if (e.dead) return;
++    if (ringHit(e.F, M_CULL)) {
++      for (const c of e.cols) dropCol(c); e.cols = []; cullMesh(e.mesh); e.dead = true; S.stats.bldCull++; return;
++    }
++    if (!e.ok || e.strip) return;
++    if (boxHit(e.minx, e.maxx, e.minz, e.maxz, M_EDGE)) {
++      for (const c of e.cols) dropCol(c);
++      e.cols = stripCols(e.F, e.minx, e.maxx, e.minz, e.maxz, e.h); for (const c of e.cols) colliders.push(c);
++      e.strip = true; S.stats.bldStrip++;
++    }
++  }
++  /** extrude 樓碰撞入口（取代 addCollider(aabb)）；ok=false 即原本唔加碰撞 */
++  function bldCollider(pts, minx, maxx, minz, maxz, h, mesh, ok = true) {
++    const e = { F: toFlat(pts), minx, maxx, minz, maxz, h, mesh, ok, cols: [], strip: false, dead: false };
++    if (ok) { const c = { minX: minx, maxX: maxx, minZ: minz, maxZ: maxz, maxY: h }; colliders.push(c); e.cols.push(c); }
++    S.reg.push(e);
++    if (S.segs.length) apply(e);
++  }
++  /** HKM 舊區圍牆：主幹穿過嘅位開缺口；segs = [[ax,val,s,e]]（區局部） */
++  function cutWalls(segs, cx, cz) {
++    if (!S.segs.length) return segs;
++    const out = [];
++    for (const [ax, val, s, e] of segs) {
++      let run = null;
++      for (let t = s; t <= e + 1e-6; t += 0.5) {
++        const x = ax === 0 ? cx + val : cx + t, z = ax === 0 ? cz + t : cz + val;
++        const blocked = !!pointHit(x, z, 1.2);
++        if (!blocked) { if (run === null) run = t; }
++        else if (run !== null) { if (t - 0.5 - run > 0.5) out.push([ax, val, run, t - 0.5]); run = null; S.stats.wallCut++; }
++        else S.stats.wallCut++;
++      }
++      if (run !== null && e - run > 0.5) out.push([ax, val, run, e]);
++    }
++    return out;
++  }
++  function retro() {
++    if (busy()) { setTimeout(retro, 2000); return; }
++    for (const e of S.reg) apply(e);
++    if (typeof HKM !== 'undefined' && typeof hkDisposeZone === 'function') {
++      for (const Z of Object.values(HKM.zones)) if (Z.built && Z.spclrN !== S.segs.length) { hkDisposeZone(Z); S.stats.retro++; }
++    }
++  }
++  /** 加一份 spines JSON（districts.*.spines[]；drivable:false 嘅唔計） */
++  function add(json, tag) {
++    if (!json || !json.districts || S.files[tag]) return 0;
++    S.files[tag] = true; let n = 0;
++    for (const D of Object.values(json.districts)) {
++      for (const sp of (D.spines || [])) {
++        if (sp.drivable === false) continue;
++        const P = sp.points || []; if (P.length < 2) continue;
++        const hw = spineHalfW(sp);
++        for (let i = 0; i + 1 < P.length; i++) addSeg(P[i].dx, P[i].dz, P[i + 1].dx, P[i + 1].dz, hw, sp.id);
++        n++;
++      }
++    }
++    S.stats.spines += n; S.stats.segs = S.segs.length;
++    if (S.readyDone) retro();
++    return n;
++  }
++  async function fetchJ(f) {
++    for (const u of ['data/' + f, './assets/data/' + f, '../data/' + f]) {
++      try { const r = await fetch(u, { cache: 'no-store' }); if (r && r.ok) return await r.json(); } catch (e) { /* */ }
++    }
++    return null;
++  }
++  S.ready = (async () => {
++    try { add(await fetchJ('core27-ssp-kc-spines.json'), 'core27'); } catch (e) { console.warn('[spclr]', e && e.message); }
++    S.readyDone = true;
++    retro();
++    return S.stats;
++  })();
++  Object.assign(S, { add, ringHit, boxHit, pointHit, bldCollider, cutWalls, stripCols, retro });
++  return S;
++})();
++function spclrBldCollider(pts, minx, maxx, minz, maxz, h, mesh, ok) { SPCLR.bldCollider(pts, minx, maxx, minz, maxz, h, mesh, ok); }
++
+ function hkBuildZone(Z) {
+   const t0 = performance.now(), cx = Z.c[0], cz = Z.c[1], H = Z.H, g = new THREE.Group(); g.name = 'hkzone-' + Z.id;
+   const excl = []; // 地標範圍（世界 AABB）：OSM 建築唔放
+@@ -9373,6 +9575,7 @@ function hkBuildZone(Z) {
+     const P = new Float32Array(n * 2); for (let k = 0; k < n; k++) { P[k * 2] = cx + a[i] / 2; P[k * 2 + 1] = cz + a[i + 1] / 2; i += 2; }
+     let mx = 0, mz = 0; for (let k = 0; k < n; k++) { mx += P[k * 2]; mz += P[k * 2 + 1]; } mx /= n; mz /= n;
+     if (excl.some((e) => mx > e[0] && mx < e[1] && mz > e[2] && mz < e[3])) continue;
++    if (SPCLR.ringHit(P)) { SPCLR.stats.zoneCull++; continue; } // core27c2：踩主幹走廊嘅舊區樓唔起
+     const seed = (bid * 0.6180339) % 1; let acc = 0;
+     for (let k = 0; k < n; k++) { const x0 = P[k * 2], z0 = P[k * 2 + 1], x1 = P[((k + 1) % n) * 2], z1 = P[((k + 1) % n) * 2 + 1], L = Math.hypot(x1 - x0, z1 - z0), vi = pos.length / 3;
+       pos.push(x0, 0, z0, x1, 0, z1, x1, h, z1, x0, h, z0); uv.push(acc / 3.2, 0, (acc + L) / 3.2, 0, (acc + L) / 3.2, h / 3.1, acc / 3.2, h / 3.1); acc += L;
+@@ -9401,7 +9604,8 @@ function hkBuildZone(Z) {
+     const gaps = ports.filter((p) => p[2] === nx && p[3] === nz).map((p) => (ax === 0 ? p[1] - cz : p[0] - cx)).sort((u, v) => u - v);
+     let s = -H; for (const gp of [...gaps, null]) { const e = gp === null ? H : gp - HKM.HW - 0.6; if (e > s + 0.5) segs.push([ax, val, s, e]); if (gp !== null) s = gp + HKM.HW + 0.6; }
+   }
+-  for (const [ax, val, s, e] of segs) {
++  const segsCut = SPCLR.cutWalls(segs, cx, cz); Z.spclrN = SPCLR.segs.length; // core27c2：主幹穿牆開缺口
++  for (const [ax, val, s, e] of segsCut) {
+     const L = e - s, m = (s + e) / 2, x = ax === 0 ? cx + val : cx + m, z = ax === 0 ? cz + m : cz + val;
+     _hq.setFromAxisAngle(_hyAx, ax === 0 ? Math.PI / 2 : 0); _hp3.set(x, 0, z); _hs3.set(L, 6.5, 0.8); _hm4.compose(_hp3, _hq, _hs3); wallIM.setMatrixAt(wallIM.count++, _hm4);
+     colliders.push({ minX: ax === 0 ? x - 0.4 : x - L / 2, maxX: ax === 0 ? x + 0.4 : x + L / 2, minZ: ax === 0 ? z - L / 2 : z - 0.4, maxZ: ax === 0 ? z + L / 2 : z + 0.4, maxY: 6.5 });
+@@ -21237,7 +21441,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
+         if (p.y < minz) minz = p.y; if (p.y > maxz) maxz = p.y;
+       }
+       const hx = (maxx - minx) * 0.5, hz = (maxz - minz) * 0.5;
+-      if (hx > 1 && hz > 1) addCollider((minx + maxx) * 0.5, (minz + maxz) * 0.5, hx, hz, Math.min(h, 40));
++      spclrBldCollider(pts, minx, maxx, minz, maxz, Math.min(h, 40), mesh, hx > 1 && hz > 1); // core27c2：走廊淨空＋條狀碰撞
+     }
+     return true;
+   }
+@@ -21611,7 +21815,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
+         if (p.y < minz) minz = p.y; if (p.y > maxz) maxz = p.y;
+       }
+       const hx = (maxx - minx) * 0.5, hz = (maxz - minz) * 0.5;
+-      if (hx > 1 && hz > 1) addCollider((minx + maxx) * 0.5, (minz + maxz) * 0.5, hx, hz, Math.min(h, 40));
++      spclrBldCollider(pts, minx, maxx, minz, maxz, Math.min(h, 40), mesh, hx > 1 && hz > 1); // core27c2：走廊淨空＋條狀碰撞
+     }
+     return true;
+   }
+@@ -21980,7 +22184,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
+         if (p.y < minz) minz = p.y; if (p.y > maxz) maxz = p.y;
+       }
+       const hx = (maxx - minx) * 0.5, hz = (maxz - minz) * 0.5;
+-      if (hx > 1 && hz > 1) addCollider((minx + maxx) * 0.5, (minz + maxz) * 0.5, hx, hz, Math.min(h, 40));
++      spclrBldCollider(pts, minx, maxx, minz, maxz, Math.min(h, 40), mesh, hx > 1 && hz > 1); // core27c2：走廊淨空＋條狀碰撞
+     }
+     return true;
+   }
+@@ -22360,7 +22564,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
+         let minx = Infinity, maxx = -Infinity, minz = Infinity, maxz = -Infinity;
+         for (const p of pts) { if (p.x < minx) minx = p.x; if (p.x > maxx) maxx = p.x; if (p.y < minz) minz = p.y; if (p.y > maxz) maxz = p.y; }
+         const hx = (maxx - minx) * 0.5, hz = (maxz - minz) * 0.5;
+-        if (hx > 1 && hz > 1) addCollider((minx + maxx) * 0.5, (minz + maxz) * 0.5, hx, hz, Math.min(h, 40));
++        spclrBldCollider(pts, minx, maxx, minz, maxz, Math.min(h, 40), m, hx > 1 && hz > 1); // core27c2：走廊淨空＋條狀碰撞
+       }
+       return true;
+     }
+@@ -22517,6 +22721,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
+   }, 530);
+ 
+   Object.assign(window.NT = window.NT || {}, { SSP: DIST.ssp, KCITY: DIST.kcity, sspBuild, kcityBuild });
++  Object.assign(window.NT, { SPCLR, spclrProbe: (pts, r) => { const o = []; let hits = 0; for (const [x, z] of pts) { const p = new THREE.Vector3(x, 0, z); resolveCircle(p, r, o); if (o.length) hits++; } return hits; } }); // core27c2 QA
+ })();
+ 
+ /* =========================================================================
+@@ -22682,7 +22887,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
+         let minx = Infinity, maxx = -Infinity, minz = Infinity, maxz = -Infinity;
+         for (const p of pts) { if (p.x < minx) minx = p.x; if (p.x > maxx) maxx = p.x; if (p.y < minz) minz = p.y; if (p.y > maxz) maxz = p.y; }
+         const hx = (maxx - minx) * 0.5, hz = (maxz - minz) * 0.5;
+-        if (hx > 1 && hz > 1) addCollider((minx + maxx) * 0.5, (minz + maxz) * 0.5, hx, hz, Math.min(h, 40));
++        spclrBldCollider(pts, minx, maxx, minz, maxz, Math.min(h, 40), m, hx > 1 && hz > 1); // core27c2：走廊淨空＋條狀碰撞
+       }
+       return true;
+     }
+@@ -23004,6 +23209,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
+   async function hk18BuildFromSkeleton() {
+     if (hk18Already()) return;
+     if (typeof scene === 'undefined') return;
++    try { await SPCLR.ready; } catch (e) { /* core27c2 */ }
+     const data = await hk18FetchJson([
+       'data/osm-hk18-skeleton-core23.json',
+       '../data/osm-hk18-skeleton-core23.json',
+@@ -23088,24 +23294,30 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
+       const mat = facadeMats[def.id]
+         || new THREE.MeshStandardMaterial({ color: 0x6a7078, roughness: 0.88 });
+       const h = 42 + ((def.id.charCodeAt(0) || 0) % 5) * 10;
+-      const block = new THREE.Mesh(new THREE.BoxGeometry(22, h, 16), mat);
+-      block.position.set(x - 16, h / 2, z - 12);
+-      block.name = 'hk18_core_' + def.id;
+-      block.castShadow = true;
+-      block.userData.noMerge = true;
+-      g.add(block);
++      // core27c2：hub 方塊踩主幹走廊就唔起（SPCLR）
++      const hubClear = !SPCLR.boxHit(x - 27, x - 5, z - 20, z - 4, 1.5);
++      if (hubClear) {
++        const block = new THREE.Mesh(new THREE.BoxGeometry(22, h, 16), mat);
++        block.position.set(x - 16, h / 2, z - 12);
++        block.name = 'hk18_core_' + def.id;
++        block.castShadow = true;
++        block.userData.noMerge = true;
++        g.add(block);
++      } else SPCLR.stats.hubCut++;
+       if (!lite) {
+         for (let k = 0; k < 2; k++) {
+           const ang = k * 1.7 + 0.4;
+           const r = 32 + k * 14;
+           const bh = 28 + k * 16;
++          const bx = x + Math.cos(ang) * r, bz = z + Math.sin(ang) * r;
++          if (SPCLR.boxHit(bx - 7, bx + 7, bz - 5.5, bz + 5.5, 1.5)) { SPCLR.stats.hubCut++; continue; }
+           const b = new THREE.Mesh(new THREE.BoxGeometry(14, bh, 11), mat);
+-          b.position.set(x + Math.cos(ang) * r, bh / 2, z + Math.sin(ang) * r);
++          b.position.set(bx, bh / 2, bz);
+           b.userData.noMerge = true;
+           g.add(b);
+         }
+       }
+-      if (typeof addCollider === 'function') {
++      if (hubClear && typeof addCollider === 'function') {
+         addCollider(x - 16, z - 12, 11, 8, h);
+       }
+       root.add(g);

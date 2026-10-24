@@ -274,7 +274,7 @@ body.aim #cross{transform:scale(.45)}
     if(b && cur < n) b.style.width=n+'%';
     if(cur < 2) t.textContent='載入引擎中… '+n+'%（手機請稍等）';
   },350);
-  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core27e。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
+  var tips=["第一次載入會耐啲，之後會快。","建議打橫、加入主畫面再玩。","載入唔郁？拉下刷新，或加 ?v=core28。","用流動數據請等陣——資產喺度解壓。","今日目標：落難香江 · 信旺安全屋。"];
   var tipEl=document.getElementById("loadTips"); var ti=0;
   if(tipEl) tipEl.textContent=tips[0];
   var tipTimer=setInterval(function(){
@@ -284,7 +284,7 @@ body.aim #cross{transform:scale(.45)}
   setTimeout(function(){
     if(done) return;
     var t=document.getElementById('loadTxt');
-    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core27e';
+    if(t) t.textContent='仍在載入…可強制刷新或用 ?v=core28';
   },45000);
 })();
 </script>
@@ -328,7 +328,7 @@ const ASSET_FILES = {
   taxi: 'gltf/taxi-cc0.glb',
   minibus: 'gltf/minibus-cc0.glb',
   euVan: 'gltf/delivery-van-cc0.glb',
-  policeSuv: 'gltf/police-suv-cc0.glb'
+  policeSuv: 'gltf/police-suv-cc0-lite.glb'
 };
 /** 把檔名轉為實際 URL：優先用內嵌 data URI，其次 ./assets/，完整網址則原樣使用 */
 function resolveAsset(name) {
@@ -1940,6 +1940,7 @@ function addSkid(i, p, heading) {
  * ========================================================================= */
 const state = { mode: 'drive', aimT: 0, camYaw: 0, camPitch: 0, yawOffset: 0, recoil: 0, shake: 0, hurtT: 0, started: false, time: 0, timeScale: 1, locked: false };
 window.NT = { THREE, scene, renderer, camera, composer, bloomPass, REFL, get renderReflection() { return renderReflection; }, get updateCamera() { return updateCamera; }, state, car, player, loadState, colliders, shootables, get fps() { return perf.fps; }, toggleCar: () => toggleCar(), fire: () => fire(), input };
+NT.safariLite = IS_SAFARI || IS_IPHONE || LOW_MEM; // core27f：lite 上限之前從來冇生效
 
 function toast(msg, ms = 1600) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), ms); }
 
@@ -2088,6 +2089,70 @@ function updateCar(dt) {
     if (impact > 11 && state.mode === 'drive') damage((impact - 11) * 1.5); // 只有猛烈撞擊才傷及司機
     for (const h of HOOKS.carImpact) h(impact);
   }
+  // core27f：欄杆靜態碰撞（美術：NT[區].railSegments = {x0,z0,x1,z1,h,id}）— 停／慢速反彈＋刮花，唔飛散
+  {
+    const segs = [];
+    for (const k of ['YTM', 'CW', 'KT', 'SSP', 'KCITY', 'WC', 'EAST', 'TW', 'ST']) {
+      const D = window.NT && NT[k]; if (!D) continue;
+      if (D.railSegments && D.railSegments.length) segs.push(...D.railSegments);
+      else if (D.group && D.group.userData && D.group.userData.railSegments) segs.push(...D.group.userData.railSegments);
+    }
+    if (segs.length) {
+      const rr = 0.95, cx = car.pos.x, cz = car.pos.z;
+      for (const s of segs) {
+        if (Math.abs(((s.x0 + s.x1) * 0.5) - cx) > 12 || Math.abs(((s.z0 + s.z1) * 0.5) - cz) > 12) continue;
+        const ax = s.x0, az = s.z0, bx = s.x1 - ax, bz = s.z1 - az, ll = bx * bx + bz * bz || 1;
+        const u = Math.max(0, Math.min(1, ((cx - ax) * bx + (cz - az) * bz) / ll));
+        const px = ax + bx * u, pz = az + bz * u, dx = cx - px, dz = cz - pz, d = Math.hypot(dx, dz);
+        if (d >= rr || d < 1e-6) continue;
+        const nx = dx / d, nz = dz / d, pen = rr - d;
+        car.pos.x += nx * pen; car.pos.z += nz * pen;
+        const vn = car.vel.x * nx + car.vel.y * nz;
+        if (vn < 0) {
+          car.vel.x -= 1.6 * vn * nx; car.vel.y -= 1.6 * vn * nz;
+          const hit = -vn;
+          if (hit > 1.2) { car.vel.multiplyScalar(0.55); if (typeof carDamage === 'function') carDamage(Math.min(18, hit * 6)); if (hit > 2.5) { try { sfx('impact'); } catch (e) {} state.shake = Math.min(0.6, hit / 18); } }
+          else car.vel.multiplyScalar(0.85);
+        }
+      }
+    }
+  }
+  // core27f：騎樓 AABB（美術 arcadeColliders）— 車擋出；靜態塞入都要推（moved）
+  if (typeof NT !== 'undefined' && typeof NT.c27fPushArcade === 'function') NT.c27fPushArcade(car, true);
+  else {
+    const boxes = [];
+    for (const k of ['YTM', 'CW', 'KT', 'SSP', 'KCITY', 'WC', 'EAST', 'TW', 'ST']) {
+      const D = window.NT && NT[k]; if (!D) continue;
+      if (D.arcadeColliders && D.arcadeColliders.length) boxes.push(...D.arcadeColliders);
+      else if (D.group && D.group.userData && D.group.userData.arcadeColliders) boxes.push(...D.group.userData.arcadeColliders);
+    }
+    if (boxes.length) {
+      const rr = 0.95; let cx = car.pos.x, cz = car.pos.z;
+      for (let pass = 0; pass < 4; pass++) {
+        let moved = false;
+        for (const b of boxes) {
+          const x0 = Math.min(b.x0, b.x1) - rr, x1 = Math.max(b.x0, b.x1) + rr;
+          const z0 = Math.min(b.z0, b.z1) - rr, z1 = Math.max(b.z0, b.z1) + rr;
+          if (cx < x0 || cx > x1 || cz < z0 || cz > z1) continue;
+          const dl = cx - x0, dr = x1 - cx, db = cz - z0, df = z1 - cz;
+          const m = Math.min(dl, dr, db, df);
+          let nx = 0, nz = 0;
+          if (m === dl) nx = -1; else if (m === dr) nx = 1; else if (m === db) nz = -1; else nz = 1;
+          cx += nx * (m + 0.02); cz += nz * (m + 0.02); moved = true;
+          const vn = car.vel.x * nx + car.vel.y * nz;
+          if (vn < 0) {
+            car.vel.x -= 1.5 * vn * nx; car.vel.y -= 1.5 * vn * nz;
+            const hit = -vn;
+            if (hit > 1.2) { car.vel.multiplyScalar(0.6); if (typeof carDamage === 'function') carDamage(Math.min(14, hit * 5)); if (hit > 2.5) { try { sfx('impact'); } catch (e) {} state.shake = Math.min(0.5, hit / 18); } }
+            else car.vel.multiplyScalar(0.88);
+          }
+        }
+        if (!moved) break;
+      }
+      car.pos.x = cx; car.pos.z = cz;
+    }
+  }
+
   // 6) 套用到模型
   car.root.position.set(car.pos.x, 0, car.pos.z);
   car.root.rotation.y = car.heading;
@@ -2168,7 +2233,9 @@ function updatePlayer(dt) {
   const dir = new THREE.Vector3().addScaledVector(fwd, mv.y).addScaledVector(right, mv.x);
   const want = dir.lengthSq() > 0.0025;
   let running = !aiming && mv.mag > 0.78 && player.energy > 1;
-  const target = want ? (aiming ? 1.6 : running ? 5.4 : 1.7 * Math.max(0.5, mv.mag / 0.78)) : 0;
+  // core27d：宣傳片日頭行街（NT.promoStroll）— 慢行 1.25 m/s、輕跑 3.3 m/s，唔耗體力
+  const PROMO = !!(window.NT && window.NT.promoStroll);
+  const target = want ? (aiming ? 1.6 : running ? (PROMO ? 3.3 : 5.4) : (PROMO ? 1.25 : 1.7) * Math.max(0.5, mv.mag / 0.78)) : 0;
   player.speed = damp(player.speed, target, target < player.speed ? 12 : 8, dt); // 減速加快，減少停步拖尾走
   if (want) { dir.normalize(); if (!aiming) player.yaw = dampAngle(player.yaw, Math.atan2(dir.x, dir.z), 12, dt); }
   if (aiming) player.yaw = dampAngle(player.yaw, state.camYaw + 0.18, 18, dt); // 瞄準時面向鏡頭前方（身體微側）
@@ -2182,7 +2249,7 @@ function updatePlayer(dt) {
     if (ex < ez) player.pos.addScaledVector(r, Math.sign(lc.x) * ex); else player.pos.addScaledVector(f, Math.sign(lc.z) * ez);
   }
   // 體力
-  player.energy = clamp(player.energy + (running && player.speed > 3 ? -18 : 12) * dt, 0, 100);
+  player.energy = clamp(player.energy + (running && player.speed > 3 && !PROMO ? -18 : 12) * dt, 0, 100);
   // 動畫權重（M1c walk 質素：Idle 快淡出、Walk 帶拉闊、腳步 timeScale 對齊 clip）
   const sp = player.speed, A = player.actions;
   const wIdle = clamp(1 - sp / 0.85, 0, 1), wRun = clamp((sp - 2.4) / 2.0, 0, 1), wWalk = clamp(1 - wIdle - wRun, 0, 1);
@@ -2197,12 +2264,20 @@ function updatePlayer(dt) {
     if (A.walk) A.walk.timeScale = clamp(sp / 1.4, 0.85, 1.35);
     if (A.run) A.run.timeScale = clamp(sp / 4.8, 0.75, 1.25);
   }
+  // core27d：行／跑相位同步 — 交叉淡入時兩條 clip 同一隻腳落地，消除過渡滑步
+  if (A.walk && A.run && wWalk > 0.001 && wRun > 0.001) {
+    const wd = A.walk.getClip().duration, rd = A.run.getClip().duration;
+    if (wRun >= wWalk) A.walk.time = ((A.run.time % rd) / rd) * wd;
+    else A.run.time = ((A.walk.time % wd) / wd) * rd;
+    const T = (wd / Math.max(A.walk.timeScale, 0.01)) * wWalk + (rd / Math.max(A.run.timeScale, 0.01)) * wRun;
+    A.walk.timeScale = wd / Math.max(T, 1e-3); A.run.timeScale = rd / Math.max(T, 1e-3);
+  }
   // 角色不在鏡頭視野內時暫停骨骼動畫更新（省效能）
   _frustum.setFromProjectionMatrix(_projView.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
   if (_frustum.containsPoint(_v.copy(player.pos).setY(0.9)) || player.pos.distanceTo(camera.position) < 6) player.mixer.update(dt);
   else player._skipped = (player._skipped || 0) + 1;
   player.root.position.copy(player.pos);
-  // 跑步轉彎時身體向內傾（GTA 式）
+  // 跑步轉彎時身體向內傾
   const yawRate = Math.atan2(Math.sin(player.yaw - prevYaw), Math.cos(player.yaw - prevYaw)) / Math.max(dt, 1e-4);
   player.lean = damp(player.lean || 0, clamp(-yawRate * player.speed * 0.012, -0.14, 0.14), 8, dt);
   player.root.rotation.set(0, player.yaw, player.lean, 'YXZ');
@@ -2932,7 +3007,7 @@ const NEON_WORDS = ['大押', '茶餐廳', '麻雀', '賓館', '金行', '跌打
   const paveMat = shared(new THREE.MeshStandardMaterial({ color: 0x4d5052, roughness: 0.55, metalness: 0.05 }));
   for (const s of [-1, 1]) {
     const p = boxMesh(paveMat, CITY.sideX0 - ROAD_HALF, 0.16, CITY.z0 - CITY.z1, s * (ROAD_HALF + (CITY.sideX0 - ROAD_HALF) / 2), 0.08, (CITY.z0 + CITY.z1) / 2, cityGroup); p.castShadow = false;
-    boxMesh(kerbMat, 0.25, 0.18, CITY.z0 - CITY.z1, s * (ROAD_HALF + 0.12), 0.09, (CITY.z0 + CITY.z1) / 2, cityGroup).castShadow = false;
+    boxMesh(kerbMat, 0.25, 0.125, CITY.z0 - CITY.z1, s * (ROAD_HALF + 0.12), 0.0625, (CITY.z0 + CITY.z1) / 2, cityGroup).castShadow = false;
     // 欄杆（香港路邊鐵欄）
     const railMat = shared(new THREE.MeshStandardMaterial({ color: 0x9aa3a8, roughness: 0.4, metalness: 0.8 }));
     for (let z = CITY.z0 - 6; z > CITY.z1 + 4; z -= 14) if (Math.abs(z + 262) > 6) {
@@ -3652,10 +3727,13 @@ async function loadM3Assets() {
   }
   if (v.status === 'fulfilled') VPROTO.van = prepVehicle(v.value, 5.0, 0x0c0d0f);
   // 備選：巡邏 SUV／紅的暫代／紅色小巴暫代
-  if (!safariLite) try {
-    const suv = await loadGLTF(ASSET_FILES.policeSuv || 'gltf/police-suv-cc0.glb', 6000);
-    VPROTO.policeSuv = prepVehicle(suv, 4.9); // 巡邏 SUV ≈4.85–5.0m
-  } catch (e) { console.warn('[gltf] police-suv', e && e.message); }
+  { // core27f：警車 SUV 用 lite 版（913KB），有通緝星先 lazy load
+    const iv = setInterval(() => {
+      if (typeof WANTED === 'undefined' || !WANTED || !(WANTED.stars > 0)) return;
+      clearInterval(iv);
+      loadGLTF(ASSET_FILES.policeSuv || 'gltf/police-suv-cc0-lite.glb', 15000).then((suv) => { VPROTO.policeSuv = prepVehicle(suv, 4.9); /* 巡邏 SUV ≈4.85–5.0m */ }).catch((e) => console.warn('[gltf] police-suv', e && e.message));
+    }, 1000);
+  }
   if (taxi.status === 'fulfilled') VPROTO.taxi = prepVehicle(taxi.value, 4.7, 0xc8201a); // 紅的 Comfort 級 ≈4.7m
   if (mini.status === 'fulfilled') VPROTO.minibus = prepVehicle(mini.value, 6.4, 0xc02020); // 十六座短軸≈6.2–7.0；取 6.4 兼顧巷戰
 }
@@ -3799,6 +3877,7 @@ function updateNPC(n, dt) {
       }
     }
   } else if (n.pose) { mvSpeed = 0; }
+  if (n.c27Walk && n.state === 'idle' && !n.hostile) { const w = n.c27Walk(n, dt); if (w) { mvDir = w; mvSpeed = n.c27Sp || 1.3; n.yaw = Math.atan2(w.x, w.z); } } // core27f 行人路行街
   if (mvDir) { n.pos.addScaledVector(mvDir, mvSpeed * dt); resolveCircle(n.pos, 0.35, []); }
   n.speed = damp(n.speed, mvSpeed, 6, dt);
   const A = n.actions, sp = n.speed;
@@ -4042,6 +4121,7 @@ const subsQ = []; let subsT = 0;
 function say(who, text, sec = 3.2) { subsQ.push({ who, text, sec }); if (subsQ.length === 1) showSub(); }
 function showSub() { const s = subsQ[0]; if (!s) { $('subs').classList.remove('show'); return; } $('subs').innerHTML = (s.who ? `<span class="who">${s.who}：</span>` : '') + s.text; $('subs').classList.add('show'); subsT = s.sec; }
 function objective(text, sec = 4.5) { // 目標提示：插隊即時顯示（對白之後再接上）
+  text = (typeof NT !== 'undefined' && NT.c27fSanitizeObj) ? NT.c27fSanitizeObj(text) : text;
   MS.objText = text; subsQ.splice(0, subsQ.length ? 1 : 0, { who: '', text, sec }); showSub();
 }
 function titleCard(name, sub, sec = 3.5) {
@@ -4474,7 +4554,7 @@ function makeLobbyTex() {
   const railMat = shared(new THREE.MeshStandardMaterial({ color: 0x9aa3a8, roughness: 0.4, metalness: 0.8 }));
   for (const s of [-1, 1]) {
     boxMesh(paveMat, CITY.sideX0 - ROAD_HALF, 0.16, L, s * (ROAD_HALF + (CITY.sideX0 - ROAD_HALF) / 2), 0.08, cz, g).castShadow = false;
-    boxMesh(kerbMat, 0.25, 0.18, L, s * (ROAD_HALF + 0.12), 0.09, cz, g).castShadow = false;
+    boxMesh(kerbMat, 0.25, 0.125, L, s * (ROAD_HALF + 0.12), 0.0625, cz, g).castShadow = false;
     for (let z = TST.z0 - 8; z > TST.z1 + 14; z -= 14) if (Math.abs(z - 5 + 412) > 8 && !(s < 0 && Math.abs(z - 5 - TST.cm.door) < 9)) {
       boxMesh(railMat, 0.05, 0.05, 10, s * (ROAD_HALF + 0.4), 1.0, z - 5, g); boxMesh(railMat, 0.05, 0.05, 10, s * (ROAD_HALF + 0.4), 0.45, z - 5, g);
       for (let k = 0; k <= 4; k++) boxMesh(railMat, 0.06, 1.0, 0.06, s * (ROAD_HALF + 0.4), 0.5, z - k * 2.5, g);
@@ -9331,6 +9411,208 @@ const ZINFO = { ssp: ['深水埗', '九龍 · 深水埗區'], kcity: ['九龍城
 for (const [id, zd] of Object.entries(HKMAP_DATA.zones)) HKM.zones[id] = { id, c: zd.c, H: zd.H, d: zd, built: false, visible: false, group: null, grid: null, polys: [], roads: [], colliders: [], lights: [] };
 const NEON_W2 = ['大押', '茶餐廳', '麻雀', '賓館', '金行', '跌打', '酒家', '藥房', '涼茶', '桌球', '燒臘', '按摩', '找換', '時鐘酒店', '雀館', '粥麵'];
 const NEON_C2 = ['#ff3b6b', '#ffcc33', '#33e0ff', '#7dff6a', '#ff7a2e', '#c76bff', '#ff4040'];
+/* =========================================================================
+ * core27c2 · SPCLR 主幹淨空（spine clearance）
+ *  · 讀 core27（＋之後 core28）spines：每條主幹 = 走廊（闊/2 + 1.5 m 邊）
+ *  · 任何樓腳多邊形踩入走廊 → 唔起樓、唔加碰撞（HKM 舊區 OSM 樓、extrude 樓、hk18 hub 方塊）
+ *  · 樓冇踩路但 AABB 碰撞盒蓋到路面 → 改用 2 m 條狀碰撞，踩路嗰幾條唔要
+ *  · HKM 舊區圍牆：主幹穿牆位開缺口
+ *  · 晚到嘅 spines（SPCLR.add）會回溯處理已起好嘅樓同 HKM 區
+ *  · 唔郁葵涌；燈位／安全島／迴旋島（設計障礙）唔經呢度
+ * ========================================================================= */
+const SPCLR = (() => {
+  const S = {
+    segs: [], grid: new Map(), cell: 32, reg: [], files: {}, ready: null, readyDone: false,
+    stats: { spines: 0, segs: 0, bldCull: 0, bldStrip: 0, stripDrop: 0, zoneCull: 0, wallCut: 0, hubCut: 0, retro: 0 }
+  };
+  const M_CULL = 1.5, M_EDGE = 0.2;
+  const key = (i, j) => i * 65536 + j;
+  function spineHalfW(sp) {
+    if (sp.width > 0) return sp.width / 2;
+    const k = sp.kind || '';
+    return (/osm_arterial|arterial/.test(k) ? 11 : (sp.speed === 'walk' ? 6 : 8)) / 2;
+  }
+  function addSeg(ax, az, bx, bz, hw, id) {
+    const s = { ax, az, bx, bz, hw, id };
+    S.segs.push(s);
+    const pad = hw + M_CULL + 2, c = S.cell;
+    const i0 = Math.floor((Math.min(ax, bx) - pad) / c), i1 = Math.floor((Math.max(ax, bx) + pad) / c);
+    const j0 = Math.floor((Math.min(az, bz) - pad) / c), j1 = Math.floor((Math.max(az, bz) + pad) / c);
+    for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { const k = key(i, j); let a = S.grid.get(k); if (!a) S.grid.set(k, (a = [])); a.push(s); }
+  }
+  function near(minx, maxx, minz, maxz) {
+    const c = S.cell, out = new Set();
+    const i0 = Math.floor(minx / c), i1 = Math.floor(maxx / c), j0 = Math.floor(minz / c), j1 = Math.floor(maxz / c);
+    if ((i1 - i0 + 1) * (j1 - j0 + 1) > 4000) { for (const s of S.segs) out.add(s); return out; }
+    for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { const a = S.grid.get(key(i, j)); if (a) for (const s of a) out.add(s); }
+    return out;
+  }
+  function pSeg(px, pz, ax, az, bx, bz) {
+    const vx = bx - ax, vz = bz - az, L = vx * vx + vz * vz;
+    const t = L > 0 ? Math.max(0, Math.min(1, ((px - ax) * vx + (pz - az) * vz) / L)) : 0;
+    return Math.hypot(px - ax - t * vx, pz - az - t * vz);
+  }
+  function segSeg(ax, az, bx, bz, cx, cz, dx, dz) {
+    const o = (px, pz, qx, qz, rx, rz) => (qx - px) * (rz - pz) - (qz - pz) * (rx - px);
+    const d1 = o(cx, cz, dx, dz, ax, az), d2 = o(cx, cz, dx, dz, bx, bz), d3 = o(ax, az, bx, bz, cx, cz), d4 = o(ax, az, bx, bz, dx, dz);
+    if (((d1 > 0) !== (d2 > 0)) && ((d3 > 0) !== (d4 > 0))) return 0;
+    return Math.min(pSeg(ax, az, cx, cz, dx, dz), pSeg(bx, bz, cx, cz, dx, dz), pSeg(cx, cz, ax, az, bx, bz), pSeg(dx, dz, ax, az, bx, bz));
+  }
+  function inFlat(x, z, F) {
+    let ins = false; const n = F.length / 2;
+    for (let i = 0, j = n - 1; i < n; j = i++) {
+      const ax = F[j * 2], az = F[j * 2 + 1], bx = F[i * 2], bz = F[i * 2 + 1];
+      if ((bz > z) !== (az > z) && x < (ax - bx) * (z - bz) / (az - bz) + bx) ins = !ins;
+    }
+    return ins;
+  }
+  function toFlat(pts) { // Vector2[]／{x,y}[]／{dx,dz}[]／Float32Array
+    if (pts instanceof Float32Array || (Array.isArray(pts) && typeof pts[0] === 'number')) return pts;
+    const F = new Float32Array(pts.length * 2);
+    pts.forEach((p, i) => { F[i * 2] = p.x != null ? p.x : p.dx; F[i * 2 + 1] = p.y != null ? p.y : (p.z != null ? p.z : p.dz); });
+    return F;
+  }
+  /** 樓腳多邊形同任何主幹走廊（hw + margin）相交？ */
+  function ringHit(pts, margin = M_CULL) {
+    if (!S.segs.length) return false;
+    const F = toFlat(pts), n = F.length / 2; if (n < 3) return false;
+    let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
+    for (let k = 0; k < n; k++) { const x = F[k * 2], z = F[k * 2 + 1]; if (x < x0) x0 = x; if (x > x1) x1 = x; if (z < z0) z0 = z; if (z > z1) z1 = z; }
+    for (const s of near(x0 - 8, x1 + 8, z0 - 8, z1 + 8)) {
+      const lim = s.hw + margin;
+      if (Math.max(s.ax, s.bx) < x0 - lim || Math.min(s.ax, s.bx) > x1 + lim || Math.max(s.az, s.bz) < z0 - lim || Math.min(s.az, s.bz) > z1 + lim) continue;
+      if (inFlat(s.ax, s.az, F) || inFlat(s.bx, s.bz, F)) return s;
+      for (let i = 0, j = n - 1; i < n; j = i++) if (segSeg(F[j * 2], F[j * 2 + 1], F[i * 2], F[i * 2 + 1], s.ax, s.az, s.bx, s.bz) < lim) return s;
+    }
+    return false;
+  }
+  function segBox(s, minx, maxx, minz, maxz) {
+    const ins = (x, z) => x >= minx && x <= maxx && z >= minz && z <= maxz;
+    if (ins(s.ax, s.az) || ins(s.bx, s.bz)) return 0;
+    const c = [[minx, minz], [maxx, minz], [maxx, maxz], [minx, maxz]];
+    let d = 1e9;
+    for (let k = 0; k < 4; k++) { const p = c[k], q = c[(k + 1) % 4]; d = Math.min(d, segSeg(s.ax, s.az, s.bx, s.bz, p[0], p[1], q[0], q[1])); if (d === 0) return 0; }
+    return d;
+  }
+  function boxHit(minx, maxx, minz, maxz, margin = M_EDGE) {
+    if (!S.segs.length) return false;
+    for (const s of near(minx - 8, maxx + 8, minz - 8, maxz + 8)) if (segBox(s, minx, maxx, minz, maxz) < s.hw + margin) return s;
+    return false;
+  }
+  function pointHit(x, z, margin = 0) {
+    for (const s of near(x - 1, x + 1, z - 1, z + 1)) if (pSeg(x, z, s.ax, s.az, s.bx, s.bz) < s.hw + margin) return s;
+    return false;
+  }
+  /** 2 m 條狀碰撞：沿長軸切片，每片取多邊形喺片內嘅另一軸範圍；踩路面（hw+0.2）嗰片唔要 */
+  function stripCols(F, minx, maxx, minz, maxz, h) {
+    const n = F.length / 2, alongX = (maxx - minx) >= (maxz - minz);
+    const a0 = alongX ? minx : minz, a1 = alongX ? maxx : maxz, N = Math.max(1, Math.ceil((a1 - a0) / 2)), w = (a1 - a0) / N;
+    const out = [];
+    for (let k = 0; k < N; k++) {
+      const s0 = a0 + k * w, s1 = s0 + w; let lo = 1e9, hi = -1e9;
+      for (let i = 0, j = n - 1; i < n; j = i++) {
+        const pa = alongX ? F[j * 2] : F[j * 2 + 1], po = alongX ? F[j * 2 + 1] : F[j * 2];
+        const qa = alongX ? F[i * 2] : F[i * 2 + 1], qo = alongX ? F[i * 2 + 1] : F[i * 2];
+        const ea = Math.min(pa, qa), eb = Math.max(pa, qa);
+        if (eb < s0 || ea > s1) continue;
+        const t0 = Math.max(s0, ea), t1 = Math.min(s1, eb);
+        for (const t of [t0, t1]) { const u = Math.abs(qa - pa) < 1e-6 ? 0 : (t - pa) / (qa - pa); const o = po + (qo - po) * Math.max(0, Math.min(1, u)); if (o < lo) lo = o; if (o > hi) hi = o; }
+        if (Math.abs(qa - pa) < 1e-6) { lo = Math.min(lo, po, qo); hi = Math.max(hi, po, qo); }
+      }
+      if (hi - lo < 0.2) continue;
+      const c = alongX ? { minX: s0, maxX: s1, minZ: lo, maxZ: hi, maxY: h } : { minX: lo, maxX: hi, minZ: s0, maxZ: s1, maxY: h };
+      if (boxHit(c.minX, c.maxX, c.minZ, c.maxZ, M_EDGE)) { S.stats.stripDrop++; continue; }
+      out.push(c);
+    }
+    return out;
+  }
+  function busy() { return (typeof INT !== 'undefined' && INT.active) || (typeof AREA !== 'undefined' && AREA.active); }
+  function dropCol(c) { const k = colliders.indexOf(c); if (k >= 0) colliders.splice(k, 1); }
+  function cullMesh(mesh) {
+    if (!mesh) return;
+    mesh.visible = false;
+    if (mesh.parent) mesh.parent.remove(mesh);
+    const k = typeof shootables !== 'undefined' ? shootables.indexOf(mesh) : -1; if (k >= 0) shootables.splice(k, 1);
+    if (mesh.geometry) mesh.geometry.dispose();
+  }
+  /** 處理一棟（新起或回溯） */
+  function apply(e) {
+    if (e.dead) return;
+    if (ringHit(e.F, M_CULL)) {
+      for (const c of e.cols) dropCol(c); e.cols = []; cullMesh(e.mesh); e.dead = true; S.stats.bldCull++; return;
+    }
+    if (!e.ok || e.strip) return;
+    if (boxHit(e.minx, e.maxx, e.minz, e.maxz, M_EDGE)) {
+      for (const c of e.cols) dropCol(c);
+      e.cols = stripCols(e.F, e.minx, e.maxx, e.minz, e.maxz, e.h); for (const c of e.cols) colliders.push(c);
+      e.strip = true; S.stats.bldStrip++;
+    }
+  }
+  /** extrude 樓碰撞入口（取代 addCollider(aabb)）；ok=false 即原本唔加碰撞 */
+  function bldCollider(pts, minx, maxx, minz, maxz, h, mesh, ok = true) {
+    const e = { F: toFlat(pts), minx, maxx, minz, maxz, h, mesh, ok, cols: [], strip: false, dead: false };
+    if (ok) { const c = { minX: minx, maxX: maxx, minZ: minz, maxZ: maxz, maxY: h }; colliders.push(c); e.cols.push(c); }
+    S.reg.push(e);
+    if (S.segs.length) apply(e);
+  }
+  /** HKM 舊區圍牆：主幹穿過嘅位開缺口；segs = [[ax,val,s,e]]（區局部） */
+  function cutWalls(segs, cx, cz) {
+    if (!S.segs.length) return segs;
+    const out = [];
+    for (const [ax, val, s, e] of segs) {
+      let run = null;
+      for (let t = s; t <= e + 1e-6; t += 0.5) {
+        const x = ax === 0 ? cx + val : cx + t, z = ax === 0 ? cz + t : cz + val;
+        const blocked = !!pointHit(x, z, 1.2);
+        if (!blocked) { if (run === null) run = t; }
+        else if (run !== null) { if (t - 0.5 - run > 0.5) out.push([ax, val, run, t - 0.5]); run = null; S.stats.wallCut++; }
+        else S.stats.wallCut++;
+      }
+      if (run !== null && e - run > 0.5) out.push([ax, val, run, e]);
+    }
+    return out;
+  }
+  function retro() {
+    if (busy()) { setTimeout(retro, 2000); return; }
+    for (const e of S.reg) apply(e);
+    if (typeof HKM !== 'undefined' && typeof hkDisposeZone === 'function') {
+      for (const Z of Object.values(HKM.zones)) if (Z.built && Z.spclrN !== S.segs.length) { hkDisposeZone(Z); S.stats.retro++; }
+    }
+  }
+  /** 加一份 spines JSON（districts.*.spines[]；drivable:false 嘅唔計） */
+  function add(json, tag) {
+    if (!json || !json.districts || S.files[tag]) return 0;
+    S.files[tag] = true; let n = 0;
+    for (const D of Object.values(json.districts)) {
+      for (const sp of (D.spines || [])) {
+        if (sp.drivable === false) continue;
+        const P = sp.points || []; if (P.length < 2) continue;
+        const hw = spineHalfW(sp);
+        for (let i = 0; i + 1 < P.length; i++) addSeg(P[i].dx, P[i].dz, P[i + 1].dx, P[i + 1].dz, hw, sp.id);
+        n++;
+      }
+    }
+    S.stats.spines += n; S.stats.segs = S.segs.length;
+    if (S.readyDone) retro();
+    return n;
+  }
+  async function fetchJ(f) {
+    for (const u of ['data/' + f, './assets/data/' + f, '../data/' + f]) {
+      try { const r = await fetch(u, { cache: 'no-store' }); if (r && r.ok) return await r.json(); } catch (e) { /* */ }
+    }
+    return null;
+  }
+  S.ready = (async () => {
+    try { add(await fetchJ('core27-ssp-kc-spines.json'), 'core27'); } catch (e) { console.warn('[spclr]', e && e.message); }
+    S.readyDone = true;
+    retro();
+    return S.stats;
+  })();
+  Object.assign(S, { add, ringHit, boxHit, pointHit, bldCollider, cutWalls, stripCols, retro });
+  return S;
+})();
+function spclrBldCollider(pts, minx, maxx, minz, maxz, h, mesh, ok) { SPCLR.bldCollider(pts, minx, maxx, minz, maxz, h, mesh, ok); }
+
 function hkBuildZone(Z) {
   const t0 = performance.now(), cx = Z.c[0], cz = Z.c[1], H = Z.H, g = new THREE.Group(); g.name = 'hkzone-' + Z.id;
   const excl = []; // 地標範圍（世界 AABB）：OSM 建築唔放
@@ -9363,6 +9645,7 @@ function hkBuildZone(Z) {
     const P = new Float32Array(n * 2); for (let k = 0; k < n; k++) { P[k * 2] = cx + a[i] / 2; P[k * 2 + 1] = cz + a[i + 1] / 2; i += 2; }
     let mx = 0, mz = 0; for (let k = 0; k < n; k++) { mx += P[k * 2]; mz += P[k * 2 + 1]; } mx /= n; mz /= n;
     if (excl.some((e) => mx > e[0] && mx < e[1] && mz > e[2] && mz < e[3])) continue;
+    if (SPCLR.ringHit(P)) { SPCLR.stats.zoneCull++; continue; } // core27c2：踩主幹走廊嘅舊區樓唔起
     const seed = (bid * 0.6180339) % 1; let acc = 0;
     for (let k = 0; k < n; k++) { const x0 = P[k * 2], z0 = P[k * 2 + 1], x1 = P[((k + 1) % n) * 2], z1 = P[((k + 1) % n) * 2 + 1], L = Math.hypot(x1 - x0, z1 - z0), vi = pos.length / 3;
       pos.push(x0, 0, z0, x1, 0, z1, x1, h, z1, x0, h, z0); uv.push(acc / 3.2, 0, (acc + L) / 3.2, 0, (acc + L) / 3.2, h / 3.1, acc / 3.2, h / 3.1); acc += L;
@@ -9391,7 +9674,8 @@ function hkBuildZone(Z) {
     const gaps = ports.filter((p) => p[2] === nx && p[3] === nz).map((p) => (ax === 0 ? p[1] - cz : p[0] - cx)).sort((u, v) => u - v);
     let s = -H; for (const gp of [...gaps, null]) { const e = gp === null ? H : gp - HKM.HW - 0.6; if (e > s + 0.5) segs.push([ax, val, s, e]); if (gp !== null) s = gp + HKM.HW + 0.6; }
   }
-  for (const [ax, val, s, e] of segs) {
+  const segsCut = SPCLR.cutWalls(segs, cx, cz); Z.spclrN = SPCLR.segs.length; // core27c2：主幹穿牆開缺口
+  for (const [ax, val, s, e] of segsCut) {
     const L = e - s, m = (s + e) / 2, x = ax === 0 ? cx + val : cx + m, z = ax === 0 ? cz + m : cz + val;
     _hq.setFromAxisAngle(_hyAx, ax === 0 ? Math.PI / 2 : 0); _hp3.set(x, 0, z); _hs3.set(L, 6.5, 0.8); _hm4.compose(_hp3, _hq, _hs3); wallIM.setMatrixAt(wallIM.count++, _hm4);
     colliders.push({ minX: ax === 0 ? x - 0.4 : x - L / 2, maxX: ax === 0 ? x + 0.4 : x + L / 2, minZ: ax === 0 ? z - L / 2 : z - 0.4, maxZ: ax === 0 ? z + L / 2 : z + 0.4, maxY: 6.5 });
@@ -9713,7 +9997,7 @@ function buildTaipeiStreets() {
   const concrete = shared(new THREE.MeshStandardMaterial({ color: 0xb0aea6, roughness: 0.85 }));
   const OX = 220, OZ = 0; // 信義廣場附近
   B(g, asphalt, 48, 0.08, 160, OX, 0.04, OZ); B(g, asphalt, 140, 0.08, 28, OX, 0.04, OZ);
-  for (const s of [-1, 1]) { B(g, curb, 4, 0.18, 160, OX + s * 26, 0.09, OZ); B(g, curb, 140, 0.18, 4, OX, 0.09, OZ + s * 16); }
+  for (const s of [-1, 1]) { B(g, curb, 4, 0.125, 160, OX + s * 26, 0.0625, OZ); B(g, curb, 140, 0.125, 4, OX, 0.0625, OZ + s * 16); /* core27f：路壆 125mm */ }
   const blocks = [
     [OX - 55, OZ - 40, 42, 55, 48], [OX - 55, OZ + 45, 42, 50, 62], [OX + 55, OZ - 35, 40, 60, 72], [OX + 55, OZ + 50, 38, 48, 88],
     [OX - 90, OZ, 28, 70, 36], [OX + 90, OZ + 8, 30, 80, 40], [OX, OZ - 85, 70, 36, 28], [OX, OZ + 88, 64, 40, 32]
@@ -12694,7 +12978,7 @@ HOOKS.sim.push((dt) => {
             '交通執法組提示：非法泊車定額罰款四百元；行車中使用手提電話亦可被票控。',
             '交通執法組提醒：超速、衝紅燈、斑馬線未讓行人均屬定額罰款項目。',
             '街道秩序組提示：公眾地方阻街、非法擺放廢物，定額罰款六千元。',
-            '醫療消息：公立急症室合資格人士每次收費約四百元，非緊急請考慮普通科門診。',
+            '醫療消息：公立急症室合資格人士每次收費四百元，非合資格二千一百元；非緊急請考慮普通科門診。',
             '交通：維港渡輪班次大致恢復，尖沙咀／中環碼頭人流偏多。',
             '地方：旺角信旺中心一帶行人多，請留意路口。',
             '葵涌貨櫃碼頭一帶重型車出入頻密，駕駛請減速。',
@@ -14230,7 +14514,7 @@ function setTimeOfDay(mode, opts = {}) {
   if (typeof FOG_COLOR !== 'undefined') {
     FOG_COLOR.setHex(cfg.fog);
     // 背景用略深於霧色，避免日頭／灰霧整幅變白屏
-    scene.background.setHex(m === 'day' ? 0x3a4a5c : 0x0b0c0e);
+    if (scene.background && scene.background.isColor) scene.background.setHex(m === 'day' ? 0x3a4a5c : 0x0b0c0e); else if (m !== 'day') scene.background = new THREE.Color(0x0b0c0e); // core27f：日頭係天空圖唔係 Color
     if (scene.fog) scene.fog.color.copy(FOG_COLOR);
     if (scene.fog && scene.fog.isFogExp2) scene.fog.density = m === 'day' ? 0.0032 : 0.0095;
   }
@@ -15367,6 +15651,9 @@ function b2ApplyFacades() {
 }
 
 function b2ApplyVehicleSheet() {
+  // core27f：p1-cc0-vehicles 係平面實景貼紙 → 禁相板（docs/kwai-no-photo-boards.md）；程序色塊車身保留
+  if (typeof scene !== 'undefined') scene.traverse((o) => { if (o.name && /^art-b2-veh-/.test(o.name)) { if (o.parent) o.parent.remove(o); if (o.geometry) o.geometry.dispose(); } });
+  B2ART.applied.vehicles = false; B2ART.applied.vehiclesPhoto = false; return;
   if (!B2ART.tex.vehDN || typeof VPROTO === 'undefined') return;
   const tex = B2ART.tex.vehDN;
   const targets = [
@@ -20016,6 +20303,16 @@ function kwBuildP1Urban() {
  *  · toast = 現實面額（oral_toast／fine-lines）；扣款 = game_amount_div40
  *  · MOP≈1:1÷40；TWD×0.25÷40；澳常見亂拋 MOP 600（mo_litter）
  * ========================================================================= */
+/* 老闆 P0 街景尺寸鎖（2026-10-24；水平遊戲 u＝m×1.5，高度／細 prop 1:1） */
+const BOSS_P0_STREET = {
+  arcade: { col_to_kerb_m: 1.5, col_to_door_m: [1.2, 1.5], clear_h_m: 3.0, post_m: [3.5, 5], post_u: [5.25, 7.5], depth_u: 3.0 },
+  ac: { old_frac: [0.4, 0.6], new_split_frac: 0.8, bracket_cm: [20, 50], from_window_m: 0.15, from_ground_m: [1.5, 2.5], class3_gt_m: 3.0, overhang_max_mm: 600 },
+  laundry_floors: [2, 8], canopy_out_m: [0.8, 1.5], canopy_clear_m: 2.5, sign_out_m: [0.5, 1.2],
+  sidewalk_m: { trunk: [2.0, 3.5], side: [1.5, 2.5] }, kerb_cm: [10, 15], bin_gap_m: [20, 50],
+  rail_h_m: { iron: [0.9, 1.1], concrete: [0.9, 1.0] },
+  bus: [12, 2.5, 4.4], minibus: [7, 2.1, 2.7], taxi: [4.6, 1.75, 1.5], tram: [20, 2.4, 3.5], tram_gauge_mm: 1067
+};
+Object.assign(window.NT = window.NT || {}, { BOSS_P0_STREET });
 const GOV_FEES = {
   // 現實面額（toast）；入帳 game_*（÷40；MOP≈1:1；TWD×0.25÷40）
   // 來源：data/gov-fees-verified.json（id 已正規化 hk_/mo_/tw_/fee_）
@@ -20296,11 +20593,11 @@ function litterDump() {
 /** 掛咗重生：急症費跟核實表 */
 function govWastedFee() { return govAeFee(); }
 function govWastedLabel() {
-  const fee = govAeFee();
-  if (fee === 0) return '公立醫院急症室（醫療費用豁免）';
+  /* 劇本 toast 顯示真港幣面額；扣款用 govWastedFee()＝÷40 遊戲$ */
+  if (govAeFee() === 0) return '公立醫院急症室（醫療費用豁免）';
   return govEligible()
-    ? `公立醫院急症室收費（合資格 $${fee}）`
-    : `公立醫院急症室收費（非合資格 $${fee}）`;
+    ? `公立醫院急症室收費（合資格 港幣 $${GOV_FEES.REAL_HA_ELIGIBLE_AE}）`
+    : `公立醫院急症室收費（非合資格 港幣 $${GOV_FEES.REAL_HA_NONELIGIBLE_AE}）`;
 }
 
 function govPatchHospShop() {
@@ -20315,7 +20612,7 @@ function govPatchHospShop() {
     return [
       { name: '家庭醫學門診', desc: `生命 +40 · 合資格 $${GOV_FEES.HA_ELIGIBLE_GOPC}／非合資格 $${GOV_FEES.HA_NONELIGIBLE_GOPC}`, price: gopc, can: player.hp < 100, why: '你冇受傷', act() { player.hp = Math.min(100, player.hp + 40); toast(`掛號收費 $${gopc}`, 1800); } },
       { name: '專科門診', desc: `生命 +70 · 合資格 $${GOV_FEES.HA_ELIGIBLE_SOPD}／非合資格 $${GOV_FEES.HA_NONELIGIBLE_SOPD}`, price: sopd, can: player.hp < 100, why: '你冇受傷', act() { player.hp = Math.min(100, player.hp + 70); toast(`專科收費 $${sopd}`, 1800); } },
-      { name: '急症治療', desc: `生命回滿 · 合資格 $${GOV_FEES.HA_ELIGIBLE_AE}／非合資格 $${GOV_FEES.HA_NONELIGIBLE_AE}`, price: ae, can: player.hp < 100, why: '你冇受傷', act() { player.hp = 100; toast(`急症收費 $${ae}`, 1800); } },
+      { name: '急症治療', desc: `生命回滿 · 合資格 港幣 $${GOV_FEES.REAL_HA_ELIGIBLE_AE}／非合資格 港幣 $${GOV_FEES.REAL_HA_NONELIGIBLE_AE}（入帳÷40）`, price: ae, can: player.hp < 100, why: '你冇受傷', act() { player.hp = 100; toast(`急症收費 港幣 $${govEligible() ? GOV_FEES.REAL_HA_ELIGIBLE_AE : GOV_FEES.REAL_HA_NONELIGIBLE_AE}（入帳 $${ae}）`, 2200); } },
       { name: '包紮／敷料', desc: `生命 +25 · 遊戲 $${GOV_FEES.HA_DRESSING}`, price: govCssaWaive() ? 0 : GOV_FEES.HA_DRESSING, can: player.hp < 100, why: '你冇受傷', act() { player.hp = Math.min(100, player.hp + 25); } },
       { name: '止痛藥', desc: '「定驚」120 秒：中槍傷害減三成', price: govCssaWaive() ? 0 : GOV_FEES.HA_DRUG, can: true, act() { if (typeof addBuff === 'function') addBuff('calm', 120); } }
     ];
@@ -21145,12 +21442,14 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
   }
 
   if (typeof HOOKS !== 'undefined' && HOOKS.sim) HOOKS.sim.push(tick);
+  // core27f：任何地方換返黑西裝（換角／任務），日頭都自動轉日頭衫
+  try { if (typeof setPlayerOutfit === 'function' && !setPlayerOutfit._c27f) { const _spo = setPlayerOutfit; setPlayerOutfit = function (o) { if (typeof TOD !== 'undefined' && TOD.mode === 'day') { if (o === OUTFITS.kit && OUTFITS.kit_day) o = OUTFITS.kit_day; else if (o === OUTFITS.wentao && OUTFITS.wentao_day) o = OUTFITS.wentao_day; } return _spo(o); }; setPlayerOutfit._c27f = 1; } } catch (e) { /* */ }
+  setInterval(() => { if (typeof TOD !== 'undefined' && TOD.mode === 'day' && typeof player !== 'undefined' && player && !player._c27fDay) { player._c27fDay = 1; applyDayOutfit('day'); } }, 3000);
   if (typeof todOnChange === 'function') todOnChange(applyDayOutfit);
   setTimeout(() => { if (typeof TOD !== 'undefined') applyDayOutfit(TOD.mode); }, 1500);
   function gotoPed(i) { const w = wpos(PEDS[i | 0] || PEDS[0]); if (w && player) { player.pos.set(w.x + 2, player.pos.y, w.z + 2); } return w; } // 測試用：瞬移去第 i 個路人
   Object.assign(window.NT = window.NT || {}, { CORE27_PEDS: { PEDS, ST, applyDayOutfit, gotoPed, liveCount: () => Object.keys(ST.live).length } });
 })();
-
 /* =========================================================================
  * core24 · 油尖旺可駛彎道＋樓腳 Extrude
  *  · data/osm-ytm-drive-extrude-core24.json
@@ -21223,6 +21522,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
   }
 
   function ytmHeight(b, csdiNear) {
+    if (b.levels && b.levels > 0) return Math.min(180, b.levels * 3.1); /* core27f 爬蟲 levels */
     // 優先顯式高度／層數；OSM 多數缺 levels → 類型預設＋CSDI 近鄰
     if (b.levels && b.levels > 0) return Math.min(180, b.levels * 3.1);
     if (b.height_m && b.height_m > 2) return Math.min(180, b.height_m);
@@ -21239,9 +21539,10 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
         if (h > 2) return Math.min(180, h);
       }
     }
+    const _ty = { tong_lau: [5, 8], public_housing: [18, 40], private_estate: [22, 45], composite_resi_comm: [9, 20], commercial_office: [14, 35], industrial: [7, 16], village_house: [3, 3], institutional: [4, 10] }[b.type]; const _r = ((((b.osm_id || b.csdi_objectid || 7) * 2654435761) >>> 0) % 1000) / 1000; if (_ty) return Math.min(180, (_ty[0] + _r * (_ty[1] - _ty[0])) * 3.1); /* core27f：冇高度用 type＋hash，唔再成排 28m */
     const kind = ((b.building || b.block_type || '') + ' ' + (b.name || b.name_zh || '')).toLowerCase();
     if (/tower|skyscraper|hotel|office/.test(kind)) return 72;
-    if (/apartments|residential|yes/.test(kind)) return 28; // ~9 層唐樓／舊廈預設
+    if (/apartments|residential|yes/.test(kind)) return 19 + _r * 14; // core27f：唐樓／舊廈 6–10 層隨機
     if (/retail|commercial|shop|mall|商場|podium/.test(kind)) return 16; // ~5 層
     if (/industrial|warehouse/.test(kind)) return 14;
     return 22; // 油尖旺街舖＋上蓋常見預設 ~7 層
@@ -21310,12 +21611,12 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
         if (p.y < minz) minz = p.y; if (p.y > maxz) maxz = p.y;
       }
       const hx = (maxx - minx) * 0.5, hz = (maxz - minz) * 0.5;
-      if (hx > 1 && hz > 1) addCollider((minx + maxx) * 0.5, (minz + maxz) * 0.5, hx, hz, Math.min(h, 40));
+      spclrBldCollider(pts, minx, maxx, minz, maxz, Math.min(h, 40), mesh, hx > 1 && hz > 1); // core27c2：走廊淨空＋條狀碰撞
     }
     return true;
   }
 
-  function ytmRoadRibbon(parent, pts, width, mat) {
+  function ytmRoadRibbon(parent, pts, width, mat) { if (pts) pts._w = width;
     if (!pts || pts.length < 2) return 0;
     let n = 0;
     for (let i = 0; i + 1 < pts.length; i++) {
@@ -21333,7 +21634,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       parent.add(mesh);
       // 雙黃
       if (n % 2 === 0 && YTM.mats.yel) {
-        for (const side of [-width * 0.42, width * 0.42]) {
+        for (const side of [] /* core27f：舊 ±42% 黃線取消，改 kerb 雙黃 */) {
           const edge = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.03, Math.min(len, 48)), YTM.mats.yel);
           edge.position.set(mesh.position.x + Math.cos(yaw) * side, 0.07, mesh.position.z - Math.sin(yaw) * side);
           edge.rotation.y = yaw;
@@ -21341,9 +21642,9 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
         }
       }
       // 行人路帶
-      if (YTM.mats.sidewalk && n % 3 === 0) {
-        for (const side of [-width * 0.72, width * 0.72]) {
-          const sw = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.05, Math.min(len, 36)), YTM.mats.sidewalk);
+      if (YTM.mats.sidewalk) { /* core27f 行人路連續 */
+        for (const side of [] /* core27f：行人路改由 c27f 每區合併一個 mesh */) {
+          const sw = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.05, len + 0.6), YTM.mats.sidewalk);
           sw.position.set(mesh.position.x + Math.cos(yaw) * side, 0.04, mesh.position.z - Math.sin(yaw) * side);
           sw.rotation.y = yaw;
           sw.receiveShadow = true;
@@ -21435,7 +21736,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       const hb = b.height_m || (b.levels || 0) * 3.1;
       return hb - ha;
     });
-    for (const b of ranked) {
+    for (const b of ranked) { if (b && b.skip_render) continue; /* core27f-b 地底站 */
       if (nBld >= cap) break;
       const ring = b.footprint_ring;
       if (!ring || ring.length < 3) continue;
@@ -21448,7 +21749,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
     // CSDI 補空隙（未同 OSM 重疊太近）
     const csdiCap = lite ? 80 : 180;
     let nCsdi = 0;
-    for (const c of csdi) {
+    for (const c of csdi) { if (c && c.skip_render) continue; /* core27f-b 地底站 */
       if (nCsdi >= csdiCap || nBld + nCsdi >= cap + 80) break;
       const ring = c.footprint_ring;
       if (!ring || ring.length < 3) continue;
@@ -21602,6 +21903,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
   }
 
   function cwHeight(b, csdiNear) {
+    if (b.levels && b.levels > 0) return Math.min(180, b.levels * 3.1); /* core27f 爬蟲 levels */
     if (b.levels && b.levels > 0) return Math.min(220, b.levels * 3.1);
     if (b.height_m && b.height_m > 2) return Math.min(220, b.height_m);
     if (b.storeys && b.storeys > 0) return Math.min(220, b.storeys * 3.1);
@@ -21617,6 +21919,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
         if (h > 2) return Math.min(220, h);
       }
     }
+    const _ty = { tong_lau: [5, 8], public_housing: [18, 40], private_estate: [22, 45], composite_resi_comm: [9, 20], commercial_office: [14, 35], industrial: [7, 16], village_house: [3, 3], institutional: [4, 10] }[b.type]; const _r = ((((b.osm_id || b.csdi_objectid || 7) * 2654435761) >>> 0) % 1000) / 1000; if (_ty) return Math.min(180, (_ty[0] + _r * (_ty[1] - _ty[0])) * 3.1); /* core27f：冇高度用 type＋hash，唔再成排 28m */
     const kind = ((b.building || b.block_type || '') + ' ' + (b.name || b.name_zh || '')).toLowerCase();
     if (/tower|skyscraper|hotel|office|bank|ifc/.test(kind)) return 96;
     if (/apartments|residential|yes/.test(kind)) return 32;
@@ -21684,12 +21987,12 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
         if (p.y < minz) minz = p.y; if (p.y > maxz) maxz = p.y;
       }
       const hx = (maxx - minx) * 0.5, hz = (maxz - minz) * 0.5;
-      if (hx > 1 && hz > 1) addCollider((minx + maxx) * 0.5, (minz + maxz) * 0.5, hx, hz, Math.min(h, 40));
+      spclrBldCollider(pts, minx, maxx, minz, maxz, Math.min(h, 40), mesh, hx > 1 && hz > 1); // core27c2：走廊淨空＋條狀碰撞
     }
     return true;
   }
 
-  function cwRoadRibbon(parent, pts, width, mat) {
+  function cwRoadRibbon(parent, pts, width, mat) { if (pts) pts._w = width;
     if (!pts || pts.length < 2) return 0;
     let n = 0;
     for (let i = 0; i + 1 < pts.length; i++) {
@@ -21706,16 +22009,16 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       mesh.name = 'cw_drive_trunk';
       parent.add(mesh);
       if (n % 2 === 0 && CW.mats.yel) {
-        for (const side of [-width * 0.42, width * 0.42]) {
+        for (const side of [] /* core27f：舊 ±42% 黃線取消，改 kerb 雙黃 */) {
           const edge = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.03, Math.min(len, 48)), CW.mats.yel);
           edge.position.set(mesh.position.x + Math.cos(yaw) * side, 0.07, mesh.position.z - Math.sin(yaw) * side);
           edge.rotation.y = yaw;
           parent.add(edge);
         }
       }
-      if (CW.mats.sidewalk && n % 3 === 0) {
-        for (const side of [-width * 0.72, width * 0.72]) {
-          const sw = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.05, Math.min(len, 36)), CW.mats.sidewalk);
+      if (CW.mats.sidewalk) { /* core27f 行人路連續 */
+        for (const side of [] /* core27f：行人路改由 c27f 每區合併一個 mesh */) {
+          const sw = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.05, len + 0.6), CW.mats.sidewalk);
           sw.position.set(mesh.position.x + Math.cos(yaw) * side, 0.04, mesh.position.z - Math.sin(yaw) * side);
           sw.rotation.y = yaw;
           sw.receiveShadow = true;
@@ -21804,7 +22107,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       const hb = b.height_m || (b.levels || 0) * 3.1;
       return hb - ha;
     });
-    for (const b of ranked) {
+    for (const b of ranked) { if (b && b.skip_render) continue; /* core27f-b 地底站 */
       if (nBld >= cap) break;
       const ring = b.footprint_ring;
       if (!ring || ring.length < 3) continue;
@@ -21816,7 +22119,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
     }
     const csdiCap = lite ? 80 : 180;
     let nCsdi = 0;
-    for (const c of csdi) {
+    for (const c of csdi) { if (c && c.skip_render) continue; /* core27f-b 地底站 */
       if (nCsdi >= csdiCap || nBld + nCsdi >= cap + 80) break;
       const ring = c.footprint_ring;
       if (!ring || ring.length < 3) continue;
@@ -21863,10 +22166,11 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
         const p = (typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined')
           ? car.pos : (typeof player !== 'undefined' ? player.pos : null);
         if (!p) return;
-        // 中西中心約干諾／德輔
-        const cx = -5860, cz = -11750;
+        // 中西中心：皇后像／遮打 gather（唔用干諾碼頭岸）
+        const sc = (NT.CW && NT.CW._streamC) || { x: -6390, z: -12288 };
+        const cx = sc.x, cz = sc.z;
         const d = Math.hypot(p.x - cx, p.z - cz);
-        const v = d < 4500;
+        const v = d < 5200;
         if (CW.group.visible !== v) CW.group.visible = v;
       });
     }
@@ -21961,6 +22265,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
   }
 
   function ktPickMat(b) {
+
     const kind = ((b.building || b.block_type || '') + ' ' + (b.name || b.name_zh || '')).toLowerCase();
     if (/container|貨櫃|yard|depot|logistics|倉庫|warehouse|industrial|廠/.test(kind)) return KT.mats.corrugated || KT.mats.industrial;
     if (/corrugat|鐵皮|tin/.test(kind)) return KT.mats.corrugated || KT.mats.industrial;
@@ -21971,6 +22276,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
   }
 
   function ktHeight(b, csdiNear) {
+    if (b.levels && b.levels > 0) return Math.min(180, b.levels * 3.1); /* core27f 爬蟲 levels */
     if (b.levels && b.levels > 0) return Math.min(180, b.levels * 3.1);
     if (b.height_m && b.height_m > 2) return Math.min(180, b.height_m);
     if (b.storeys && b.storeys > 0) return Math.min(180, b.storeys * 3.1);
@@ -21986,6 +22292,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
         if (h > 2) return Math.min(180, h);
       }
     }
+    const _ty = { tong_lau: [5, 8], public_housing: [18, 40], private_estate: [22, 45], composite_resi_comm: [9, 20], commercial_office: [14, 35], industrial: [7, 16], village_house: [3, 3], institutional: [4, 10] }[b.type]; const _r = ((((b.osm_id || b.csdi_objectid || 7) * 2654435761) >>> 0) % 1000) / 1000; if (_ty) return Math.min(180, (_ty[0] + _r * (_ty[1] - _ty[0])) * 3.1); /* core27f：冇高度用 type＋hash，唔再成排 28m */
     const kind = ((b.building || b.block_type || '') + ' ' + (b.name || b.name_zh || '')).toLowerCase();
     if (/tower|office|hotel/.test(kind)) return 72;
     if (/apartments|residential|公屋|housing/.test(kind)) return 42;
@@ -22053,12 +22360,12 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
         if (p.y < minz) minz = p.y; if (p.y > maxz) maxz = p.y;
       }
       const hx = (maxx - minx) * 0.5, hz = (maxz - minz) * 0.5;
-      if (hx > 1 && hz > 1) addCollider((minx + maxx) * 0.5, (minz + maxz) * 0.5, hx, hz, Math.min(h, 40));
+      spclrBldCollider(pts, minx, maxx, minz, maxz, Math.min(h, 40), mesh, hx > 1 && hz > 1); // core27c2：走廊淨空＋條狀碰撞
     }
     return true;
   }
 
-  function ktRoadRibbon(parent, pts, width, mat) {
+  function ktRoadRibbon(parent, pts, width, mat) { if (pts) pts._w = width;
     if (!pts || pts.length < 2) return 0;
     let n = 0;
     for (let i = 0; i + 1 < pts.length; i++) {
@@ -22075,16 +22382,16 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       mesh.name = 'kt_drive_trunk';
       parent.add(mesh);
       if (n % 2 === 0 && KT.mats.yel) {
-        for (const side of [-width * 0.42, width * 0.42]) {
+        for (const side of [] /* core27f：舊 ±42% 黃線取消，改 kerb 雙黃 */) {
           const edge = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.03, Math.min(len, 48)), KT.mats.yel);
           edge.position.set(mesh.position.x + Math.cos(yaw) * side, 0.07, mesh.position.z - Math.sin(yaw) * side);
           edge.rotation.y = yaw;
           parent.add(edge);
         }
       }
-      if (KT.mats.sidewalk && n % 3 === 0) {
-        for (const side of [-width * 0.72, width * 0.72]) {
-          const sw = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.05, Math.min(len, 36)), KT.mats.sidewalk);
+      if (KT.mats.sidewalk) { /* core27f 行人路連續 */
+        for (const side of [] /* core27f：行人路改由 c27f 每區合併一個 mesh */) {
+          const sw = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.05, len + 0.6), KT.mats.sidewalk);
           sw.position.set(mesh.position.x + Math.cos(yaw) * side, 0.04, mesh.position.z - Math.sin(yaw) * side);
           sw.rotation.y = yaw;
           sw.receiveShadow = true;
@@ -22176,7 +22483,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       const hb = b.height_m || (b.levels || 0) * 3.1;
       return hb - ha;
     });
-    for (const b of ranked) {
+    for (const b of ranked) { if (b && b.skip_render) continue; /* core27f-b 地底站 */
       if (nBld >= cap) break;
       const ring = b.footprint_ring;
       if (!ring || ring.length < 3) continue;
@@ -22188,7 +22495,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
     }
     const csdiCap = lite ? 80 : 180;
     let nCsdi = 0;
-    for (const c of csdi) {
+    for (const c of csdi) { if (c && c.skip_render) continue; /* core27f-b 地底站 */
       if (nCsdi >= csdiCap || nBld + nCsdi >= cap + 80) break;
       const ring = c.footprint_ring;
       if (!ring || ring.length < 3) continue;
@@ -22367,6 +22674,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
     }
 
     function pickMat(b, h) {
+
       const kind = ((b.building || b.block_type || '') + ' ' + (b.name || b.name_zh || '')).toLowerCase();
       if (/industrial|warehouse|factory|工廈|廠/.test(kind)) return D.mats.industrial;
       if (/retail|commercial|shop|商場|電腦|market|街市/.test(kind)) return D.mats.shop;
@@ -22386,9 +22694,10 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
         if (near.height_m > 2) return Math.min(180, near.height_m);
         if (near.storeys > 0) return Math.min(180, near.storeys * 3.1);
       }
+      const _ty = { tong_lau: [5, 8], public_housing: [18, 40], private_estate: [22, 45], composite_resi_comm: [9, 20], commercial_office: [14, 35], industrial: [7, 16], village_house: [3, 3], institutional: [4, 10] }[b.type]; const _r = ((((b.osm_id || b.csdi_objectid || 7) * 2654435761) >>> 0) % 1000) / 1000; if (_ty) return Math.min(180, (_ty[0] + _r * (_ty[1] - _ty[0])) * 3.1); /* core27f：冇高度用 type＋hash，唔再成排 28m */
       const kind = ((b.building || b.block_type || '') + ' ' + (b.name || '')).toLowerCase();
       if (/tower|office|hotel/.test(kind)) return 60;
-      if (/apartments|residential/.test(kind)) return 28; // 唐樓≈9 層
+      if (/apartments|residential/.test(kind)) return 19 + _r * 14; // core27f：唐樓 6–10 層隨機
       if (/retail|commercial|shop/.test(kind)) return 16;
       return cfg.fallbackH;
     }
@@ -22433,12 +22742,12 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
         let minx = Infinity, maxx = -Infinity, minz = Infinity, maxz = -Infinity;
         for (const p of pts) { if (p.x < minx) minx = p.x; if (p.x > maxx) maxx = p.x; if (p.y < minz) minz = p.y; if (p.y > maxz) maxz = p.y; }
         const hx = (maxx - minx) * 0.5, hz = (maxz - minz) * 0.5;
-        if (hx > 1 && hz > 1) addCollider((minx + maxx) * 0.5, (minz + maxz) * 0.5, hx, hz, Math.min(h, 40));
+        spclrBldCollider(pts, minx, maxx, minz, maxz, Math.min(h, 40), m, hx > 1 && hz > 1); // core27c2：走廊淨空＋條狀碰撞
       }
       return true;
     }
 
-    function ribbon(parent, pts, width) {
+    function ribbon(parent, pts, width) { if (pts) pts._w = width;
       let n = 0;
       for (let i = 0; i + 1 < pts.length; i++) {
         const a = pts[i], b = pts[i + 1];
@@ -22449,15 +22758,15 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
         m.receiveShadow = true; m.userData.noMerge = true; m.name = cfg.id + '_drive_trunk';
         parent.add(m);
         if (n % 2 === 0) {
-          for (const side of [-width * 0.42, width * 0.42]) {
+          for (const side of [] /* core27f：舊 ±42% 黃線取消，改 kerb 雙黃 */) {
             const e = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.03, Math.min(len, 48)), D.mats.yel);
             e.position.set(m.position.x + Math.cos(yaw) * side, 0.07, m.position.z - Math.sin(yaw) * side); e.rotation.y = yaw;
             parent.add(e);
           }
         }
-        if (n % 3 === 0) {
-          for (const side of [-width * 0.72, width * 0.72]) {
-            const s = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.05, Math.min(len, 36)), D.mats.sidewalk);
+        { /* core27f 行人路連續 */
+          for (const side of [] /* core27f：行人路改由 c27f 每區合併一個 mesh */) {
+            const s = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.05, len + 0.6), D.mats.sidewalk);
             s.position.set(m.position.x + Math.cos(yaw) * side, 0.04, m.position.z - Math.sin(yaw) * side); s.rotation.y = yaw;
             s.receiveShadow = true; parent.add(s);
           }
@@ -22513,7 +22822,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
         const ranked = (data.buildings || []).slice().sort((a, b) => ((b.height_m || (b.levels || 0) * 3.1) - (a.height_m || (a.levels || 0) * 3.1)));
         const cap = lite ? 200 : 480;
         let nB = 0, nC = 0, parkSkip = 0;
-        for (const b of ranked) {
+        for (const b of ranked) { if (b && b.skip_render) continue; /* core27f-b 地底站 */
           if (nB >= cap) break;
           const ring = b.footprint_ring; if (!ring || ring.length < 3) continue;
           const c = b.centroid || { dx: ring[0].dx, dz: ring[0].dz };
@@ -22523,7 +22832,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
         }
         const cCap = lite ? 70 : 160;
         const top = ranked.slice(0, Math.min(nB, 200));
-        for (const c of csdi) {
+        for (const c of csdi) { if (c && c.skip_render) continue; /* core27f-b 地底站 */
           if (nC >= cCap) break;
           const ring = c.footprint_ring, cen = c.centroid; if (!ring || ring.length < 3 || !cen) continue;
           if (inPark(cen) || /城寨|寨城/.test(c.name_zh || '')) { parkSkip++; continue; }
@@ -22590,6 +22899,331 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
   }, 530);
 
   Object.assign(window.NT = window.NT || {}, { SSP: DIST.ssp, KCITY: DIST.kcity, sspBuild, kcityBuild });
+  Object.assign(window.NT, { SPCLR, spclrProbe: (pts, r) => { const o = []; let hits = 0; for (const [x, z] of pts) { const p = new THREE.Vector3(x, 0, z); resolveCircle(p, r, o); if (o.length) hits++; } return hits; } }); // core27c2 QA
+})();
+
+/* =========================================================================
+ * core28 · 灣仔＋東區 densify 可駛彎道＋樓腳 Extrude（wcBuild／eastBuild）
+ *  · data/osm-wc|east-drive-extrude-core28.json（schema＝SSP／KCITY）；path_chord_ratio≤4
+ *  · tex/facade/wc|east/ RepeatWrapping；懶載 ±1.5km、>4.5km 隱藏；禁直軸／相板／Google mesh
+ *  · NT.WC／NT.EAST 有 .group／.data → 街道傢俬模組自動掛
+ * ========================================================================= */
+(function () {
+  const LAZY_M = 1500, HIDE_M = 4500;
+  const CFGS = {
+    wc: {
+      id: 'wc', label: '灣仔區', zone: 'wc:core28',
+      json: 'osm-wc-drive-extrude-core28.json',
+      bbox: [-11366, -6945, -14166, -11583],
+      wide: /軒尼詩|告士打|港灣道|高士威|譚臣/,
+      minimap: '#c4a574', fallbackH: 28, midMid: true,
+      files: {
+        tonglau: 'tex/facade/wc/wc_tonglau_verandah_green.jpg',
+        housing: 'tex/facade/wc/wc_composite_mosaic_60s.jpg',
+        midrise: 'tex/facade/wc/wc_office_glass_curtain.jpg',
+        shop: 'tex/facade/wc/wc_market_shopfront_awning.jpg',
+        parkwall: 'tex/facade/wc/wc_harbour_promenade_railing.jpg',
+        sidewalk: 'tex/facade/wc/wc_sidewalk_granite.jpg',
+        district: 'tex/facade/district/facade_d_cwb.jpg'
+      },
+      park: null
+    },
+    east: {
+      id: 'east', label: '東區', zone: 'east:core28',
+      json: 'osm-east-drive-extrude-core28.json',
+      bbox: [-15689, -10662, -12533, -10345],
+      wide: /英皇道|渣華道|電氣道|太古城道/,
+      minimap: '#b8a888', fallbackH: 30, midMid: false,
+      files: {
+        tonglau: 'tex/facade/east/east_skw_tonglau_shopfront.jpg',
+        shop: 'tex/facade/east/east_skw_tonglau_shopfront.jpg',
+        midrise: 'tex/facade/east/east_northpoint_composite_ac.jpg',
+        industrial: 'tex/facade/east/east_quarrybay_industrial_strip.jpg',
+        housing: 'tex/facade/east/east_taikooshing_bay_window.jpg',
+        parkwall: 'tex/facade/east/east_quarrybay_boardwalk_railing.jpg',
+        sidewalk: 'tex/facade/east/east_sidewalk_beige.jpg',
+        district: 'tex/facade/district/facade_d_cwb.jpg'
+      },
+      park: null
+    }
+  };
+
+  function dpos() {
+    if (typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined') return car.pos;
+    return typeof player !== 'undefined' ? player.pos : null;
+  }
+  function bboxDist(b, p) {
+    const dx = Math.max(b[0] - p.x, 0, p.x - b[1]);
+    const dz = Math.max(b[2] - p.z, 0, p.z - b[3]);
+    return Math.hypot(dx, dz);
+  }
+  async function dFetch(json) {
+    for (const u of ['data/' + json, './assets/data/' + json, '../data/' + json]) {
+      try { const r = await fetch(u, { cache: 'no-store' }); if (r && r.ok) return await r.json(); } catch (e) { /* */ }
+    }
+    return null;
+  }
+
+  function makeDistrict(cfg) {
+    const D = { cfg, ready: false, building: false, group: null, data: null, tex: {}, mats: {}, stats: null };
+
+    async function loadMats() {
+      if (typeof loadTex === 'function') {
+        for (const [k, f] of Object.entries(cfg.files)) {
+          try {
+            const t = await loadTex(f, true, true);
+            if (t) {
+              t.wrapS = t.wrapT = THREE.RepeatWrapping;
+              const sw = k === 'sidewalk';
+              t.repeat.set(sw ? 4 : 2, sw ? 4 : 3);
+              D.tex[k] = t;
+            }
+          } catch (e) { /* */ }
+        }
+      }
+      const T = D.tex;
+      const mk = (map, rough, metal, color) => new THREE.MeshStandardMaterial({
+        map: map || null, color: map ? 0xffffff : (color || 0x7a746c),
+        roughness: rough == null ? 0.88 : rough, metalness: metal == null ? 0.04 : metal
+      });
+      D.mats.tonglau = mk(T.tonglau || T.district, 0.9, 0.03);
+      D.mats.shop = mk(T.shop || T.tonglau || T.district, 0.8, 0.05);
+      D.mats.industrial = mk(T.industrial || T.midrise || T.district, 0.88, 0.1);
+      D.mats.housing = mk(T.housing || T.pastel || T.district, 0.88, 0.03);
+      D.mats.midrise = mk(T.midrise || T.district, 0.85, 0.05);
+      D.mats.district = mk(T.district || T.tonglau, 0.88, 0.04);
+      D.mats.parkwall = mk(T.parkwall || T.district, 0.92, 0.02);
+      D.mats.road = new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.5, metalness: 0.08 });
+      D.mats.sidewalk = mk(T.sidewalk, 0.92, 0.02, 0x7a7e72);
+      D.mats.yel = new THREE.MeshStandardMaterial({ color: 0xc9a000, emissive: 0x332200, emissiveIntensity: 0.35 });
+    }
+
+    function pickMat(b, h) {
+
+      const kind = ((b.building || b.block_type || '') + ' ' + (b.name || b.name_zh || '')).toLowerCase();
+      if (/industrial|warehouse|factory|工廈|廠/.test(kind)) return D.mats.industrial;
+      if (/retail|commercial|shop|商場|電腦|market|街市/.test(kind)) return D.mats.shop;
+      if (/邨|estate|public|公屋/.test(kind)) return D.mats.housing;
+      if (/office|hotel|tower|school|學校|hospital/.test(kind)) return D.mats.midrise;
+      if (h < 34) return D.mats.tonglau;
+      if (h < 60) return cfg.midMid ? D.mats.midrise : D.mats.housing;
+      return D.mats.district;
+    }
+
+    function height(b, near) {
+      if (b.levels && b.levels > 0) return Math.min(180, b.levels * 3.1);
+      if (b.height_m && b.height_m > 2) return Math.min(180, b.height_m);
+      if (b.storeys && b.storeys > 0) return Math.min(180, b.storeys * 3.1);
+      if (b.top_height_m != null && b.base_height_m != null) { const h = b.top_height_m - b.base_height_m; if (h > 2) return Math.min(180, h); }
+      if (near) {
+        if (near.height_m > 2) return Math.min(180, near.height_m);
+        if (near.storeys > 0) return Math.min(180, near.storeys * 3.1);
+      }
+      const _ty = { tong_lau: [5, 8], public_housing: [18, 40], private_estate: [22, 45], composite_resi_comm: [9, 20], commercial_office: [14, 35], industrial: [7, 16], village_house: [3, 3], institutional: [4, 10] }[b.type]; const _r = ((((b.osm_id || b.csdi_objectid || 7) * 2654435761) >>> 0) % 1000) / 1000; if (_ty) return Math.min(180, (_ty[0] + _r * (_ty[1] - _ty[0])) * 3.1); /* core27f：冇高度用 type＋hash，唔再成排 28m */
+      const kind = ((b.building || b.block_type || '') + ' ' + (b.name || '')).toLowerCase();
+      if (/tower|office|hotel/.test(kind)) return 60;
+      if (/apartments|residential/.test(kind)) return 19 + _r * 14; // core27f：唐樓 6–10 層隨機
+      if (/retail|commercial|shop/.test(kind)) return 16;
+      return cfg.fallbackH;
+    }
+
+    function inPark(c) {
+      const P = cfg.park; if (!P || !c) return false;
+      return Math.hypot(c.dx - P.x, c.dz - P.z) < P.r;
+    }
+
+    function extrude(ring, h, mat, parent, name) {
+      if (!ring || ring.length < 3 || h < 2) return false;
+      let pts = ring.map((p) => new THREE.Vector2(p.dx, p.dz));
+      const a0 = pts[0], aN = pts[pts.length - 1];
+      if (Math.hypot(a0.x - aN.x, a0.y - aN.y) < 0.05) pts = pts.slice(0, -1);
+      if (pts.length < 3) return false;
+      if (THREE.ShapeUtils.isClockWise(pts)) pts.reverse();
+      const pos = [], uv = [], idx = [];
+      const n = pts.length; let acc = 0;
+      for (let k = 0; k < n; k++) {
+        const p0 = pts[k], p1 = pts[(k + 1) % n];
+        const L = p0.distanceTo(p1); if (L < 0.3) continue;
+        const vi = pos.length / 3, u0 = acc / 4.2, u1 = (acc + L) / 4.2, v1 = h / 3.2; acc += L;
+        pos.push(p0.x, 0, p0.y, p1.x, 0, p1.y, p1.x, h, p1.y, p0.x, h, p0.y);
+        uv.push(u0, 0, u1, 0, u1, v1, u0, v1);
+        idx.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3);
+      }
+      if (pos.length < 12) return false;
+      try {
+        const tris = THREE.ShapeUtils.triangulateShape(pts, []);
+        const ri = pos.length / 3;
+        for (const p of pts) { pos.push(p.x, h, p.y); uv.push(p.x / 40, p.y / 40); }
+        for (const t of tris) idx.push(ri + t[0], ri + t[1], ri + t[2]);
+      } catch (e) { /* */ }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      g.setIndex(idx); g.computeVertexNormals();
+      const m = new THREE.Mesh(g, mat);
+      m.castShadow = true; m.receiveShadow = true; m.userData.noMerge = true; m.userData[cfg.id] = true;
+      m.name = name; parent.add(m);
+      if (typeof addCollider === 'function') {
+        let minx = Infinity, maxx = -Infinity, minz = Infinity, maxz = -Infinity;
+        for (const p of pts) { if (p.x < minx) minx = p.x; if (p.x > maxx) maxx = p.x; if (p.y < minz) minz = p.y; if (p.y > maxz) maxz = p.y; }
+        const hx = (maxx - minx) * 0.5, hz = (maxz - minz) * 0.5;
+        spclrBldCollider(pts, minx, maxx, minz, maxz, Math.min(h, 40), m, hx > 1 && hz > 1); // core27c2：走廊淨空＋條狀碰撞
+      }
+      return true;
+    }
+
+    function ribbon(parent, pts, width) { if (pts) pts._w = width;
+      let n = 0;
+      for (let i = 0; i + 1 < pts.length; i++) {
+        const a = pts[i], b = pts[i + 1];
+        const len = Math.hypot(b.dx - a.dx, b.dz - a.dz); if (len < 4) continue;
+        const yaw = Math.atan2(b.dx - a.dx, b.dz - a.dz);
+        const m = new THREE.Mesh(new THREE.BoxGeometry(width, 0.08, len), D.mats.road);
+        m.position.set((a.dx + b.dx) * 0.5, 0.03, (a.dz + b.dz) * 0.5); m.rotation.y = yaw;
+        m.receiveShadow = true; m.userData.noMerge = true; m.name = cfg.id + '_drive_trunk';
+        parent.add(m);
+        if (n % 2 === 0) {
+          for (const side of [] /* core27f：舊 ±42% 黃線取消，改 kerb 雙黃 */) {
+            const e = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.03, Math.min(len, 48)), D.mats.yel);
+            e.position.set(m.position.x + Math.cos(yaw) * side, 0.07, m.position.z - Math.sin(yaw) * side); e.rotation.y = yaw;
+            parent.add(e);
+          }
+        }
+        { /* core27f 行人路連續 */
+          for (const side of [] /* core27f：行人路改由 c27f 每區合併一個 mesh */) {
+            const s = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.05, len + 0.6), D.mats.sidewalk);
+            s.position.set(m.position.x + Math.cos(yaw) * side, 0.04, m.position.z - Math.sin(yaw) * side); s.rotation.y = yaw;
+            s.receiveShadow = true; parent.add(s);
+          }
+        }
+        n++;
+      }
+      return n;
+    }
+
+    function nearestCsdi(cx, cz, list) {
+      let best = null, bd = 140;
+      for (const c of list) { const p = c.centroid; if (!p) continue; const d = Math.hypot(p.dx - cx, p.dz - cz); if (d < bd) { bd = d; best = c; } }
+      return best;
+    }
+
+    async function build() {
+      if (D.ready || D.building || typeof scene === 'undefined') return D.stats;
+      D.building = true;
+      try {
+        const data = await dFetch(cfg.json);
+        if (!data) { console.warn('[' + cfg.id + '] ' + cfg.json + ' 未到手'); return null; }
+        D.data = data;
+        await loadMats();
+        const lite = typeof NT !== 'undefined' && NT.safariLite;
+        const root = new THREE.Group(); root.name = cfg.id + '-core28'; scene.add(root); D.group = root;
+
+        const gRoad = new THREE.Group(); gRoad.name = cfg.id + '_drive_trunks'; gRoad.userData.noMerge = true;
+        let roadSegs = 0, trunks = 0; const rn = [];
+        for (const t of (data.drive_trunk || [])) {
+          if ((t.path_chord_ratio || 1) > 4) continue;
+          const pts = t.points || []; if (pts.length < 2) continue;
+          const nm = (t.name_zh || '') + (t.id || '');
+          roadSegs += ribbon(gRoad, pts, cfg.wide.test(nm) ? 14 : 11); trunks++;
+          rn.push(pts.map((p) => ({ x: p.dx, z: p.dz })));
+        }
+        root.add(gRoad);
+
+        try {
+          if (typeof ROADNET !== 'undefined' && Array.isArray(ROADNET)) {
+            for (const line of rn) {
+              const step = Math.max(1, Math.floor(line.length / (lite ? 6 : 14)));
+              const s = []; for (let i = 0; i < line.length; i += step) s.push(line[i]);
+              if (s[s.length - 1] !== line[line.length - 1]) s.push(line[line.length - 1]);
+              const base = ROADNET.length;
+              for (const p of s) ROADNET.push({ x: p.x, z: p.z, nb: [] });
+              for (let i = 0; i + 1 < s.length; i++) { ROADNET[base + i].nb.push(base + i + 1); ROADNET[base + i + 1].nb.push(base + i); }
+            }
+          }
+        } catch (e) { console.warn('[' + cfg.id + '-roadnet]', e && e.message); }
+
+        const gB = new THREE.Group(); gB.name = cfg.id + '_extrude_buildings'; gB.userData.noMerge = true;
+        const csdi = data.csdi_buildings || [];
+        const ranked = (data.buildings || []).slice().sort((a, b) => ((b.height_m || (b.levels || 0) * 3.1) - (a.height_m || (a.levels || 0) * 3.1)));
+        const cap = lite ? 200 : 480;
+        let nB = 0, nC = 0, parkSkip = 0;
+        for (const b of ranked) { if (b && b.skip_render) continue; /* core27f-b 地底站 */
+          if (nB >= cap) break;
+          const ring = b.footprint_ring; if (!ring || ring.length < 3) continue;
+          const c = b.centroid || { dx: ring[0].dx, dz: ring[0].dz };
+          if (inPark(c) || /城寨|寨城|walled city/i.test(b.name || '')) { parkSkip++; continue; }
+          const h = height(b, nearestCsdi(c.dx, c.dz, csdi));
+          if (extrude(ring, h, pickMat(b, h), gB, cfg.id + '_bld_' + (b.osm_id || nB))) nB++;
+        }
+        const cCap = lite ? 70 : 160;
+        const top = ranked.slice(0, Math.min(nB, 200));
+        for (const c of csdi) { if (c && c.skip_render) continue; /* core27f-b 地底站 */
+          if (nC >= cCap) break;
+          const ring = c.footprint_ring, cen = c.centroid; if (!ring || ring.length < 3 || !cen) continue;
+          if (inPark(cen) || /城寨|寨城/.test(c.name_zh || '')) { parkSkip++; continue; }
+          let near = false;
+          for (const b of top) { const bc = b.centroid; if (bc && Math.hypot(bc.dx - cen.dx, bc.dz - cen.dz) < 25) { near = true; break; } }
+          if (near) continue;
+          const h = height(c, null);
+          if (extrude(ring, h, pickMat(c, h), gB, cfg.id + '_csdi_' + (c.csdi_objectid || nC))) nC++;
+        }
+        root.add(gB);
+
+        if (typeof ZONES !== 'undefined') ZONES[cfg.zone] = [cfg.label, '進入：' + cfg.label + ' densify'];
+        D.ready = true;
+        D.stats = { roadSegs, trunks, buildings: nB, csdi: nC, parkSkip, tex: Object.keys(D.tex), lazy: true };
+        console.info('[' + cfg.id + '] core28 drive+extrude densify', D.stats);
+        return D.stats;
+      } finally { D.building = false; }
+    }
+    D.build = build;
+    return D;
+  }
+
+  const DIST = { wc: makeDistrict(CFGS.wc), east: makeDistrict(CFGS.east) };
+  const wcBuild = () => DIST.wc.build();
+  const eastBuild = () => DIST.east.build();
+
+  function tick() {
+    const p = dpos(); if (!p) return;
+    for (const D of Object.values(DIST)) {
+      const d = bboxDist(D.cfg.bbox, p);
+      if (!D.ready && !D.building && d < LAZY_M) {
+        const go = () => D.build().catch((e) => console.warn('[' + D.cfg.id + ']', e && e.message));
+        if (typeof requestIdleCallback === 'function') requestIdleCallback(go, { timeout: 1500 }); else setTimeout(go, 50);
+      }
+      if (D.group) { const v = d < HIDE_M; if (D.group.visible !== v) D.group.visible = v; }
+    }
+  }
+
+  const t0 = setInterval(() => {
+    if (typeof scene === 'undefined' || typeof THREE === 'undefined') return;
+    clearInterval(t0);
+    if (/[?&]core2[78]all\b/.test(location.search)) { wcBuild(); eastBuild(); } // QA：強制全部建
+    setInterval(tick, 1200);
+    tick();
+    if (typeof HOOKS !== 'undefined') {
+      HOOKS.minimap = HOOKS.minimap || [];
+      HOOKS.minimap.push(function core28Minimap(c) {
+        const p = dpos(); if (!p) return;
+        for (const D of Object.values(DIST)) {
+          if (!D.data) continue;
+          c.strokeStyle = D.cfg.minimap; c.lineWidth = 4;
+          for (const t of (D.data.drive_trunk || [])) {
+            if ((t.path_chord_ratio || 1) > 4) continue;
+            c.beginPath(); let st = false;
+            for (const q of (t.points || [])) {
+              if (Math.abs(q.dx - p.x) > 700 || Math.abs(q.dz - p.z) > 700) { st = false; continue; }
+              if (!st) { c.moveTo(q.dx, q.dz); st = true; } else c.lineTo(q.dx, q.dz);
+            }
+            if (st) c.stroke();
+          }
+        }
+      });
+    }
+  }, 530);
+
+  Object.assign(window.NT = window.NT || {}, { WC: DIST.wc, EAST: DIST.east, wcBuild, eastBuild });
 })();
 
 
@@ -22755,6 +23389,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
   async function hk18BuildFromSkeleton() {
     if (hk18Already()) return;
     if (typeof scene === 'undefined') return;
+    try { await SPCLR.ready; } catch (e) { /* core27c2 */ }
     const data = await hk18FetchJson([
       'data/osm-hk18-skeleton-core23.json',
       '../data/osm-hk18-skeleton-core23.json',
@@ -22789,6 +23424,32 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
         }
       }
     } catch (e) { console.warn('[hk18] core27 ssp/kc spines skip', e && e.message); }
+    // core28：灣仔＋東區真 OSM 主幹（data/core28-wc-eastern-spines.json）取代 hub_link harbour_central／eastern_isle；告士打道／東區走廊／東隧唔可駛
+    try {
+      const c28 = await hk18FetchJson([
+        'data/core28-wc-eastern-spines.json',
+        '../data/core28-wc-eastern-spines.json',
+        './assets/data/core28-wc-eastern-spines.json'
+      ]);
+      if (c28 && c28.districts) {
+        try { SPCLR.add(c28, 'core28'); } catch (e) { /* core27c2 */ }
+        const add = [];
+        for (const did of ['wan_chai', 'eastern', 'central_west']) {
+          const D = c28.districts[did];
+          if (!D || !Array.isArray(D.spines)) continue;
+          for (const sp of D.spines) {
+            if (sp.drivable === false || !sp.points || sp.points.length < 2) continue;
+            add.push({ id: sp.id, name_zh: sp.name_zh, from: did, to: did, kind: sp.kind, speed: sp.speed, width: sp.width, tram: !!sp.tram, points: sp.points, core28: true });
+          }
+        }
+        if (add.length) {
+          const drop = new Set((c28.connections || []).map((c) => c.replaces_hub_link).filter(Boolean));
+          data.spines = (data.spines || []).filter((sp) => !drop.has(sp.id)).concat(add);
+          HK18.core28 = { entries: { wan_chai: c28.districts.wan_chai.entries, eastern: c28.districts.eastern.entries },
+            blocked: (c28.blocked_roads || []).map((b) => b.name_zh), spines: add.length };
+        }
+      }
+    } catch (e) { console.warn('[hk18] core28 wc/eastern spines skip', e && e.message); }
     HK18.data = data;
     const root = new THREE.Group();
     root.name = 'hk18-district-skeleton';
@@ -22809,7 +23470,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       const pts = sp.points || [];
       if (pts.length < 2) continue;
       const kind = sp.kind || '';
-      const w = /osm_arterial|arterial/.test(kind) ? 11 : (sp.speed === 'walk' ? 6 : 8); // core27 鴨寮街 walk 收窄
+      const w = sp.width > 0 ? sp.width : (/osm_arterial|arterial/.test(kind) ? 11 : (sp.speed === 'walk' ? 6 : 8)); // core27 鴨寮街 walk 收窄；core28 用 width
       const mat = /osm_arterial|arterial/.test(kind) ? aspMajor : asp;
       const n = hk18RoadPolyline(gSpines, pts, w, 'hk18_spine_' + (sp.id || 'x'), mat);
       spineSegs += n;
@@ -22839,24 +23500,30 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       const mat = facadeMats[def.id]
         || new THREE.MeshStandardMaterial({ color: 0x6a7078, roughness: 0.88 });
       const h = 42 + ((def.id.charCodeAt(0) || 0) % 5) * 10;
-      const block = new THREE.Mesh(new THREE.BoxGeometry(22, h, 16), mat);
-      block.position.set(x - 16, h / 2, z - 12);
-      block.name = 'hk18_core_' + def.id;
-      block.castShadow = true;
-      block.userData.noMerge = true;
-      g.add(block);
+      // core27c2：hub 方塊踩主幹走廊就唔起（SPCLR）
+      const hubClear = !SPCLR.boxHit(x - 27, x - 5, z - 20, z - 4, 1.5);
+      if (hubClear) {
+        const block = new THREE.Mesh(new THREE.BoxGeometry(22, h, 16), mat);
+        block.position.set(x - 16, h / 2, z - 12);
+        block.name = 'hk18_core_' + def.id;
+        block.castShadow = true;
+        block.userData.noMerge = true;
+        g.add(block);
+      } else SPCLR.stats.hubCut++;
       if (!lite) {
         for (let k = 0; k < 2; k++) {
           const ang = k * 1.7 + 0.4;
           const r = 32 + k * 14;
           const bh = 28 + k * 16;
+          const bx = x + Math.cos(ang) * r, bz = z + Math.sin(ang) * r;
+          if (SPCLR.boxHit(bx - 7, bx + 7, bz - 5.5, bz + 5.5, 1.5)) { SPCLR.stats.hubCut++; continue; }
           const b = new THREE.Mesh(new THREE.BoxGeometry(14, bh, 11), mat);
-          b.position.set(x + Math.cos(ang) * r, bh / 2, z + Math.sin(ang) * r);
+          b.position.set(bx, bh / 2, bz);
           b.userData.noMerge = true;
           g.add(b);
         }
       }
-      if (typeof addCollider === 'function') {
+      if (hubClear && typeof addCollider === 'function') {
         addCollider(x - 16, z - 12, 11, 8, h);
       }
       root.add(g);
@@ -23116,7 +23783,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
     // 停車線：各自行車方向左半（香港靠左）
     for (const sgn of [1, -1]) {
       const u = -sgn * 4.2, v = sgn * W / 4;
-      boxAt(g, x + tx * u + lx * v, z + tz * u + lz * v, tx, tz, 0.35, W / 2 - 0.3, 0.03, M.white, 0.06);
+      boxAt(g, x + tx * u + lx * v, z + tz * u + lz * v, tx, tz, 0.2, W / 2 - 0.3, 0.03, M.white /* core27f：停車線闊 200mm */, 0.06);
       // 燈柱喺各自來車方向嘅左邊路緣
       const lu = -sgn * 4.6, lv = sgn * (W / 2 + 0.8);
       trafficLight(g, x + tx * lu + lx * lv, z + tz * lu + lz * lv, Math.atan2(-tx * sgn, -tz * sgn));
@@ -23315,6 +23982,310 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
   }
   if (typeof HOOKS !== 'undefined') HOOKS.sim.push(sim);
   Object.assign(window.NT = window.NT || {}, { C27ENF: E });
+})();
+/* =========================================================================
+ * core27f 日頭街聲（音效配樂總監）· 貼喺 index.html core27b 燈位執法之後、boot 之前
+ *  · 過路燈「嘀嘀」：讀 NT.C27SIGNS.phase（車 G＝行人等，慢嘀；車 R＝行人綠，快嘀）
+ *    原創合成近似，唔係錄真裝置；只喺行路、燈位 22 單位內
+ *  · 巴士：附近 bus／minibus 低沉引擎；由行車減速到停有一下氣掣「嘶」
+ *  · 日頭人聲：彌敦道、長沙灣道／鴨寮街、衙前圍道、太子道東四段，真 lat/lon
+ *  · ?recaudio：MediaRecorder 錄 audio.master（宣傳片用實機聲），按 Shift+R 開始／停止，自動下載 .webm
+ * 冇真歌、冇真電台、冇可辨商號叫賣、冇 WASTED sting。
+ * ========================================================================= */
+(function () {
+  if (typeof SFX10 === 'undefined' || typeof tone !== 'function') return;
+  Object.assign(SFX10, {
+    xing_tick_slow: (v = 1) => tone([[1650, 0, 0.035, 'square', 0.5]], 0.05 * v),
+    xing_tick_fast: (v = 1) => tone([[1650, 0, 0.03, 'square', 0.5]], 0.06 * v),
+    bus_idle: (v = 1) => tone([[48, 0, 0.9, 'sawtooth', 0.5], [72, 0.05, 0.8, 'sine', 0.6], [96, 0.1, 0.6, 'triangle', 0.25]], 0.09 * v),
+    bus_air_brake: (v = 1) => { const n = []; for (let i = 0; i < 10; i++) n.push([3200 + ((i * 523) % 1800), i * 0.025, 0.12, 'sawtooth', 0.18]); tone(n, 0.05 * v); },
+    day_murmur: (v = 1) => { const n = []; for (let i = 0; i < 10; i++) { const f = 180 + ((i * 97) % 220); n.push([f, i * 0.12 + Math.random() * 0.08, 0.18 + Math.random() * 0.1, i % 3 ? 'sine' : 'triangle', 0.2 + Math.random() * 0.15]); } tone(n, 0.04 * v); }
+  });
+
+  const D = { tick: 0, cool: {}, buses: new WeakMap(), rec: null };
+  const ZONES = [ // 日頭人聲：真 lat/lon，半徑 m，權重
+    { id: 'nathan_rd',  lat: 22.3050, lon: 114.1716, r: 260, w: 1.0 },
+    { id: 'csw_rd',     lat: 22.3303, lon: 114.1620, r: 200, w: 0.9 },
+    { id: 'nga_tsin_wai', lat: 22.3297, lon: 114.1903, r: 140, w: 0.7 },
+    { id: 'pe_rd_east', lat: 22.3311, lon: 114.1950, r: 160, w: 0.4 }
+  ];
+  const pos = () => {
+    if (typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined' && car.pos) return { x: car.pos.x, z: car.pos.z, drive: true };
+    if (typeof player !== 'undefined' && player.pos) return { x: player.pos.x, z: player.pos.z, drive: false };
+    return null;
+  };
+  function sim(dt) {
+    if (typeof state === 'undefined' || !state.started || typeof sfx !== 'function') return;
+    if (typeof INT !== 'undefined' && INT.active) return;
+    const p = pos(); if (!p) return;
+    const day = typeof TOD !== 'undefined' && TOD.mode === 'day';
+    const K = (typeof LM !== 'undefined' && LM.K) ? LM.K : 1;
+    const cd = (k) => { D.cool[k] = Math.max(0, (D.cool[k] || 0) - dt); return D.cool[k] > 0; };
+
+    // 過路燈嘀嘀
+    const SG = typeof NT !== 'undefined' && NT.C27SIGNS;
+    if (!p.drive && SG && SG.ready && SG.calmingData) {
+      let best = 1e9;
+      for (const c of SG.calmingData) { if (c.type === 'lane_shift') continue; const d = Math.hypot(p.x - c.x, p.z - c.z); if (d < best) best = d; }
+      if (best < 22) {
+        const walk = SG.phase === 'R';
+        D.tick -= dt;
+        if (D.tick <= 0) { D.tick = walk ? 0.12 : 0.9; sfx(walk ? 'xing_tick_fast' : 'xing_tick_slow', 1 - best / 26); }
+      }
+    }
+    // 巴士
+    if (typeof VEHS !== 'undefined') {
+      for (const v of VEHS) {
+        if (!v.pos || !/bus/.test(String(v.kind || v.model || ''))) continue;
+        const d = Math.hypot(p.x - v.pos.x, p.z - v.pos.z); if (d > 35) continue;
+        const f = 1 - d / 35, prev = D.buses.get(v) || 0, sp = Math.abs(v.speed || 0);
+        if (prev > 2 && sp < 0.4 && !cd('brake')) { D.cool.brake = 6; sfx('bus_air_brake', f); }
+        D.buses.set(v, sp);
+        if (!cd('bus_idle') && Math.random() < dt * 0.5) { D.cool.bus_idle = 1.6; sfx('bus_idle', f * (p.drive ? 0.5 : 1)); }
+      }
+    }
+    // 日頭人聲（夜晚交返 kowloonamb）
+    if (day && typeof hkGeo === 'function') {
+      for (const z of ZONES) {
+        if (z._x == null) { const g = hkGeo(z.lat, z.lon); z._x = g.x; z._z = g.z; }
+        const d = Math.hypot(p.x - z._x, p.z - z._z); if (d > z.r * K) continue;
+        if (cd(z.id)) continue;
+        if (Math.random() < dt * 0.25 * z.w) { D.cool[z.id] = 2.5 + Math.random() * 3; sfx('day_murmur', z.w * (1 - d / (z.r * K)) * (p.drive ? 0.4 : 1)); }
+      }
+    }
+  }
+  if (typeof HOOKS !== 'undefined') HOOKS.sim.push(sim);
+
+  // ?recaudio：錄遊戲聲（宣傳片）
+  if (/[?&]recaudio\b/.test(location.search)) {
+    window.addEventListener('keydown', (e) => {
+      if (!(e.shiftKey && e.code === 'KeyR')) return;
+      const a = typeof audio !== 'undefined' && audio; if (!a || !a.ctx || !a.master) return;
+      if (D.rec) { D.rec.stop(); return; }
+      const dest = a.ctx.createMediaStreamDestination(); a.master.connect(dest);
+      const r = new MediaRecorder(dest.stream), chunks = [];
+      r.ondataavailable = (ev) => chunks.push(ev.data);
+      r.onstop = () => { a.master.disconnect(dest); D.rec = null; const u = URL.createObjectURL(new Blob(chunks, { type: 'audio/webm' })); const l = document.createElement('a'); l.href = u; l.download = 'neon-triangle-game-audio.webm'; l.click(); };
+      r.start(); D.rec = r;
+    });
+  }
+  Object.assign(window.NT = window.NT || {}, { DAYAMB: D, DAYAMB_ZONES: ZONES });
+})();
+
+/* core28 · modZe_wceast_calm_core28（關卡與地圖設計師）*/
+/* =========================================================================
+ * core28 · 灣仔＋東區 實體減速點／電車站島／封路欄（modZe_wceast_calm_core28）
+ *  · 讀 data/core28-wc-eastern-spines.json（tools/osm/core28_wc_eastern_spines.py；© OSM contributors ODbL）
+ *  · calming[]：直路 >400 先加，一律 design_not_osm → 燈柱＋停車線＋斑馬＋安全島（碰撞）／交錯路緣島（碰撞）
+ *    （跟 core27b modZc 一樣做法；電車路／主幹只用燈位，唔放交錯島阻路軌）
+ *  · tram_stops[]：OSM railway=tram_stop → 路中電車站島（月台＋上蓋＋欄杆，碰撞）——電車路段迫慢
+ *  · blocked_roads[].barriers：告士打道／東區走廊／東區海底隧道接駁位 → 水馬欄（碰撞）＋「道路封閉」牌
+ *  · 燈號 14 秒循環；紅燈 AI 車停線、玩家 >18 km/h 越線 → issueFine('hk_red_light')（同 core27b）
+ *  · SPCLR.add(core28)：主幹走廊淨空（core27c2）
+ *  · Safari／iPhone／LOW_MEM：略過上蓋／斜紋裝飾，碰撞照舊；唔放葵涌；禁相板／真 logo／GTA 命名
+ * ========================================================================= */
+(function () {
+  const C = { ready: false, group: null, calming: 0, tramStops: 0, barriers: 0, colliders: 0, lite: false, phase: 'G', calmingData: [] };
+  const LITE = (typeof IS_SAFARI !== 'undefined' && IS_SAFARI) || (typeof IS_IPHONE !== 'undefined' && IS_IPHONE)
+    || (typeof LOW_MEM !== 'undefined' && LOW_MEM) || !!(typeof NT !== 'undefined' && NT.safariLite);
+  C.lite = LITE;
+  const M = {};
+  function mats() {
+    if (M.ok) return;
+    const S = (c, r, m, e, ei) => { const o = { color: c, roughness: r, metalness: m || 0 }; if (e != null) { o.emissive = new THREE.Color(e); o.emissiveIntensity = ei || 0; } return new THREE.MeshStandardMaterial(o); };
+    M.pole = S(0x4a5056, 0.5, 0.6); M.kerb = S(0x8a8c88, 0.85); M.white = S(0xeeeeea, 0.6); M.yel = S(0xe0b000, 0.65);
+    M.black = S(0x141414, 0.6); M.bollard = S(0xe8e8e8, 0.5, 0.1, 0x8aa0c0, 0.25);
+    M.lampR = S(0x401010, 0.4, 0, 0xff2a1a, 0); M.lampA = S(0x403010, 0.4, 0, 0xffb020, 0); M.lampG = S(0x104020, 0.4, 0, 0x30ff70, 0);
+    M.platform = S(0x9a968c, 0.88); M.rail = S(0x6f8a5e, 0.6, 0.3); M.roof = S(0x3c5a44, 0.7, 0.2);
+    M.water = S(0xd84a2a, 0.7); M.waterW = S(0xf2f2ee, 0.7);
+    M.ok = true;
+  }
+  function addCol(x, z, hw, hd, h) { if (typeof addCollider === 'function') { addCollider(x, z, hw, hd, h); C.colliders++; } }
+  function colRect(cx, cz, tx, tz, len, wid, h) {
+    const lx = tz, lz = -tx; const s = Math.min(1.2, wid, len);
+    const nu = Math.max(1, Math.round(len / s)), nv = Math.max(1, Math.round(wid / s));
+    for (let i = 0; i < nu; i++) for (let j = 0; j < nv; j++) {
+      const u = -len / 2 + (i + 0.5) * len / nu, v = -wid / 2 + (j + 0.5) * wid / nv;
+      addCol(cx + tx * u + lx * v, cz + tz * u + lz * v, s * 0.5, s * 0.5, h);
+    }
+  }
+  function boxAt(parent, cx, cz, tx, tz, len, wid, h, mat, y) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(wid, h, len), mat);
+    m.position.set(cx, (y || 0) + h / 2, cz); m.rotation.y = Math.atan2(tx, tz); parent.add(m); return m;
+  }
+  function trafficLight(parent, x, z, faceYaw) {
+    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = faceYaw; g.name = 'c28_traffic_light';
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 3.4, 8), M.pole); p.position.y = 1.7; g.add(p);
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.36, 1.0, 0.26), M.black); head.position.set(0, 3.0, 0.12); g.add(head);
+    [[M.lampR, 3.32], [M.lampA, 3.0], [M.lampG, 2.68]].forEach(([mt, y]) => { const l = new THREE.Mesh(new THREE.CircleGeometry(0.12, 12), mt); l.position.set(0, y, 0.26); g.add(l); });
+    parent.add(g); addCol(x, z, 0.15, 0.15, 3.4);
+  }
+  function bollard(parent, x, z) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 1.0, 8), M.bollard); b.position.set(x, 0.5, z); parent.add(b); }
+
+  // 燈位過路處（跟 core27b）：斑馬＋停車線＋燈柱×2＋中央安全島（碰撞）＋路緣伸出
+  function buildCrossing(parent, c) {
+    const { x, z, tx, tz } = c; const W = c.road_w; const lx = tz, lz = -tx;
+    const g = new THREE.Group(); g.name = c.id; parent.add(g);
+    const n = Math.floor(W / 1.0);
+    const im = new THREE.InstancedMesh(new THREE.BoxGeometry(0.5, 0.03, 3.0), M.white, n); const o = new THREE.Object3D();
+    for (let i = 0; i < n; i++) { const v = -W / 2 + 0.5 + i * (W - 1) / Math.max(1, n - 1); o.position.set(x + lx * v, 0.075, z + lz * v); o.rotation.set(0, Math.atan2(tx, tz), 0); o.updateMatrix(); im.setMatrixAt(i, o.matrix); }
+    im.userData.noMerge = true; g.add(im);
+    for (const sgn of [1, -1]) {
+      const u = -sgn * 4.2, v = sgn * W / 4;
+      boxAt(g, x + tx * u + lx * v, z + tz * u + lz * v, tx, tz, 0.2, W / 2 - 0.3, 0.03, M.white /* core27f：停車線闊 200mm */, 0.06);
+      const lu = -sgn * 4.6, lv = sgn * (W / 2 + 0.8);
+      trafficLight(g, x + tx * lu + lx * lv, z + tz * lu + lz * lv, Math.atan2(-tx * sgn, -tz * sgn));
+    }
+    const isl = 1.2, islL = 6.0;
+    boxAt(g, x, z, tx, tz, islL, isl, 0.25, M.kerb); colRect(x, z, tx, tz, islL, isl, 1.0);
+    bollard(g, x + tx * (islL / 2 - 0.3), z + tz * (islL / 2 - 0.3)); bollard(g, x - tx * (islL / 2 - 0.3), z - tz * (islL / 2 - 0.3));
+    const bo = Math.max(0, Math.min(1.6, (W - isl - 2 * 3.3) / 2));
+    if (bo >= 0.6) for (const sgn of [1, -1]) { const v = sgn * (W / 2 - bo / 2); boxAt(g, x + lx * v, z + lz * v, tx, tz, 7.0, bo, 0.2, M.kerb); colRect(x + lx * v, z + lz * v, tx, tz, 7.0, bo, 1.0); }
+    C.calming++;
+  }
+  // 交錯路緣島（chicane）
+  function buildLaneShift(parent, c) {
+    const { x, z, tx, tz } = c; const W = c.road_w; const lx = tz, lz = -tx;
+    const g = new THREE.Group(); g.name = c.id; parent.add(g);
+    const iw = W / 2, il = 6.0, gap = 8.0;
+    for (const sgn of [1, -1]) {
+      const u = sgn * gap, v = sgn * (W / 2 - iw / 2), cx = x + tx * u + lx * v, cz = z + tz * u + lz * v;
+      boxAt(g, cx, cz, tx, tz, il, iw, 0.22, M.kerb);
+      if (!LITE) boxAt(g, cx, cz, tx, tz, il - 0.6, iw - 0.6, 0.05, M.yel, 0.22);
+      colRect(cx, cz, tx, tz, il, iw, 1.0);
+      for (const k of [-1, 1]) for (const q of [0.3, 0.75]) { const bu = u + k * (il / 2 - 0.3), bv = sgn * (W / 2 - iw * q); bollard(g, x + tx * bu + lx * bv, z + tz * bu + lz * bv); }
+    }
+    C.calming++;
+  }
+  // 電車站島：路中月台（18×2.0，碰撞）＋欄杆＋上蓋（Lite 略上蓋）
+  function buildTramStop(parent, s) {
+    const { x, z, tx, tz } = s; const lx = tz, lz = -tx;
+    const g = new THREE.Group(); g.name = s.id; parent.add(g);
+    const L = 18, Wd = 2.0;
+    boxAt(g, x, z, tx, tz, L, Wd, 0.25, M.platform); colRect(x, z, tx, tz, L, Wd, 1.0);
+    for (const sgn of [1, -1]) boxAt(g, x + lx * sgn * (Wd / 2 - 0.05), z + lz * sgn * (Wd / 2 - 0.05), tx, tz, L - 2, 0.05, 0.9, M.rail, 0.25);
+    if (!LITE) {
+      for (const u of [-6, 0, 6]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.6, 6), M.pole); p.position.set(x + tx * u, 1.55, z + tz * u); g.add(p); }
+      boxAt(g, x, z, tx, tz, 14, 2.2, 0.08, M.roof, 2.85);
+    }
+    for (const sgn of [1, -1]) bollard(g, x + tx * sgn * (L / 2 + 0.4), z + tz * sgn * (L / 2 + 0.4));
+    C.tramStops++;
+  }
+  // 封路水馬欄（橫跨封路行車線）＋道路封閉牌
+  let closedTex = null;
+  function buildBarrier(parent, b) {
+    const { x, z, tx, tz } = b; const lx = tz, lz = -tx; const len = b.len || 10;
+    const g = new THREE.Group(); g.name = b.id; parent.add(g);
+    const n = Math.max(2, Math.round(len / 2));
+    for (let i = 0; i < n; i++) {
+      const v = -len / 2 + (i + 0.5) * len / n, cx = x + lx * v, cz = z + lz * v;
+      const m = boxAt(g, cx, cz, lx, lz, len / n - 0.1, 0.55, 0.9, i % 2 ? M.waterW : M.water);
+      m.castShadow = !LITE;
+    }
+    colRect(x, z, lx, lz, len, 0.6, 1.1);
+    if (!LITE && typeof canvasTex === 'function') {
+      if (!closedTex) closedTex = canvasTex(256, 128, (c, w, h) => { c.fillStyle = '#c81e1e'; c.fillRect(0, 0, w, h); c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = `bold ${Math.round(h * 0.38)}px "PingFang HK","Noto Sans TC",sans-serif`; c.fillText('道路封閉', w / 2, h * 0.38); c.font = `${Math.round(h * 0.2)}px Arial,sans-serif`; c.fillText('ROAD CLOSED', w / 2, h * 0.76); });
+      const sg = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.7, 0.04), new THREE.MeshStandardMaterial({ map: closedTex, roughness: 0.6 }));
+      sg.position.set(x, 1.45, z); sg.rotation.y = Math.atan2(tx, tz); g.add(sg);
+    }
+    C.barriers++;
+  }
+  function projOn(points, x, z) {
+    let best = null;
+    for (let i = 0; i + 1 < points.length; i++) {
+      const a = points[i], b = points[i + 1]; const dx = b.dx - a.dx, dz = b.dz - a.dz, L2 = dx * dx + dz * dz || 1e-9;
+      const t = Math.max(0, Math.min(1, ((x - a.dx) * dx + (z - a.dz) * dz) / L2)); const px = a.dx + t * dx, pz = a.dz + t * dz; const d = Math.hypot(x - px, z - pz);
+      if (!best || d < best.d) { const L = Math.sqrt(L2); best = { d, x: px, z: pz, tx: dx / L, tz: dz / L }; }
+    }
+    return best;
+  }
+  let phaseT = 0;
+  function signalTick(dt) {
+    phaseT = (phaseT + (dt || 0.016)) % 14;
+    const p = phaseT < 8 ? 'G' : (phaseT < 10 ? 'A' : 'R');
+    M.lampG.emissiveIntensity = p === 'G' ? 2.2 : 0; M.lampA.emissiveIntensity = p === 'A' ? 2.2 : 0; M.lampR.emissiveIntensity = p === 'R' ? 2.2 : 0;
+    C.phase = p;
+  }
+  // 執法（同 core27b 燈位執法）
+  const E = { fines: 0, aiHolds: 0, pts: null, cool: 0 };
+  function sim(dt) {
+    if (!C.ready) return;
+    if (!E.pts) E.pts = C.calmingData.filter((c) => c.type !== 'lane_shift').map((c) => ({ x: c.x, z: c.z, fx: c.tx, fz: c.tz, half: (c.road_w || 10) / 2, prev: 0 }));
+    const ph = C.phase; E.cool = Math.max(0, E.cool - (dt || 0));
+    const driving = typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined' && car.pos;
+    for (const L of E.pts) {
+      if (driving) {
+        const dx = car.pos.x - L.x, dz = car.pos.z - L.z;
+        if (Math.abs(dx) < 40 && Math.abs(dz) < 40) {
+          const along = dx * L.fx + dz * L.fz, lat = Math.abs(-dx * L.fz + dz * L.fx);
+          const side = lat > L.half + 1 ? 0 : (along > 4.2 ? 1 : (along < -4.2 ? -1 : 2));
+          if (side === 2 && (L.prev === 1 || L.prev === -1) && ph === 'R' && (car.speedKmh || 0) > 18 && E.cool <= 0) { E.cool = 25; E.fines++; if (typeof issueFine === 'function') issueFine('hk_red_light', '衝紅燈'); }
+          L.prev = side;
+        } else L.prev = 0;
+      }
+      if (ph === 'G' || typeof VEHS === 'undefined') continue;
+      for (const v of VEHS) {
+        if (!v.pos || v.kind === 'police' || v.ai === 'park') continue;
+        const ex = v.pos.x - L.x, ez = v.pos.z - L.z;
+        if (Math.abs(ex) > 32 || Math.abs(ez) > 32 || Math.abs(-ex * L.fz + ez * L.fx) > L.half + 2) continue;
+        const hx = Math.sin(v.heading || 0), hz = Math.cos(v.heading || 0); if (hx * ex + hz * ez >= 0) continue;
+        const dist = Math.abs(ex * L.fx + ez * L.fz); if (dist < 5 || dist > 30) continue;
+        const vmax = Math.max(0, (dist - 5.5) * 0.9); if (v.speed > vmax) { v.speed = vmax; E.aiHolds++; }
+      }
+    }
+  }
+  async function fetchJson(f) {
+    for (const u of ['data/' + f, './assets/data/' + f, '../data/' + f]) { try { const r = await fetch(u, { cache: 'no-store' }); if (r && r.ok) return await r.json(); } catch (e) { /* */ } }
+    return null;
+  }
+  async function build() {
+    const data = await fetchJson('core28-wc-eastern-spines.json');
+    if (!data || !data.districts) { console.warn('[core28] core28-wc-eastern-spines.json 未到手'); return; }
+    try { if (typeof SPCLR !== 'undefined') SPCLR.add(data, 'core28'); } catch (e) { /* */ }
+    mats();
+    const root = new THREE.Group(); root.name = 'core28-wc-east-calm'; root.userData.noMerge = true; scene.add(root); C.group = root;
+    const byD = {}; const ctr = {};
+    for (const [did, D] of Object.entries(data.districts)) {
+      const g = new THREE.Group(); g.name = 'c28_' + did; g.userData.noMerge = true; root.add(g); byD[did] = g;
+      let sx = 0, sz = 0, n = 0;
+      for (const c of (D.calming || [])) {
+        if (Math.abs(c.x) < 3000) continue; // 保險：唔放葵涌
+        if (c.type === 'lane_shift') buildLaneShift(g, c); else buildCrossing(g, c);
+        C.calmingData.push(c); sx += c.x; sz += c.z; n++;
+      }
+      for (const sp of (D.spines || [])) {
+        if (sp.drivable === false) continue;
+        for (const ts of (sp.tram_stops || [])) {
+          const q = projOn(sp.points, ts.dx, ts.dz); if (!q) continue;
+          buildTramStop(g, { id: 'c28_tram_stop_' + ts.osm_node, x: q.x, z: q.z, tx: q.tx, tz: q.tz }); sx += q.x; sz += q.z; n++;
+        }
+      }
+      ctr[did] = n ? { x: sx / n, z: sz / n } : null;
+    }
+    const gB = new THREE.Group(); gB.name = 'c28_blocked_barriers'; gB.userData.noMerge = true; root.add(gB);
+    let bx = 0, bz = 0, bn = 0;
+    for (const br of (data.blocked_roads || [])) for (const b of (br.barriers || [])) { buildBarrier(gB, b); bx += b.x; bz += b.z; bn++; }
+    byD.blocked = gB; ctr.blocked = bn ? { x: bx / bn, z: bz / bn } : null;
+    if (typeof HOOKS !== 'undefined') {
+      HOOKS.frame = HOOKS.frame || []; let acc = 0;
+      HOOKS.frame.push(function core28Calm(dt) {
+        signalTick(typeof dt === 'number' && dt < 1 ? dt : 0.016);
+        acc += 1; if (acc % 20) return;
+        const p = (typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined') ? car.pos : (typeof player !== 'undefined' ? player.pos : null);
+        if (!p) return;
+        for (const k in byD) { const c = ctr[k]; const v = !c || Math.hypot(p.x - c.x, p.z - c.z) < 3200; if (byD[k].visible !== v) byD[k].visible = v; } // 碰撞常在
+      });
+      if (HOOKS.sim) HOOKS.sim.push(sim);
+    }
+    C.ready = true; C.data = data;
+    console.info('[core28] wc+eastern calm', { calming: C.calming, tramStops: C.tramStops, barriers: C.barriers, colliders: C.colliders, lite: LITE });
+  }
+  const t0 = setInterval(() => {
+    if (typeof scene === 'undefined' || typeof THREE === 'undefined') return;
+    clearInterval(t0);
+    build().catch((e) => console.warn('[core28]', e && e.message));
+  }, 470);
+  Object.assign(window.NT = window.NT || {}, { C28CALM: C, C28ENF: E });
 })();
 
 /* core27b · modYt_kowloonamb（深水埗＋九龍城真街點環境音；座標跟 core27-ssp-kc-spines 錨點）*/
@@ -23876,7 +24847,8 @@ body.cine #h2Left{visibility:hidden}`;
   c27dMastFix(); todOnChange(c27dMastFix);
 
   // 街道傢俬（美術模組，用爬蟲 OSM 真點；電線桿只限葵涌）
-  try { import('./assets/js/street-furniture-core27d.js').then((m) => m.attachAll(THREE)).catch((e) => console.warn('[core27d-furniture]', e)); } catch (e) { /* */ }
+  try { import('./assets/js/street-furniture-core27d.js').then((m) => m.attachAll(THREE, ['./assets/data/osm-street-furniture-core27d.json', './assets/data/osm-street-furniture-core28.json'])) /* core29 合併時加 core29.json */.catch((e) => console.warn('[core27d-furniture]', e)); } catch (e) { /* */ }
+  try { import('./assets/js/building-extras-core27f.js').then((m) => m.attachAll(THREE)).catch((e) => console.warn('[core27f-extras]', e)); } catch (e) { /* */ }
 
   // HUD core27d（QA iPhone 844×390）：小地圖 92px 疊喺右下掣上面、隔 ≥12px、貼右；身份／暗網入血條下；字幕同倒數避位
   if (HUD2_ON) {
@@ -23953,6 +24925,458 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
     const CP = CanvasRenderingContext2D.prototype;
     for (const k of ['fillText', 'strokeText']) { const f = CP[k]; CP[k] = function (t, ...r) { return f.call(this, c27dBrandSafe(t), ...r); }; }
   } catch (e) { /* */ }
+  // core28：hk18 傳送落 densify 區時，貼去最近主幹道點（免得車同鏡頭塞入擠出嚟嘅樓）
+  const C28_HUBKEY = { wan_chai: 'WC', eastern: 'EAST', sham_shui_po: 'SSP', kowloon_city: 'KCITY', yau_tsim_mong: 'YTM', central_western: 'CW', central_west: 'CW', kwai_tsing: 'KT', tsuen_wan: 'TW', sha_tin: 'ST' };
+  function c28SnapRoad(x, z, only) {
+    let best = null, bd = 1500;
+    for (const k of (only ? [only] : ['YTM', 'CW', 'KT', 'SSP', 'KCITY', 'WC', 'EAST', 'TW', 'ST'])) {
+      const D = NT[k]; const tr = D && D.data && D.data.drive_trunk; if (!tr) continue;
+      for (const t of tr) {
+        if ((t.path_chord_ratio || 1) > 4) continue;
+        const P = t.points || [];
+        for (let i = 0; i + 1 < P.length; i++) { const d = Math.hypot(P[i].dx - x, P[i].dz - z); if (d < bd) { bd = d; best = [P[i], P[i + 1]]; } }
+      }
+    }
+    return best;
+  }
+  if (typeof NT.hk18Go === 'function' && !NT.hk18Go._c28snap) {
+    const _go = NT.hk18Go;
+    NT.hk18Go = function (id) {
+      const ok = _go.call(this, id); if (!ok) return ok;
+      const snap = () => {
+        try {
+          const d = NT.HK18 && NT.HK18.byId ? NT.HK18.byId[id] : null; if (!d) return;
+          let tx = d.x, tz = d.z;
+          // 中西：對齊外傭假日 gather（皇后像廣場／遮打）— 唔落碼頭／工業岸
+          if (id === 'central_west' || id === 'central_western') {
+            const g = (NT.C27F_LAYERS && NT.C27F_LAYERS.districts && NT.C27F_LAYERS.districts.cw
+              && NT.C27F_LAYERS.districts.cw.domestic_sunday_gather) || null;
+            const sp = g && g.spawn_points && g.spawn_points[0];
+            const bb = g && g.bbox;
+            if (sp && sp.x != null) { tx = sp.x; tz = sp.z; }
+            else if (bb && bb.center_x != null) { tx = bb.center_x; tz = bb.center_z; }
+            else { tx = -6287.7; tz = -12267.0; } /* 皇后像廣場 hkGeo 鎖死 */
+          }
+          const s2 = c28SnapRoad(tx, tz, C28_HUBKEY[id]) || c28SnapRoad(tx, tz);
+          let px = tx, pz = tz, yaw = 0;
+          if (s2) {
+            // 中西 gather：寧可靠近廣場，唔好被 snap 拉去干諾／繞道（似碼頭）
+            if (id === 'central_west' || id === 'central_western') {
+              const dRoad = Math.hypot(s2[0].dx - tx, s2[0].dz - tz);
+              if (dRoad < 380) { px = s2[0].dx; pz = s2[0].dz; yaw = Math.atan2(s2[1].dx - s2[0].dx, s2[1].dz - s2[0].dz); }
+              else { px = tx; pz = tz; yaw = Math.PI * 0.15; }
+            } else {
+              px = s2[0].dx; pz = s2[0].dz;
+              yaw = Math.atan2(s2[1].dx - s2[0].dx, s2[1].dz - s2[0].dz);
+            }
+          }
+          if (typeof HKM !== 'undefined' && HKM.raw && HKM.raw.placeCar) HKM.raw.placeCar(px, pz, yaw);
+          else if (typeof placeCar === 'function') placeCar(px, pz, yaw);
+          if (typeof camState !== 'undefined') camState.init = false;
+        } catch (e) { /* */ }
+      };
+      snap(); setTimeout(snap, 3500); // 懶載區啱啱 build 完再貼一次
+      return ok;
+    };
+    NT.hk18Go._c28snap = true;
+  }
+  // CW 串流中心改近皇后像／遮打（原干諾偏碼頭岸）
+  try {
+    if (window.NT && NT.CW) NT.CW._streamC = { x: -6390, z: -12288 };
+  } catch (e) { /* */ }
+  /* =========================================================================
+   * core27f · 街景真實感（樓唔再一模一樣、地舖分類、深灰瀝青雙黃線、日頭行人）
+   *  · 每幢樓：該區門面貼圖隨機揀一張＋色調偏移＋UV 錯位；夜晚窗燈比例／色每幢唔同
+   *  · 地舖：樓腳 0–4.4m 包一圈（茶餐廳／藥房／金行／地產／燒臘／五金／鐵閘）＋戲仿招牌條，每區按類合併
+   *  · 主幹道：深灰瀝青＋中線雙黃線（每區 1 個 mesh）
+   *  · 行人：InstancedMesh 沿主幹道兩邊行人路行（日頭密、夜晚少）；全程序、冇相板
+   * ========================================================================= */
+  const C27F = { done: {}, lite: C27D_LITE, kinds: null, nightMats: [] };
+  const c27fHash = (str) => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+  // 美術 facade-pool-core27f.json（每區 12–21 張）＋地舖 gf_*；爬蟲 type／ground_shop
+  const C27F_POOLKEY = { YTM: 'yau_tsim_mong', CW: 'central_west', KT: 'kwai_tsing', SSP: 'sham_shui_po', KCITY: 'kowloon_city', WC: 'wan_chai', EAST: 'eastern', TW: 'tsuen_wan', ST: 'sha_tin' };
+  const C27F_TEX = {};
+  const c27fTex = (f) => (C27F_TEX[f] = C27F_TEX[f] || loadTex(f, true, true).catch(() => null));
+  let C27F_POOL = null;
+  const c27fPool = () => (C27F_POOL = C27F_POOL || fetch('./assets/data/facade-pool-core27f.json').then((r) => r.ok ? r.json() : null).catch(() => null));
+  let C27F_LAYOUT = null;
+  const c27fLayout = () => (C27F_LAYOUT = C27F_LAYOUT || fetch('./assets/data/core27f-sidewalk-railing-bin-layout.json').then((r) => r.ok ? r.json() : null).catch(() => null));
+  let C27F_LAYERS = null;
+  const c27fLayers = () => (C27F_LAYERS = C27F_LAYERS || fetch('./assets/data/hk-street-reality-layers-core27f.json').then((r) => r.ok ? r.json() : null).catch(() => null));
+
+  function c27fSwW(nameZh, fallback) {
+    const L = C27F_LAYOUT && C27F_LAYOUT.streets; if (!L || !nameZh) return fallback;
+    for (const st of L) {
+      const m = st.match_name_zh || st.name_zh; if (!m) continue;
+      if (m.split('|').some((p) => p && nameZh.indexOf(p) >= 0)) return (st.footway_u && st.footway_u.target) || fallback;
+    }
+    return fallback;
+  }
+
+  function c27fMaps(D, gB) {
+    const out = [], seen = new Set();
+    const push = (t) => { if (t && t.isTexture && !seen.has(t)) { seen.add(t); out.push(t); } };
+    if (D.tex) for (const [k, t] of Object.entries(D.tex)) if (!/sidewalk|parkwall|railing|road/.test(k)) push(t);
+    gB.traverse((o) => { if (o.isMesh && o.material && o.material.map) push(o.material.map); });
+    return out.slice(0, 12).map((t) => ({ t, lt: null }));
+  }
+  const C27F_WINC = [0xffd9a0, 0xcfe6ff, 0xf0fff4];
+  const c27fRnd = (h, k) => { const x = Math.imul(h ^ (k * 0x9e3779b1), 0x85ebca6b) >>> 0; return ((x ^ (x >>> 13)) >>> 0) / 4294967296; };
+  // core27f-c：buildings_small（細樓）— 每區按貼圖合併成幾個 mesh，只起近主幹（dist_trunk_m 細）嘅，lite 限 300 幢
+  async function c27fSmall(key, D) {
+    const list = D.data && D.data.buildings_small; if (!list || !list.length || !D.group) return 0;
+    const pre = key.toLowerCase();
+    if (D.group.getObjectByName(pre + '_c27f_small')) return 0;
+    const cap = C27D_LITE ? 300 : 900, near = C27D_LITE ? 45 : 80;
+    const pick = list.filter((b) => b && !b.skip_render && b.footprint_ring && b.footprint_ring.length >= 3 && (b.dist_trunk_m == null || b.dist_trunk_m <= near))
+      .sort((a, b) => (a.dist_trunk_m || 0) - (b.dist_trunk_m || 0)).slice(0, cap);
+    if (!pick.length) return 0;
+    const POOL = await c27fPool();
+    const lib = (POOL && POOL.lib) || [];
+    const want = ['tonglau', 'composite', 'residential_old'];
+    const files = lib.filter((l) => want.includes(l.type)).map((l) => 'tex/facade/lib/' + l.file).slice(0, 4);
+    const tx = (await Promise.all(files.map(c27fTex))).filter(Boolean);
+    const mats = tx.length ? tx.map((t) => { const m = new THREE.MeshStandardMaterial({ map: t, roughness: 0.86, metalness: 0, color: 0xe6e0d8, emissiveMap: t, emissive: new THREE.Color(0xffd9a0), emissiveIntensity: 0 }); C27F.nightMats.push([m, 0, 0.3]); return m; })
+      : [new THREE.MeshStandardMaterial({ color: 0xb8b0a4, roughness: 0.9 })];
+    const W = mats.map(() => ({ pos: [], uv: [], idx: [] })), R = { pos: [], idx: [] };
+    let n = 0;
+    for (const b of pick) {
+      let pts = b.footprint_ring.map((p) => new THREE.Vector2(p.dx, p.dz));
+      const a0 = pts[0], a1 = pts[pts.length - 1]; if (pts.length > 3 && Math.hypot(a0.x - a1.x, a0.y - a1.y) < 0.05) pts = pts.slice(0, -1);
+      if (pts.length < 3) continue;
+      if (THREE.ShapeUtils.isClockWise(pts)) pts.reverse();
+      const lv = b.levels > 0 ? b.levels : b.height_m > 0 ? b.height_m / 3.1 : 3 + (Math.abs(b.osm_id | 0) % 5);
+      const h = Math.max(4, Math.min(60, lv * 3.1));
+      const hs = Math.imul((b.osm_id % 2147483647) | 0, 2654435761) >>> 0; /* imul：唔好 float 食咗低位 */
+      const B = W[hs % W.length], du = (hs >>> 4) % 12 / 12;
+      let acc = 0;
+      for (let k = 0; k < pts.length; k++) {
+        const p0 = pts[k], p1 = pts[(k + 1) % pts.length], L = p0.distanceTo(p1); if (L < 0.3) continue;
+        const vi = B.pos.length / 3, u0 = acc / 12 + du, u1 = (acc + L) / 12 + du, v1 = h / 9.3; acc += L;
+        B.pos.push(p0.x, 0, p0.y, p1.x, 0, p1.y, p1.x, h, p1.y, p0.x, h, p0.y);
+        B.uv.push(u0, 0, u1, 0, u1, v1, u0, v1);
+        B.idx.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3);
+      }
+      try { const tris = THREE.ShapeUtils.triangulateShape(pts, []); const ri = R.pos.length / 3; for (const p of pts) R.pos.push(p.x, h, p.y); for (const t of tris) R.idx.push(ri + t[0], ri + t[1], ri + t[2]); } catch (e) { /* */ }
+      let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const p of pts) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); z0 = Math.min(z0, p.y); z1 = Math.max(z1, p.y); }
+      if (typeof addCollider === 'function' && x1 - x0 > 1.5 && z1 - z0 > 1.5) addCollider((x0 + x1) / 2, (z0 + z1) / 2, (x1 - x0) / 2 - 0.2, (z1 - z0) / 2 - 0.2, Math.min(h, 40));
+      n++;
+    }
+    const G = new THREE.Group(); G.name = pre + '_c27f_small';
+    const mk = (pos, uv, idx, m, nm) => { if (!idx.length) return; const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); if (uv) g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); g.computeBoundingSphere(); const me = new THREE.Mesh(g, m); me.name = nm; me.castShadow = !C27D_LITE; me.receiveShadow = true; me.userData.noMerge = true; G.add(me); };
+    W.forEach((B, i) => mk(B.pos, B.uv, B.idx, mats[i], pre + '_small_wall_' + i));
+    mk(R.pos, null, R.idx, new THREE.MeshStandardMaterial({ color: 0x8a8c8e, roughness: 0.95 }), pre + '_small_roof');
+    D.group.add(G);
+    console.log('[core27f] ' + key + ' 細樓 ' + n + ' 幢／' + G.children.length + ' draw（≤' + near + 'm 主幹）');
+    return n;
+  }
+  async function c27fProcess(key, D) {
+    const g = D.group; if (!g) return false;
+    await c27fLayout(); await c27fLayers(); if (C27F_LAYERS) NT.C27F_LAYERS = C27F_LAYERS;
+    const pre = key.toLowerCase();
+    const gB = g.getObjectByName(pre + '_extrude_buildings'); if (!gB) return false;
+    const POOL = await c27fPool();
+    const libType = {}; if (POOL && POOL.lib) for (const l of POOL.lib) libType['tex/facade/lib/' + l.file] = l.type;
+    const pk = POOL && POOL.pools && POOL.pools[C27F_POOLKEY[key]];
+    let maps = [];
+    if (pk && pk.facades) {
+      const tx = await Promise.all(pk.facades.map(c27fTex));
+      pk.facades.forEach((f, i) => { if (tx[i]) maps.push({ t: tx[i], lt: libType[f] || (/tonglau/.test(f) ? 'tonglau' : /estate|housing|_ph_|prh/.test(f) ? 'public_housing' : /glass|office|cbd/.test(f) ? 'office' : /ind|factory|godown/.test(f) ? 'industrial' : null) }); });
+    }
+    if (maps.length < 3) maps = maps.concat(c27fMaps(D, gB));
+    if (!maps.length) return false;
+    // 地舖貼圖
+    const shopItems = (POOL && POOL.shopfronts && POOL.shopfronts.items) || [];
+    const shopPath = (POOL && POOL.shopfronts && POOL.shopfronts.path) || 'tex/facade/shopfront/';
+    const shopTx = await Promise.all(shopItems.map((it) => c27fTex(shopPath + it.file)));
+    const shops = shopItems.map((it, i) => ({ it, t: shopTx[i] })).filter((x) => x.t);
+    const byKey = {}; for (const s of shops) (byKey[s.it.ground_shop || 'other'] = byKey[s.it.ground_shop || 'other'] || []).push(s);
+    // core27f：劇本新 ground_shop key → 現有 gf_* 貼圖（未有獨立圖之前）
+    const C27F_GS_ALIAS = { wet_market_stall: 'other', fabric: 'hardware', electronics: 'hardware', convenience: 'other', money_exchange: 'estate_agency', footwear: 'other', fashion: 'other', thai_eatery: 'cha_chaan_teng', watch_shop: 'goldsmith', pawn_shop: 'goldsmith', dried_seafood: 'other', herbal_tea: 'pharmacy', mahjong: 'other' };
+    for (const [k, to] of Object.entries(C27F_GS_ALIAS)) if (!byKey[k] || !byKey[k].length) byKey[k] = byKey[to] || byKey.other || byKey[Object.keys(byKey)[0]];
+
+    // 樓 record 索引
+    const rec = {};
+    for (const b of (D.data.buildings || [])) if (b.osm_id != null) rec[pre + '_bld_' + b.osm_id] = b;
+    for (const c of (D.data.csdi_buildings || [])) if (c.csdi_objectid != null) rec[pre + '_csdi_' + c.csdi_objectid] = c;
+    const T2L = (POOL && POOL.type_to_lib) || {};
+    const pool = {}, white = new THREE.Color(0xffffff);
+    const matFor = (hsh, mi, baseMat) => {
+      const ti = (hsh >>> 4) & 3, wi = (hsh >>> 8) & 3;
+      const k = mi + ':' + ti + ':' + wi;
+      if (!pool[k]) {
+        const r1 = c27fRnd(hsh, 1), r2 = c27fRnd(hsh, 2), r3 = c27fRnd(hsh, 3);
+        // 色調：h ±0.03、s ±0.10、l 0.88–1.04（唔低過 0.85）
+        const c = new THREE.Color().setHSL((0.08 + (r1 - 0.5) * 0.06 + 1) % 1, 0.10 + (r2 - 0.5) * 0.2, 0.5).lerp(white, 0.82).multiplyScalar(0.88 + r3 * 0.16);
+        const m = new THREE.MeshStandardMaterial({ map: maps[mi].t, color: c, roughness: (baseMat && baseMat.roughness != null) ? baseMat.roughness : 0.86, metalness: (baseMat && baseMat.metalness != null) ? baseMat.metalness : 0.04 });
+        // 夜晚亮窗 15–55%（用 emissiveMap＝門面圖，亮位先發光），三色隨機
+        m.emissiveMap = maps[mi].t; m.emissive.setHex(C27F_WINC[wi % 3]); m.emissiveIntensity = 0;
+        C27F.nightMats.push([m, 0, 0.15 + c27fRnd(hsh, 4) * 0.40]);
+        pool[k] = m;
+      }
+      return pool[k];
+    };
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0x8a8c8e, roughness: 0.95, metalness: 0.0 });
+    const band = {}; let nB = 0, nShop = 0, nTyped = 0;
+    const blds = []; gB.traverse((o) => { if (o.isMesh && o.geometry && o.geometry.attributes.position && !o.userData.c27f) blds.push(o); });
+    for (const m of blds) {
+      m.userData.c27f = true;
+      const hsh = c27fHash(m.name || String(nB));
+      const geo = m.geometry, P = geo.attributes.position, N = geo.attributes.normal, UV = geo.attributes.uv;
+      if (!UV || !N) continue;
+      const R = rec[m.name] || null;
+      // 揀門面：有 type 就優先同類 lib 張
+      let cand = null;
+      if (R && R.type && T2L[R.type]) { const want = T2L[R.type]; const c = []; maps.forEach((x, i) => { if (x.lt && want.includes(x.lt)) c.push(i); }); if (c.length) { cand = c; nTyped++; } }
+      const mi = cand ? cand[hsh % cand.length] : hsh % maps.length;
+      const du = ((hsh >>> 12) % 97) / 97, dv = ((hsh >>> 20) % 7) / 7;
+      // 窗比例：一張圖闊 12m、高 9.3m（3 層），repeat 1；天台唔用牆貼圖
+      for (let i = 0; i < UV.count; i++) { if (Math.abs(N.getY(i)) < 0.4) UV.setXY(i, UV.getX(i) * 4.2 / 12 + du, UV.getY(i) * 3.2 / 9.3 + dv); else UV.setXY(i, 0, 0); }
+      UV.needsUpdate = true;
+      const fm = matFor(hsh, mi, m.material);
+      if (geo.index) {
+        const ia = geo.index.array, wt = [], rt = [];
+        for (let t = 0; t < ia.length; t += 3) ((Math.abs(N.getY(ia[t])) > 0.4 && Math.abs(N.getY(ia[t + 1])) > 0.4 && Math.abs(N.getY(ia[t + 2])) > 0.4) ? rt : wt).push(ia[t], ia[t + 1], ia[t + 2]);
+        geo.setIndex(wt.concat(rt)); geo.clearGroups(); geo.addGroup(0, wt.length, 0); if (rt.length) geo.addGroup(wt.length, rt.length, 1);
+        m.material = [fm, roofMat];
+      } else m.material = fm;
+      if (R) { m.userData.has_arcade = !!R.has_arcade; if (R.podium) m.userData.podium = R.podium; m.userData.bldType = R.type || ''; } // core27f：等美術騎樓／podium mesh
+      nB++;
+      // 地舖：牆身三角形複製去 0–4.4m，向外推 7cm
+      geo.computeBoundingBox(); const bb = geo.boundingBox; const H = bb.max.y - bb.min.y;
+      const gs = R && R.ground_shop ? [].concat(R.ground_shop)[0] : null;
+      if (H < 6 || (!gs && (hsh % 10) < 2) || (R && /industrial|institutional/.test(R.type || '') && !gs)) continue;
+      let list = (gs && byKey[gs]) || null;
+      if (!list || !list.length) { const keys = Object.keys(byKey); if (!keys.length) continue; list = byKey[keys[(hsh >>> 6) % keys.length]]; }
+      const S = list[(hsh >>> 10) % list.length]; const sk = S.it.file;
+      const idx = geo.index ? geo.index.array : null; const nt = idx ? idx.length : P.count;
+      const bp = [], bn = [], bu = [];
+      for (let t = 0; t < nt; t += 3) {
+        const v = idx ? [idx[t], idx[t + 1], idx[t + 2]] : [t, t + 1, t + 2];
+        if (v.some((i) => Math.abs(N.getY(i)) > 0.4)) continue;
+        for (const i of v) {
+          const top = P.getY(i) > bb.min.y + 0.5;
+          const nx = N.getX(i), nz = N.getZ(i);
+          bp.push(P.getX(i) + nx * 0.07, bb.min.y + (top ? 4.4 : 0.02), P.getZ(i) + nz * 0.07); bn.push(nx, 0, nz); bu.push((UV.getX(i) - du) * 12 / 6.0, top ? 1 : 0);
+        }
+      }
+      if (!bp.length) continue;
+      const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.Float32BufferAttribute(bp, 3)); gg.setAttribute('normal', new THREE.Float32BufferAttribute(bn, 3)); gg.setAttribute('uv', new THREE.Float32BufferAttribute(bu, 2));
+      (band[sk] = band[sk] || { S, g: [] }).g.push(gg); nShop++;
+    }
+    const gS = new THREE.Group(); gS.name = pre + '_c27f_shops';
+    for (const [sk, o] of Object.entries(band)) {
+      const mm = mergeGeometries(o.g, false); o.g.forEach((x) => x.dispose()); if (!mm) continue;
+      const closed = !!o.S.it.closed || o.S.it.ground_shop === 'shuttered';
+      const mat = new THREE.MeshStandardMaterial({ map: o.S.t, roughness: 0.7, metalness: closed ? 0.35 : 0.05 });
+      if (!closed) { mat.emissiveMap = o.S.t; mat.emissive.setHex(0xfff0d8); mat.emissiveIntensity = 0; C27F.nightMats.push([mat, 0, 0.5]); }
+      const me = new THREE.Mesh(mm, mat); me.receiveShadow = true; me.userData.noMerge = true; me.name = pre + '_shop_' + sk.replace(/\.jpg$/, ''); gS.add(me);
+    }
+    g.add(gS);
+    // 主幹道：深灰瀝青 #3A3D40＋貼 kerb 雙黃線 #E8B820（0.1m 闊、相隔 0.12m）
+    const roadMats = new Set();
+    g.traverse((o) => { if (o.isMesh && /_drive_trunk$/.test(o.name) && o.material) roadMats.add(o.material); });
+    for (const rm of roadMats) { rm.color.setHex(0x3a3d40); if (rm.map && TOD.mode === 'day') rm.color.setHex(0x55595d); rm.roughness = 0.92; rm.metalness = 0.0; rm.needsUpdate = true; }
+    const yl = [], wl = [];
+    const wideRe = /彌敦|軒尼詩|英皇道|告士打|長沙灣|太子道|德輔|皇后大道|干諾|港灣道|葵涌道|青山公路|興華街|東區走廊/;
+    for (const t of ((D.data && D.data.drive_trunk) || [])) {
+      if ((t.path_chord_ratio || 1) > 4) continue;
+      const pts = t.points || []; const half = (pts._w || (wideRe.test(t.name_zh || '') ? 14 : 11)) / 2;
+      for (let i = 0; i + 1 < pts.length; i++) {
+        const a = pts[i], b = pts[i + 1], dx = b.dx - a.dx, dz = b.dz - a.dz, L = Math.hypot(dx, dz); if (L < 2) continue;
+        const nx = -dz / L, nz = dx / L;
+        for (const off of [half - 0.35, half - 0.57, -(half - 0.35), -(half - 0.57)]) {
+          const o0 = off - 0.05, o1 = off + 0.05, y = 0.085;
+          yl.push(a.dx + nx * o0, y, a.dz + nz * o0, b.dx + nx * o0, y, b.dz + nz * o0, b.dx + nx * o1, y, b.dz + nz * o1,
+                  a.dx + nx * o0, y, a.dz + nz * o0, b.dx + nx * o1, y, b.dz + nz * o1, a.dx + nx * o1, y, a.dz + nz * o1);
+        }
+      }
+      // core27f：白色行車線（官方：1m 線＋5m 空位、闊 100mm）— 中線＋分線
+      const nLane = Math.max(1, Math.round((half - 0.6) / 3.4)), lw = (half - 0.6) / nLane, offs = [0];
+      for (let k = 1; k < nLane; k++) offs.push(k * lw, -k * lw);
+      let ph = 0;
+      for (let i = 0; i + 1 < pts.length; i++) {
+        const a = pts[i], b = pts[i + 1], dx = b.dx - a.dx, dz = b.dz - a.dz, L = Math.hypot(dx, dz); if (L < 0.5) continue;
+        const ux = dx / L, uz = dz / L, nx = -uz, nz = ux;
+        for (let s0 = (6 - ph) % 6; s0 + 1 <= L; s0 += 6) {
+          const p0x = a.dx + ux * s0, p0z = a.dz + uz * s0, p1x = p0x + ux, p1z = p0z + uz;
+          for (const off of offs) { const o0 = off - 0.05, o1 = off + 0.05, y = 0.086;
+            wl.push(p0x + nx * o0, y, p0z + nz * o0, p1x + nx * o0, y, p1z + nz * o0, p1x + nx * o1, y, p1z + nz * o1, p0x + nx * o0, y, p0z + nz * o0, p1x + nx * o1, y, p1z + nz * o1, p0x + nx * o1, y, p0z + nz * o1); }
+        }
+        ph = (ph + L) % 6;
+      }
+    }
+    if (wl.length) { const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.Float32BufferAttribute(wl, 3)); const me = new THREE.Mesh(gg, new THREE.MeshBasicMaterial({ color: 0xe8e8e2, side: THREE.DoubleSide, fog: true })); me.name = pre + '_c27f_lane_dash'; me.userData.noMerge = true; g.add(me); }
+    // 行人路：連續、每區合併（kerb 起 0.12m）
+    const swMat = D.mats && D.mats.sidewalk;
+    if (swMat) {
+      const sp = [], su = [], sn = [];
+      for (const t of ((D.data && D.data.drive_trunk) || [])) {
+        if ((t.path_chord_ratio || 1) > 4) continue;
+        const pts = t.points || []; const half = (pts._w || 11) / 2;
+        const swW = c27fSwW(t.name_zh || '', wideRe.test(t.name_zh || '') ? 6.75 : 4.8); // core27f：跟 layout JSON footway_u（真米×1.5）
+        let acc = 0;
+        for (let i = 0; i + 1 < pts.length; i++) {
+          const a = pts[i], b = pts[i + 1], dx = b.dx - a.dx, dz = b.dz - a.dz, L = Math.hypot(dx, dz); if (L < 1) continue;
+          const nx = -dz / L, nz = dx / L, ex = dx / L * 0.4, ez = dz / L * 0.4, u0 = acc / 2, u1 = (acc + L) / 2; acc += L;
+          for (const sg of [1, -1]) {
+            const i0 = half * sg, i1 = (half + swW) * sg, y = 0.12;
+            const A = [a.dx - ex + nx * i0, a.dz - ez + nz * i0], B = [b.dx + ex + nx * i0, b.dz + ez + nz * i0], C = [b.dx + ex + nx * i1, b.dz + ez + nz * i1], E = [a.dx - ex + nx * i1, a.dz - ez + nz * i1];
+            sp.push(A[0], y, A[1], B[0], y, B[1], C[0], y, C[1], A[0], y, A[1], C[0], y, C[1], E[0], y, E[1]);
+            su.push(u0, 0, u1, 0, u1, 1.6, u0, 0, u1, 1.6, u0, 1.6);
+            for (let k = 0; k < 6; k++) sn.push(0, 1, 0);
+            // kerb 面
+            sp.push(A[0], 0.02, A[1], B[0], 0.02, B[1], B[0], y, B[1], A[0], 0.02, A[1], B[0], y, B[1], A[0], y, A[1]);
+            su.push(u0, 0, u1, 0, u1, 0.06, u0, 0, u1, 0.06, u0, 0.06);
+            for (let k = 0; k < 6; k++) sn.push(-nx * sg, 0, -nz * sg);
+          }
+        }
+      }
+      if (sp.length) {
+        const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.Float32BufferAttribute(sp, 3)); gg.setAttribute('normal', new THREE.Float32BufferAttribute(sn, 3)); gg.setAttribute('uv', new THREE.Float32BufferAttribute(su, 2));
+        swMat.side = THREE.DoubleSide; const me = new THREE.Mesh(gg, swMat); me.receiveShadow = true; me.userData.noMerge = true; me.name = pre + '_c27f_sidewalk'; g.add(me);
+      }
+    }
+    if (yl.length) {
+      const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.Float32BufferAttribute(yl, 3));
+      const me = new THREE.Mesh(gg, new THREE.MeshBasicMaterial({ color: 0xe8b820, side: THREE.DoubleSide, fog: true }));
+      me.name = pre + '_c27f_double_yellow'; me.userData.noMerge = true; g.add(me);
+    }
+    c27fNight();
+    console.info('[core27f] ' + key + ' 門面 ' + maps.length + ' 張、樓 ' + nB + '（' + Object.keys(pool).length + ' 款材質，' + nTyped + ' 幢按 type）、地舖 ' + nShop + '（' + Object.keys(band).length + ' 款）、雙黃線段 ' + (yl.length / 72));
+    return true;
+  }
+  function c27fNight() {
+    const night = TOD.mode !== 'day';
+    // 日頭乾瀝青：地板唔反光、唔似水氹（落雨／夜晚先濕）
+    try { const wet = night || (typeof STORM !== 'undefined' && STORM.on); if (C27F._g0 == null) C27F._g0 = [groundMat.envMapIntensity, groundMat.normalScale.x, groundMat.color.getHex()]; groundMat.envMapIntensity = wet ? C27F._g0[0] : 0.12; groundMat.normalScale.setScalar(wet ? C27F._g0[1] : 0.25); groundMat.color.setHex(wet ? C27F._g0[2] : 0x8e9296); } catch (e) { /* */ }
+    for (const [m, dayI, nightI] of C27F.nightMats) m.emissiveIntensity = night ? nightI : dayI;
+  }
+  todOnChange(c27fNight);
+
+  // 行人：沿主幹道行人路（InstancedMesh：身＋頭）
+  const C27F_PED = { n: C27D_LITE ? 70 : 180, list: [], body: null, head: null, t: 0, lines: [], linesT: 0 };
+  (function c27fPedInit() {
+    try {
+      const bodyG = new THREE.CapsuleGeometry(0.21, 0.95, 3, 6); bodyG.translate(0, 0.72, 0);
+      const headG = new THREE.SphereGeometry(0.12, 8, 6); headG.translate(0, 1.55, 0);
+      const bm = new THREE.MeshStandardMaterial({ roughness: 0.9 }), hm = new THREE.MeshStandardMaterial({ roughness: 0.8 });
+      C27F_PED.body = new THREE.InstancedMesh(bodyG, bm, C27F_PED.n); C27F_PED.head = new THREE.InstancedMesh(headG, hm, C27F_PED.n);
+      const CL = [0x2a2f38, 0xe8e4da, 0x6a7a8a, 0x3a5a3a, 0x8a3a3a, 0xd9c9a0, 0x1a1a1e, 0x4a6aa0, 0xb07a4a, 0xcfcfcf];
+      const SK = [0xc89878, 0xb88a68, 0xd0a080, 0xa8805c];
+      const c = new THREE.Color();
+      for (let i = 0; i < C27F_PED.n; i++) {
+        C27F_PED.body.setColorAt(i, c.setHex(CL[i % CL.length])); C27F_PED.head.setColorAt(i, c.setHex(SK[i % SK.length]));
+        C27F_PED.list.push({ on: false });
+      }
+      for (const m of [C27F_PED.body, C27F_PED.head]) { m.frustumCulled = false; m.count = 0; m.name = 'c27f_peds'; m.userData.noMerge = true; scene.add(m); }
+    } catch (e) { console.warn('[core27f-peds]', e && e.message); }
+  })();
+  const _pm = new THREE.Matrix4(), _pq = new THREE.Quaternion(), _pv = new THREE.Vector3(), _ps = new THREE.Vector3(1, 1, 1), _py = new THREE.Vector3(0, 1, 0);
+  function c27fLines(p) {
+    const out = [];
+    for (const k of ['YTM', 'CW', 'KT', 'SSP', 'KCITY', 'WC', 'EAST', 'TW', 'ST']) {
+      const D = NT[k]; const tr = D && D.data && D.data.drive_trunk; if (!tr || !D.group) continue; /* core27f：group 隱藏（LOD）都照計，距離已經篩 */
+      for (const t of tr) {
+        if ((t.path_chord_ratio || 1) > 4) continue;
+        const P = t.points || []; if (P.length < 2) continue;
+        let near = false; for (let i = 0; i + 1 < P.length; i++) { const ax = P[i].dx, az = P[i].dz, bx = P[i + 1].dx - ax, bz = P[i + 1].dz - az, ll = bx * bx + bz * bz || 1; const u = Math.max(0, Math.min(1, ((p.x - ax) * bx + (p.z - az) * bz) / ll)); if (Math.hypot(ax + bx * u - p.x, az + bz * u - p.z) < 260) { near = true; break; } } /* core27f：用線段距離，長段都計到 */
+        if (near) out.push({ P, w: P._w || 11 });
+      }
+    }
+    return out;
+  }
+  function c27fSpawn(a, p, lines) {
+    const L = lines[(Math.random() * lines.length) | 0]; const P = L.P;
+    let best = 0, bd = Infinity; for (let i = 0; i + 1 < P.length; i++) { const d0 = Math.hypot(P[i].dx - p.x, P[i].dz - p.z); if (d0 < 35) continue; const d = d0 + Math.random() * 160; if (d < bd) { bd = d; best = i; } }
+    a.on = true; a.P = P; a.i = best; a.f = Math.random(); a.dir = Math.random() < 0.5 ? 1 : -1;
+    a.side = (Math.random() < 0.5 ? -1 : 1) * (L.w * 0.5 + 1.6 + (Math.random() - 0.5) * 1.8); a.sp = 1.1 + Math.random() * 0.6; a.ph = Math.random() * 6;
+  }
+  HOOKS.frame.push((dt) => {
+    const B = C27F_PED; if (!B.body) return;
+    if (window.NT && NT.CROWD) { if (B.body.count) B.body.count = B.head.count = 0; if ((B.linesT -= dt) <= 0) { B.linesT = 2; const pp = state.mode === 'drive' && car ? car.pos : player.pos; B.lines = (INT && INT.active) ? [] : c27fLines(pp); } return; } // core27f：有 CROWD 人流就唔重複出
+    const p = state.mode === 'drive' && car ? car.pos : player.pos;
+    if ((B.linesT -= dt) <= 0) { B.linesT = 2; B.lines = (INT && INT.active) ? [] : c27fLines(p); }
+    const want = !B.lines.length ? 0 : Math.round(B.n * (TOD.mode === 'day' ? 1 : 0.4));
+    B.t += dt; let n = 0;
+    for (let i = 0; i < want; i++) {
+      const a = B.list[i];
+      if (!a.on || !a.P) c27fSpawn(a, p, B.lines);
+      const P = a.P; let s0 = P[a.i], s1 = P[a.i + 1];
+      if (!s1) { c27fSpawn(a, p, B.lines); continue; }
+      const L = Math.max(1, Math.hypot(s1.dx - s0.dx, s1.dz - s0.dz));
+      a.f += a.dir * a.sp * dt / L;
+      if (a.f > 1) { a.i++; a.f = 0; if (a.i >= P.length - 1) { a.dir = -1; a.i = P.length - 2; a.f = 1; } }
+      else if (a.f < 0) { a.i--; a.f = 1; if (a.i < 0) { a.dir = 1; a.i = 0; a.f = 0; } }
+      s0 = P[a.i]; s1 = P[a.i + 1];
+      const dx = s1.dx - s0.dx, dz = s1.dz - s0.dz, l2 = Math.hypot(dx, dz) || 1, nx = -dz / l2, nz = dx / l2;
+      const x = s0.dx + dx * a.f + nx * a.side, z = s0.dz + dz * a.f + nz * a.side;
+      if (Math.abs(x - p.x) > 300 || Math.abs(z - p.z) > 300) { a.on = false; continue; }
+      const yaw = Math.atan2(dx * a.dir, dz * a.dir);
+      _pq.setFromAxisAngle(_py, yaw); _pv.set(x, Math.abs(Math.sin(B.t * 7 * a.sp + a.ph)) * 0.05, z);
+      _pm.compose(_pv, _pq, _ps); B.body.setMatrixAt(n, _pm); B.head.setMatrixAt(n, _pm); n++;
+    }
+    B.body.count = B.head.count = n;
+    if (n) { B.body.instanceMatrix.needsUpdate = true; B.head.instanceMatrix.needsUpdate = true; }
+    if (!B._c) { B._c = true; B.body.instanceColor.needsUpdate = true; B.head.instanceColor.needsUpdate = true; }
+  });
+
+  // 日頭常駐真 NPC 行人（近玩家 70m 內，沿行人路行）；遠處由 InstancedMesh 補密度
+  const C27F_WALK = { live: [], t: 0, max: C27D_LITE ? 6 : 12 };
+  const _wv = new THREE.Vector3();
+  function c27fWalkStep(n) {
+    const W = n.c27W; if (!W) return null;
+    for (let g = 0; g < 3; g++) {
+      const s0 = W.P[W.i], s1 = W.P[W.i + 1]; if (!s0 || !s1) { W.dir = -W.dir; W.i = Math.max(0, Math.min(W.P.length - 2, W.i)); return null; }
+      const dx = s1.dx - s0.dx, dz = s1.dz - s0.dz, l = Math.hypot(dx, dz) || 1, nx = -dz / l, nz = dx / l;
+      const tgt = W.dir > 0 ? s1 : s0;
+      const tx = tgt.dx + nx * W.side, tz = tgt.dz + nz * W.side;
+      _wv.set(tx - n.pos.x, 0, tz - n.pos.z);
+      if (_wv.lengthSq() > 1.2) return _wv.normalize();
+      W.i += W.dir; if (W.i < 0 || W.i > W.P.length - 2) { W.dir = -W.dir; W.i = Math.max(0, Math.min(W.P.length - 2, W.i)); }
+    }
+    return null;
+  }
+  HOOKS.sim.push((dt) => {
+    if ((C27F_WALK.t -= dt) > 0) return; C27F_WALK.t = 1.2;
+    if (typeof spawnNPC !== 'function' || typeof HUMAN === 'undefined' || !HUMAN.gltf || (INT && INT.active)) return;
+    const p = state.mode === 'drive' && car ? car.pos : player.pos;
+    C27F_WALK.max = (window.NT && NT.CROWD && NT.CROWD.ready) ? (C27D_LITE ? 3 : 6) : (C27D_LITE ? 6 : 12);
+    C27F_WALK.live = C27F_WALK.live.filter((n) => {
+      if (!n.alive) return false;
+      if (Math.hypot(n.pos.x - p.x, n.pos.z - p.z) > 110 || TOD.mode !== 'day') { if (typeof removeNPC === 'function') removeNPC(n); return false; }
+      return true;
+    });
+    if (TOD.mode !== 'day') return;
+    const lines = C27F_PED.lines; if (!lines || !lines.length) return;
+    const OUT = ['ped_youth', 'ped_elder', 'ped_fabric', 'ped_plane', 'ped_veg', 'ped_lin', 'ped_chung', 'kit'];
+    let tries = 0;
+    while (C27F_WALK.live.length < C27F_WALK.max && tries++ < 4) {
+      let P = null, bi = -1; { const c = []; /* core27f：只揀身邊 18–70m 嘅主幹段，唔再亂抽遠區 */
+        for (const L of lines) { const Q = L.P; for (let i = 0; i + 1 < Q.length; i++) { const d = Math.hypot(Q[i].dx - p.x, Q[i].dz - p.z); if (d > 18 && d < 70) c.push([Q, i]); } }
+        if (c.length) { const k = c[(Math.random() * c.length) | 0]; P = k[0]; bi = k[1]; } }
+      if (bi < 0) continue;
+      const s0 = P[bi], s1 = P[bi + 1], dx = s1.dx - s0.dx, dz = s1.dz - s0.dz, l = Math.hypot(dx, dz) || 1;
+      const side = (Math.random() < 0.5 ? -1 : 1) * ((P._w || 11) * 0.5 + 1.2 + Math.random() * 1.6);
+      const f = Math.random(), x = s0.dx + dx * f - dz / l * side, z = s0.dz + dz * f + dx / l * side;
+      const o = OUTFITS[OUT[(Math.random() * OUT.length) | 0]] || OUTFITS.kit;
+      const n = spawnNPC('civ', x, z, 0, { hostile: false, unarmed: true, hp: 60, cash: 20 + (Math.random() * 80 | 0), outfit: o, state: 'idle', tag: 'c27f-walker' });
+      if (!n) break;
+      n.kind = 'civ'; n.hostile = false; n.c27W = { P, i: bi, dir: Math.random() < 0.5 ? 1 : -1, side }; n.c27Walk = c27fWalkStep; n.c27Sp = 1.1 + Math.random() * 0.5;
+      C27F_WALK.live.push(n);
+    }
+  });
+  // 每 1.5 秒睇下邊區 build 好咗就處理一次
+  setInterval(() => {
+    for (const k of ['YTM', 'CW', 'KT', 'SSP', 'KCITY', 'WC', 'EAST', 'TW', 'ST']) {
+      const D = NT[k]; if (!D || !D.group || !D.data || C27F.done[k]) continue;
+      C27F.done[k] = 'busy';
+      c27fProcess(k, D).then((ok) => { C27F.done[k] = ok ? true : undefined; if (ok) c27fSmall(k, D).catch((e) => console.warn('[core27f-small] ' + k, e && e.message)); }).catch((e) => { C27F.done[k] = true; console.warn('[core27f] ' + k, e && e.message); });
+    }
+  }, 1500);
+  Object.assign(window.NT = window.NT || {}, { C27F, C27F_PED, C27F_WALK, c27fLines });
+
+
   Object.assign(window.NT = window.NT || {}, { c27dDistAt, c27dShort, c27dBrandSafe });
 
   // 若 &day 喺本模組之前已經套用，再套一次新日頭設定
@@ -24018,9 +25442,132 @@ body.cine #c27Dist,body.cine #c27Wanted,body.cine #c27Horn{visibility:hidden}`;
   for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) horn.addEventListener(ev, () => horn.classList.remove('on'));
   window.addEventListener('keydown', (e) => { if (e.code === 'KeyH' && !e.repeat && state.mode === 'drive') beep(); });
   // 18 區名（入區顯示 4 秒）
-  const DIST = [['YTM', '油尖旺'], ['CW', '中西區'], ['KT', '葵青'], ['SSP', '深水埗'], ['KCITY', '九龍城']];
+  // core27f：冷錢包／葵涌字卡只喺碼頭原點；傳送即刻清（KWAI_AFTER_NATHAN）
+  // objective／字幕：出碼頭 bbox 唔准留「冷錢包／八號泊位」（docs/objective-lines-no-kwai-bind.md）
+  NT.C27F_OBJ_POOL = {
+    generic: [
+      '喺附近行開，睇下有咩事發生。',
+      '跟住地圖，摸熟呢一帶。',
+      '街口停低，聽下路人講咩。',
+      '有訊號就接；冇就當街逛。'
+    ],
+    oldtown: ['沿住主幹行，留意騎樓同地舖。', '主題街口轉入去睇一眼就得。'],
+    central: ['遮打一帶行人多，通道留空。', '廣場坐低嘅人唔好打擾，行過就得。'],
+    newtown: ['入商場平台再上屋苑，地面街好靜。', '巴士總站喺平台底，跟指示行。']
+  };
+  NT.c27fPickObj = function (id) {
+    const P = NT.C27F_OBJ_POOL;
+    let pool = P.generic;
+    if (id === 'central_west' || id === 'central_western' || /中西|中環/.test(String(id || ''))) pool = P.central.concat(P.generic);
+    else if (/sha_tin|tsuen_wan|沙田|荃灣/.test(String(id || ''))) pool = P.newtown.concat(P.generic);
+    else if (/yau_tsim|sham_shui|wan_chai|油尖|深水|灣仔|YTM|SSP|WC/.test(String(id || ''))) pool = P.oldtown.concat(P.generic);
+    return pool[Math.floor(Math.random() * pool.length)];
+  };
+  NT.c27fInYardPos = function (pp) {
+    return !!(pp && Math.abs(pp.x) < 90 && Math.abs(pp.z) < 220);
+  };
+  NT.c27fSanitizeObj = function (text) {
+    const raw = String(text || '');
+    if (!/冷錢包|八號泊位|葵涌貨櫃|衝出葵涌/.test(raw)) return text;
+    try {
+      const pp = (typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined') ? car.pos : (typeof player !== 'undefined' ? player.pos : null);
+      if (NT.c27fInYardPos(pp)) return text; // 碼頭任務保留
+    } catch (e) { /* fallthrough */ }
+    return NT.c27fPickObj((NT._c27fLastGoId) || '');
+  };
+  NT.c27fClearKwaiObjective = function (districtId) {
+    try {
+      NT._c27fLastGoId = districtId || NT._c27fLastGoId || '';
+      const line = NT.c27fPickObj(NT._c27fLastGoId);
+      if (typeof MS !== 'undefined') MS.objText = line;
+      if (typeof subsQ !== 'undefined') {
+        for (let i = subsQ.length - 1; i >= 0; i--) {
+          const blob = String((subsQ[i] && subsQ[i].text) || '');
+          if (/冷錢包|八號泊位|葵涌/.test(blob)) subsQ.splice(i, 1);
+        }
+      }
+      if (typeof objective === 'function') objective(line, 3.2);
+      // brief 表「目標」欄若可見，一併換
+      try {
+        const br = document.getElementById('brief');
+        if (br && /冷錢包|八號泊位|葵涌/.test(br.textContent || '')) {
+          br.querySelectorAll('td').forEach((td) => {
+            if (/冷錢包|八號泊位|葵涌/.test(td.textContent || '')) td.textContent = line;
+          });
+        }
+      } catch (e2) { /* */ }
+    } catch (e) { /* */ }
+  };
+
+  try {
+    const _inYard = (pp) => !!(pp && Math.abs(pp.x) < 90 && Math.abs(pp.z) < 220);
+    const _markTp = (id) => {
+      NT._c27fTpT = performance.now();
+      if (id) NT._c27fLastGoId = id;
+      try {
+        const el = document.getElementById('mTitle');
+        if (el) { el.classList.remove('show'); }
+        if (typeof MS !== 'undefined') MS.titleT = 0;
+        // 出碼頭：清葵涌 objective／字幕殘字
+        try {
+          const pp = (typeof state !== 'undefined' && state.mode === 'drive' && car) ? car.pos : player.pos;
+          if (!NT.c27fInYardPos(pp)) NT.c27fClearKwaiObjective(id);
+        } catch (e2) { if (typeof NT.c27fClearKwaiObjective === 'function') NT.c27fClearKwaiObjective(id); }
+      } catch (e) { /* */ }
+    };
+    if (typeof NT.hk18Go === 'function' && !NT.hk18Go._c27f) {
+      const _go = NT.hk18Go; NT.hk18Go = function (id) { _markTp(id); const r = _go.apply(this, arguments); try { NT.c27fClearKwaiObjective(id); } catch (e) {} return r; }; NT.hk18Go._c27f = true;
+    }
+    if (typeof window.NT !== 'undefined' && NT.HKM && typeof NT.HKM.go === 'function' && !NT.HKM.go._c27f) {
+      const _hg = NT.HKM.go.bind(NT.HKM); NT.HKM.go = function () { _markTp(); return _hg.apply(NT.HKM, arguments); }; NT.HKM.go._c27f = true;
+    }
+    if (typeof titleCard === 'function' && !titleCard._c27f) {
+      const _tc = titleCard; titleCard = function (name, sub, sec) {
+        const blob = String(name) + ' ' + String(sub || '');
+        if (NT._c27fTpT && performance.now() - NT._c27fTpT < 60000) return;
+        if (/冷錢包|八號泊位|葵涌貨櫃|衝出葵涌/.test(blob)) {
+          try {
+            const pp = (typeof state !== 'undefined' && state.mode === 'drive' && car) ? car.pos : player.pos;
+            if (!_inYard(pp)) return; /* 世界座標唔喺碼頭原點 → 唔彈 */
+          } catch (e) { return; }
+        }
+        return _tc(name, sub, sec);
+      }; titleCard._c27f = true;
+    }
+    // 每幀：離碼頭清字卡＋objective／字幕葵涌殘字
+    if (!NT._c27fTitleFrame) {
+      NT._c27fTitleFrame = true;
+      HOOKS.frame.push(() => {
+        try {
+          const pp = (typeof state !== 'undefined' && state.mode === 'drive' && car) ? car.pos : player.pos;
+          const away = !_inYard(pp);
+          const el = document.getElementById('mTitle');
+          if (el && el.classList.contains('show')) {
+            const nm = (document.getElementById('mTitleTxt') || {}).textContent || '';
+            const sub = (document.getElementById('mTitleSub') || {}).textContent || '';
+            if (/冷錢包|八號泊位|葵涌/.test(nm + ' ' + sub) && away) {
+              el.classList.remove('show'); if (typeof MS !== 'undefined') MS.titleT = 0;
+            }
+          }
+          if (away && typeof MS !== 'undefined' && MS.objText && /冷錢包|八號泊位|葵涌/.test(MS.objText)) {
+            NT.c27fClearKwaiObjective(NT._c27fLastGoId);
+          }
+          if (away && typeof subsQ !== 'undefined') {
+            let dirty = false;
+            for (const s of subsQ) {
+              if (s && /冷錢包|八號泊位|葵涌/.test(String(s.text || ''))) { s.text = NT.c27fPickObj(NT._c27fLastGoId); dirty = true; }
+            }
+            if (dirty && typeof showSub === 'function') showSub();
+          }
+        } catch (e) { /* */ }
+      });
+    }
+  } catch (e) { console.warn('[core27f-title]', e && e.message); }
+  const DIST = [['WC', '灣仔'], ['EAST', '東區'], ['SSP', '深水埗'], ['KCITY', '九龍城'], ['YTM', '油尖旺'], ['CW', '中西區'], ['KT', '葵青']];
   const boxes = []; let lastD = null, dT = 0, boxT = 0;
-  const box = () => { boxes.length = 0; for (const [k, zh] of DIST) { const g = window.NT && NT[k] && NT[k].group; if (!g || !g.children.length) continue; const b = new THREE.Box3().setFromObject(g); boxes.push([zh, b]); } };
+  const box = () => { boxes.length = 0; for (const [k, zh] of DIST) { const D = window.NT && NT[k] && NT[k].data; const tr = D && D.drive_trunk; if (!tr || !tr.length) continue; const b = { min: { x: 1e9, z: 1e9 }, max: { x: -1e9, z: -1e9 } }; /* core27f：用主幹 OSM 點做框，唔用 group（group 有遠處嘢） */
+    for (const t of tr) for (const q of (t.points || [])) { if (q.dx < b.min.x) b.min.x = q.dx; if (q.dx > b.max.x) b.max.x = q.dx; if (q.dz < b.min.z) b.min.z = q.dz; if (q.dz > b.max.z) b.max.z = q.dz; }
+    if (b.max.x > b.min.x) boxes.push([zh, b]); } };
   HOOKS.frame.push((dt) => {
     if (!document.body.classList.contains('hud2')) return;
     // N 徽章：方形邊
@@ -24033,11 +25580,633 @@ body.cine #c27Dist,body.cine #c27Wanted,body.cine #c27Horn{visibility:hidden}`;
     if (s !== wEl._s) { wEl._s = s; wEl.classList.toggle('on', s > 0); wEl.innerHTML = '通緝級 <b>' + '▮'.repeat(s) + '▯'.repeat(5 - s) + '</b>'; }
     // 地區名
     if ((boxT -= dt) <= 0) { boxT = 5; box(); }
-    if ((dT -= dt) <= 0) { dT = 0.5; const p = state.mode === 'drive' ? car.pos : player.pos; let d = null; for (const [zh, b] of boxes) if (p.x >= b.min.x && p.x <= b.max.x && p.z >= b.min.z && p.z <= b.max.z) { d = zh; break; } if (!d && NT.c27dDistAt && !(INT && INT.active)) { const hd = NT.c27dDistAt(p); if (hd) d = NT.c27dShort(hd.name_zh); }
-      if (d !== lastD) { lastD = d; if (d) { dEl.textContent = d; dEl.classList.add('show'); clearTimeout(dEl._t); dEl._t = setTimeout(() => dEl.classList.remove('show'), 4000); } } }
+    if ((dT -= dt) <= 0) { dT = 0.5; const p = state.mode === 'drive' ? car.pos : player.pos; let d = null, da = 1e18;
+      if (!(INT && INT.active)) {
+        try {
+          let zk = zoneOf(p);
+          /* hkopen＝「香港」兜底 → 改用十八區／OSM 框 */
+          if (zk === 'hkopen' && typeof c27dDistAt === 'function') {
+            const dd = c27dDistAt(p); if (dd) zk = 'hk18:' + dd.id;
+          }
+          const z = ZONES[zk];
+          if (z && z[0] && !/碼頭|公路|^香港$/.test(z[0])) d = (NT.c27dShort ? NT.c27dShort(z[0]) : z[0]);
+        } catch (e) { /* */ }
+      }
+      if (!d) for (const [zh, b] of boxes) if (p.x >= b.min.x - 150 && p.x <= b.max.x + 150 && p.z >= b.min.z - 150 && p.z <= b.max.z + 150) { const ar = (b.max.x - b.min.x) * (b.max.z - b.min.z); if (ar < da) { da = ar; d = zh; } }
+      if (!d && !(INT && INT.active) && typeof c27dDistAt === 'function') {
+        try { const dd = c27dDistAt(p); if (dd) d = (typeof NT.c27dShort === 'function' ? NT.c27dShort(dd.name_zh) : dd.name_zh); } catch (e) { /* */ }
+      }
+      if (d === '香港' || d === '公路') d = null;
+      if (d !== lastD) { lastD = d; if (d) { dEl.textContent = d; dEl.classList.add('show'); } else dEl.classList.remove('show'); } }
   });
   setTimeout(() => { try { resizeMinimap(); } catch (e) { /* */ } }, 120);
 }
+/*__CORE27F_CROWD_BEGIN__*/
+/* =========================================================================
+ * core27f · 日頭人流＋街車（InstancedMesh｜程序｜禁相板）
+ *  · 行人：9 個 InstancedMesh（腳×2、身、手×2、頭、頭髮、袋、帽）＝ 9 draw call
+ *    五類造型（上班族／學生／阿姨／外傭／遊客）× 隨機配色；擺手擺腳程序動畫
+ *  · 車：雙層巴士、紅頂小巴、綠頂小巴、紅的士 — 每款 1 個 InstancedMesh（頂點色）
+ *    塗裝全通用（無巴士公司／的士公司 logo、無真車牌）；巴士牌只寫虛構路線
+ *  · 路網：各區 osm-*-drive-extrude JSON 嘅 drive_trunk（dx/dz 已係遊戲座標）
+ *    行人行兩邊行人路，車行兩條線；全部以玩家為中心循環重生（R 內永遠有人）
+ *  · 上限：NT.CROWD.caps（數值線可改）；Safari／LOW_MEM 用 lite
+ * ========================================================================= */
+const CROWD = {
+  ready: false, trunks: [], segs: [], peds: [], cars: [],
+  // 數值線 docs/crowd-traffic-caps-core27f.md §4（原樣）
+  caps: {
+    lite: { peds: 120, pedR: 120, mainMin: 10, skinned: 6, pedHz: 15, cars: 18, bus: 3, minibus: 4, taxi: 6, priv: 5, carR: 180 },
+    full: { peds: 400, pedR: 220, mainMin: 25, skinned: 24, pedHz: 30, cars: 48, bus: 6, minibus: 8, taxi: 16, priv: 18, carR: 320 }
+  },
+  fpsScale: 1, outfits: null,
+  meshes: {}, vmesh: {}, t: 0
+};
+(function () {
+  const lite = (typeof IS_SAFARI !== 'undefined' && IS_SAFARI) || (typeof LOW_MEM !== 'undefined' && LOW_MEM) || (typeof URLQ !== 'undefined' && URLQ.has && URLQ.has('ldr'));
+  const CAP = () => CROWD.caps[lite ? 'lite' : 'full'];
+  const REGION = { ytm: 'tst', cw: 'central', kt: 'kt', ssp: 'ssp', kcity: 'kc', wc: 'wanchai', east: 'quarrybay', tw: 'tw', st: 'st' };
+  const FILES = ['ytm-drive-extrude-core24', 'cw-drive-extrude-core25', 'kt-drive-extrude-core25', 'ssp-drive-extrude-core27', 'kcity-drive-extrude-core27',
+    'wc-drive-extrude-core28', 'east-drive-extrude-core28', 'tw-drive-extrude-core29', 'st-drive-extrude-core29'];
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const pick = (arr) => arr[(Math.random() * arr.length) | 0];
+
+  /* ---------- 造型配色（人物設計表到咗可直接覆蓋 CROWD.styles）---------- */
+  CROWD.styles = {
+    office:  { w: 0.30, top: [0xf2f2ee, 0xdfe6ee, 0x2a3240, 0x3a3a3e, 0xc8d4e0], bottom: [0x1e2430, 0x2a2a2e, 0x3a3a40], hat: 0, bag: 0.7, bagC: [0x1a1a1a, 0x3a2a20] },
+    student: { w: 0.18, top: [0xf4f4f0, 0xe8eef4], bottom: [0x2a3a5a, 0x3a4a3a, 0x5a5a5a], hat: 0, bag: 0.9, bagC: [0x2a3a6a, 0x1a1a1a, 0x8a2a2a] },
+    auntie:  { w: 0.18, top: [0xc85a7a, 0x8a5aa8, 0xe0a050, 0x5a8aa8, 0xd0d0c0], bottom: [0x2a2a2a, 0x4a3a30, 0x3a3a50], hat: 0.25, hatC: [0xd8c8a0, 0xf0f0f0], bag: 0.8, bagC: [0xc82a2a, 0x2a5aa8, 0xe8e0d0] },
+    helper:  { w: 0.12, top: [0xe8a0b0, 0x6ac0d0, 0xf0d040, 0xffffff], bottom: [0x2a2a3a, 0x3a3a3a, 0x5a4a6a], hat: 0.1, hatC: [0x2a2a2a], bag: 0.6, bagC: [0xd8c8b0, 0x2a2a2a] },
+    tourist: { w: 0.22, top: [0xf0e0a0, 0x9ad0e0, 0xffffff, 0xe07a4a, 0x7ab07a], bottom: [0xc8b898, 0x2a3a5a, 0x5a5a50], hat: 0.5, hatC: [0xf0f0e8, 0x2a2a3a, 0xc8a060], bag: 0.85, bagC: [0x3a3a3a, 0x6a5a40] }
+  };
+  const SKIN = [0xe0b090, 0xc89878, 0xb08060, 0x8a6040, 0xd8a888];
+  const HAIR = [0x0e0a08, 0x1a120c, 0x2a1e14, 0x6a6058, 0xb0aaa0];
+  function pickStyle(region) {
+    const A = CROWD.outfits && CROWD.outfits.archetypes; const night = typeof TOD !== 'undefined' && TOD.mode === 'night';
+    const ws = Object.keys(CROWD.styles).map((k) => {
+      let w = CROWD.styles[k].w; const wt = A && A[k] && A[k].weight;
+      if (wt) { const vals = Object.values(wt); w = wt[region] != null ? wt[region] : vals.reduce((a, b) => a + b, 0) / vals.length; }
+      if (k === 'helper' && region === 'central' && new Date().getDay() === 0) w *= 3;
+      if (night) w *= k === 'office' ? 0.4 : k === 'student' ? 0.2 : 1;
+      return [k, w];
+    });
+    let tot = ws.reduce((a, b) => a + b[1], 0), r = Math.random() * tot; for (const [k, w] of ws) { r -= w; if (r <= 0) return k; } return 'office';
+  }
+
+  /* ---------- 路網 ---------- */
+  async function loadTrunks() {
+    for (const f of FILES) {
+      let d = null;
+      for (const u of ['assets/data/osm-' + f + '.json', 'data/osm-' + f + '.json']) { try { const r = await fetch(u); if (r.ok) { d = await r.json(); break; } } catch (e) { /* */ } }
+      if (!d) continue;
+      for (const t of (d.drive_trunk || [])) {
+        if ((t.path_chord_ratio || 1) > 4 || !t.points || t.points.length < 2) continue;
+        const pts = t.points.map((p) => ({ x: p.dx, z: p.dz }));
+        const w = /彌敦|軒尼詩|英皇|德輔|干諾/.test(t.name_zh || '') ? 14 : 11;
+        const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z));
+        addTrunk(t.name_zh, pts, w, REGION[f.split('-')[0]] || 'misc');
+      }
+    }
+  }
+  // 空間格（200 單位）：只喺玩家附近抽線段，唔使亂試
+  const GRID = new Map(), CELL = 200, gk = (x, z) => Math.floor(x / CELL) + ',' + Math.floor(z / CELL);
+  // 數值 §5 密度系數（旺角／銅鑼灣 1.0 … 葵涌碼頭 0.15）
+  // §11 四類：級 5→1.0 … 1→0.15；常駐＝上限/3×dens。商場／平台級 4 另見 nearMall()
+  const DENS = {
+    tst: 1.0,       // 油尖旺舊街／旺角 5
+    ssp: 0.8,       // 深水埗 4
+    central: 0.6,   // 中環地面 3（§9 假日升 0.8）
+    wanchai: 0.7,   // 灣仔 3–4
+    quarrybay: 0.4, // 東區北角／鰂魚涌地面 2
+    kc: 0.6,        // 九龍城食街 3
+    kt: 0.15,       // 工廈／工業 1
+    port: 0.15,     // 葵涌碼頭工業 1
+    tw: 0.4,        // 荃灣地面 2（商場密另加）
+    st: 0.4,        // 沙田地面 2
+    misc: 0.5
+  };
+  const MALL_REG = { tw: 1, st: 1, kt: 1, central: 1 }; // podium 新市鎮／有大平台
+  function nearMall(p) {
+    if (!MALL_REG[localRegion(p)] && localRegion(p) !== 'central') return false;
+    const NT = window.NT || {};
+    for (const k of ['TW', 'ST', 'KT', 'CW', 'YTM', 'WC', 'EAST', 'SSP', 'KCITY']) {
+      const list = NT[k] && NT[k].arcadeColliders;
+      if (!list) continue;
+      for (const a of list) {
+        const cx = (a.x0 + a.x1) / 2, cz = (a.z0 + a.z1) / 2;
+        if (Math.hypot(p.x - cx, p.z - cz) < 40) return true; // §7／§11：平台入口 40 m
+      }
+    }
+    return false;
+  }
+  function addTrunk(name, pts, w, region) {
+    // 長段切細（≤30），方便抽樣
+    const P = [pts[0]];
+    for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i], L = Math.hypot(b.x - a.x, b.z - a.z), n = Math.max(1, Math.ceil(L / 30)); for (let k = 1; k <= n; k++) P.push({ x: a.x + (b.x - a.x) * k / n, z: a.z + (b.z - a.z) * k / n }); }
+    const cum = [0]; for (let i = 1; i < P.length; i++) cum.push(cum[i - 1] + Math.hypot(P[i].x - P[i - 1].x, P[i].z - P[i - 1].z));
+    const tr = { id: CROWD.trunks.length, name, pts: P, cum, len: cum[cum.length - 1], w, region }; if (tr.len < 8) return; CROWD.trunks.push(tr);
+    for (let i = 0; i < P.length - 1; i++) { const sg = { tr, i, x: (P[i].x + P[i + 1].x) / 2, z: (P[i].z + P[i + 1].z) / 2 }; CROWD.segs.push(sg); const key = gk(sg.x, sg.z); if (!GRID.has(key)) GRID.set(key, []); GRID.get(key).push(sg); }
+  }
+  // 基本城（碼頭／漆咸道）冇 OSM trunk → 用 ROADNET 邊補
+  function addRoadnet() {
+    if (typeof ROADNET === 'undefined') return 0; const seen = new Set(); let n = 0;
+    for (let a = 0; a < ROADNET.length; a++) for (const b of ROADNET[a].nb) {
+      const key = a < b ? a + '-' + b : b + '-' + a; if (seen.has(key)) continue; seen.add(key);
+      const A = ROADNET[a], B = ROADNET[b], L = Math.hypot(B.x - A.x, B.z - A.z); if (L < 10 || L > 900) continue;
+      // 已有 OSM trunk 覆蓋就跳過
+      const mx = (A.x + B.x) / 2, mz = (A.z + B.z) / 2; if ((GRID.get(gk(mx, mz)) || []).some((s) => !s.tr.rn && Math.hypot(s.x - mx, s.z - mz) < 25)) continue;
+      addTrunk('roadnet', [{ x: A.x, z: A.z }, { x: B.x, z: B.z }], 10, Math.abs(A.z) < 180 && Math.abs(B.z) < 180 ? 'port' : 'misc'); CROWD.trunks[CROWD.trunks.length - 1].rn = true; n++;
+    }
+    return n;
+  }
+  // 沿 trunk 取 s 位置＋方向
+  function at(tr, s, out) {
+    s = Math.max(0, Math.min(tr.len - 0.01, s));
+    let i = 0, lo = 0, hi = tr.cum.length - 1; while (lo < hi) { const m = (lo + hi) >> 1; if (tr.cum[m + 1] <= s) lo = m + 1; else hi = m; } i = lo;
+    const a = tr.pts[i], b = tr.pts[i + 1] || a, L = (tr.cum[i + 1] - tr.cum[i]) || 1, k = (s - tr.cum[i]) / L;
+    const dx = (b.x - a.x) / L, dz = (b.z - a.z) / L;
+    out.x = a.x + (b.x - a.x) * k; out.z = a.z + (b.z - a.z) * k; out.dx = dx; out.dz = dz; return out;
+  }
+  // 玩家所在區（最近 OSM 線段嘅區；冇就 port／misc）
+  let _rgT = 0, _rg = 'misc';
+  function localRegion(p) {
+    if ((_rgT -= 1) > 0) return _rg; _rgT = 30;
+    let best = 1e9, r = 'misc'; const cx = Math.floor(p.x / CELL), cz = Math.floor(p.z / CELL);
+    for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (const s of (GRID.get((cx + i) + ',' + (cz + j)) || [])) { const d = Math.hypot(s.x - p.x, s.z - p.z) + (s.tr.rn ? 60 : 0); if (d < best) { best = d; r = s.tr.region; } }
+    return (_rg = r);
+  }
+  const _near = [];
+  function nearSeg(p, R) {
+    _near.length = 0; const c = Math.ceil(R / CELL), cx = Math.floor(p.x / CELL), cz = Math.floor(p.z / CELL);
+    for (let i = -c; i <= c; i++) for (let j = -c; j <= c; j++) { const L = GRID.get((cx + i) + ',' + (cz + j)); if (L) for (const s of L) if (Math.hypot(s.x - p.x, s.z - p.z) < R) _near.push(s); }
+    if (!_near.length) return null;
+    // 唔好喺主角眼前「變」出嚟：盡量揀 35 以外
+    for (let k = 0; k < 6; k++) { const s = pick(_near); if (Math.hypot(s.x - p.x, s.z - p.z) > 35) return s; }
+    return pick(_near);
+  }
+
+  /* ---------- 行人 Instanced ---------- */
+  const PARTS = ['legL', 'legR', 'torso', 'armL', 'armR', 'head', 'hair', 'bag', 'hat'];
+  function buildPedMeshes(N) {
+    const M = () => new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });
+    const G = {
+      legL: new THREE.BoxGeometry(0.15, 0.82, 0.17).translate(0, -0.41, 0), legR: null,
+      torso: new THREE.BoxGeometry(0.4, 0.62, 0.24),
+      armL: new THREE.BoxGeometry(0.1, 0.62, 0.11).translate(0, -0.3, 0), armR: null,
+      head: new THREE.IcosahedronGeometry(0.12, 1).scale(1, 1.12, 1),
+      hair: new THREE.SphereGeometry(0.128, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.55).scale(1, 1.1, 1.05),
+      bag: new THREE.BoxGeometry(0.08, 0.3, 0.26),
+      hat: new THREE.CylinderGeometry(0.15, 0.17, 0.08, 10)
+    };
+    G.legR = G.legL; G.armR = G.armL;
+    for (const k of PARTS) {
+      const im = new THREE.InstancedMesh(G[k], M(), N);
+      im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); im.frustumCulled = false; im.castShadow = !lite && (k === 'torso' || k === 'legL' || k === 'legR'); im.receiveShadow = false;
+      im.name = 'crowd-' + k; im.count = N; im.userData.noMerge = true;
+      for (let i = 0; i < N; i++) im.setColorAt(i, new THREE.Color(0xffffff));
+      scene.add(im); CROWD.meshes[k] = im;
+    }
+  }
+  const C = new THREE.Color();
+  const jit = (hex) => { C.setHex(hex); const k = 1 + (Math.random() * 2 - 1) * 0.06; return C.setRGB(Math.min(1, C.r * k), Math.min(1, C.g * k), Math.min(1, C.b * k)).getHex(); };
+  function dressPed(i, p) {
+    const S = CROWD.styles[p.style]; let top = pick(S.top), bot = pick(S.bottom), skin = pick(SKIN), hair = p.style === 'auntie' && Math.random() < 0.4 ? 0x6a6058 : pick(HAIR);
+    const O = CROWD.outfits && CROWD.outfits.archetypes && CROWD.outfits.archetypes[p.style];
+    if (O && O.v && O.v.length) { const v = pick(O.v), h = (x) => parseInt(String(x).replace('#', ''), 16); top = h(Math.random() < 0.35 ? v.shirt : v.jacket); bot = h(v.pants); skin = h(v.skin); hair = h(v.hair); }
+    top = jit(top); bot = jit(bot);
+    const Mh = CROWD.meshes;
+    Mh.torso.setColorAt(i, C.setHex(top)); Mh.armL.setColorAt(i, C.setHex(Math.random() < 0.5 ? top : skin)); Mh.armR.setColorAt(i, C);
+    Mh.legL.setColorAt(i, C.setHex(bot)); Mh.legR.setColorAt(i, C); Mh.head.setColorAt(i, C.setHex(skin)); Mh.hair.setColorAt(i, C.setHex(hair));
+    p.hasBag = Math.random() < S.bag; p.hasHat = Math.random() < (S.hat || 0);
+    Mh.bag.setColorAt(i, C.setHex(pick(S.bagC || [0x222222]))); Mh.hat.setColorAt(i, C.setHex(pick(S.hatC || [0x222222])));
+    p.h = rnd(0.9, 1.06) * (p.style === 'student' ? 0.96 : p.style === 'auntie' ? 0.93 : 1);
+    p.speed = p.style === 'auntie' ? rnd(0.95, 1.2) : p.style === 'tourist' ? rnd(0.9, 1.25) : rnd(1.25, 1.7);
+    for (const k of PARTS) if (Mh[k].instanceColor) Mh[k].instanceColor.needsUpdate = true;
+  }
+  function spawnPed(p, i, center, R) {
+    const s = nearSeg(center, R); if (!s) { p.on = false; return; }
+    p.on = true; p.tr = s.tr; p.s = s.tr.cum[s.i] + Math.random() * ((s.tr.cum[s.i + 1] - s.tr.cum[s.i]) || 1);
+    p.side = Math.random() < 0.5 ? -1 : 1; p.dir = Math.random() < 0.5 ? -1 : 1;
+    p.lat = s.tr.w / 2 + rnd(1.2, 3.6); p.ph = Math.random() * 6.28; p.style = pickStyle(s.tr.region); p.wait = Math.random() < 0.12 ? rnd(2, 8) : 0;
+    dressPed(i, p);
+  }
+  const _o = new THREE.Object3D(), _q = new THREE.Quaternion(), _qy = new THREE.Quaternion(), _qx = new THREE.Quaternion(), _v = new THREE.Vector3(), _P = { x: 0, z: 0, dx: 0, dz: 0 };
+  const UP = new THREE.Vector3(0, 1, 0), RX = new THREE.Vector3(1, 0, 0), ZERO = new THREE.Vector3(0, 0, 0), ONE = new THREE.Vector3(1, 1, 1);
+  const _m = new THREE.Matrix4(), _hide = new THREE.Matrix4().makeScale(0, 0, 0);
+  function put(k, i, base, yawQ, off, swing, scl) {
+    _qx.setFromAxisAngle(RX, swing || 0); _q.copy(yawQ).multiply(_qx);
+    _v.copy(off).applyQuaternion(yawQ).add(base);
+    _m.compose(_v, _q, scl || ONE); CROWD.meshes[k].setMatrixAt(i, _m);
+  }
+  const OFF = { legL: new THREE.Vector3(-0.1, 0.86, 0), legR: new THREE.Vector3(0.1, 0.86, 0), torso: new THREE.Vector3(0, 1.16, 0),
+    armL: new THREE.Vector3(-0.26, 1.44, 0), armR: new THREE.Vector3(0.26, 1.44, 0), head: new THREE.Vector3(0, 1.62, 0), hair: new THREE.Vector3(0, 1.64, -0.01),
+    bag: new THREE.Vector3(0.3, 1.0, 0), hat: new THREE.Vector3(0, 1.76, 0) };
+  const _b = new THREE.Vector3(), _sc = new THREE.Vector3(), _off = new THREE.Vector3();
+  function updatePeds(dt, center) {
+    const R = CAP().pedR, N = CROWD.peds.length, night = typeof TOD !== 'undefined' && TOD.mode === 'night';
+    const reg = localRegion(center); CROWD.region = reg;
+    // 數值 §5／§9：旺區常駐＝上限 ÷3 × 密度；假日中環級 4
+    let dens = DENS[reg] ?? 0.5;
+    if (reg === 'central' && isFdwSunday()) dens = Math.max(dens, 0.8); // §9
+    if (nearMall(center)) dens = Math.max(dens, 0.8); // §11 商場／平台級 4
+    const want = Math.round(N / 3 * dens * (night ? 0.5 : 1) * CROWD.fpsScale);
+    const pp = typeof player !== 'undefined' ? player.pos : null;
+    for (let i = 0; i < N; i++) {
+      const p = CROWD.peds[i];
+      if (i >= want) { if (p.on) { p.on = false; for (const k of PARTS) CROWD.meshes[k].setMatrixAt(i, _hide); } continue; }
+      if (!p.on) { spawnPed(p, i, center, R); if (!p.on) { for (const k of PARTS) CROWD.meshes[k].setMatrixAt(i, _hide); continue; } }
+      // 移動
+      let moving = 1;
+      if (p.wait > 0) { p.wait -= dt; moving = 0; }
+      else { p.s += p.dir * p.speed * dt; if (p.s <= 0 || p.s >= p.tr.len) { p.dir = -p.dir; p.wait = rnd(0.5, 3); } }
+      at(p.tr, p.s, _P);
+      const nx = -_P.dz, nz = _P.dx; // 左法線
+      const x = _P.x + nx * p.lat * p.side, z = _P.z + nz * p.lat * p.side;
+      if (Math.hypot(x - center.x, z - center.z) > R * 1.15) { p.on = false; continue; }
+      // 讓開主角
+      let ox = 0, oz = 0;
+      if (pp) { const ddx = x - pp.x, ddz = z - pp.z, d = Math.hypot(ddx, ddz); if (d < 1.4 && d > 0.01) { ox = ddx / d * (1.4 - d); oz = ddz / d * (1.4 - d); p.lat += 0.6 * dt; } }
+      const yaw = Math.atan2(_P.dx * p.dir, _P.dz * p.dir);
+      _qy.setFromAxisAngle(UP, yaw);
+      p.ph += dt * moving * p.speed * 5.2;
+      const sw = Math.sin(p.ph) * 0.55 * moving, bob = Math.abs(Math.cos(p.ph)) * 0.035 * moving;
+      _b.set(x + ox, bob, z + oz); const h = p.h; _sc.set(h, h, h);
+      const O = (k) => _off.copy(OFF[k]).multiplyScalar(h);
+      put('legL', i, _b, _qy, O('legL'), sw, _sc); put('legR', i, _b, _qy, O('legR'), -sw, _sc);
+      put('torso', i, _b, _qy, O('torso'), 0.03 * moving, _sc);
+      put('armL', i, _b, _qy, O('armL'), -sw * 0.8, _sc); put('armR', i, _b, _qy, O('armR'), p.hasBag ? 0.05 : sw * 0.8, _sc);
+      put('head', i, _b, _qy, O('head'), 0, _sc); put('hair', i, _b, _qy, O('hair'), 0, _sc);
+      if (p.hasBag) put('bag', i, _b, _qy, O('bag'), 0, _sc); else CROWD.meshes.bag.setMatrixAt(i, _hide);
+      if (p.hasHat) put('hat', i, _b, _qy, O('hat'), 0, _sc); else CROWD.meshes.hat.setMatrixAt(i, _hide);
+    }
+    for (const k of PARTS) CROWD.meshes[k].instanceMatrix.needsUpdate = true;
+  }
+
+  /* ---------- 車（頂點色合併幾何）---------- */
+  function colored(geo, hex) { const c = new THREE.Color(hex), n = geo.attributes.position.count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) { a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; } geo.setAttribute('color', new THREE.BufferAttribute(a, 3)); return geo; }
+  function boxC(w, h, d, x, y, z, hex) { const g = new THREE.BoxGeometry(w, h, d).toNonIndexed(); g.translate(x, y, z); return colored(g, hex); }
+  function wheels(list, len, wid, r) { for (const zx of [-len * 0.32, len * 0.32]) for (const s of [-1, 1]) { const g = new THREE.CylinderGeometry(r, r, 0.25, 10).toNonIndexed(); g.rotateZ(Math.PI / 2); g.translate(s * wid / 2, r, zx); list.push(colored(g, 0x111111)); } }
+  const mergeG = (list) => mergeGeometries(list, false);
+  const GLASS = 0x1a2630;
+  function busGeo() { // 雙層巴士：長 12、闊 2.5、高 4.4（遊戲單位×1；外形通用）
+    const L = []; const body = 0xe8e4d8, band = 0x2a7a8a;
+    L.push(boxC(2.5, 1.2, 12, 0, 0.9, 0, body), boxC(2.52, 0.9, 11.2, 0, 2.0, 0.2, GLASS), boxC(2.52, 0.35, 12, 0, 2.62, 0, band),
+      boxC(2.52, 1.0, 11.6, 0, 3.3, 0, GLASS), boxC(2.5, 0.4, 12, 0, 4.0, 0, body), boxC(2.3, 1.8, 0.05, 0, 2.6, 6.01, GLASS), boxC(1.6, 0.3, 0.05, 0, 3.95, 6.02, 0xffb020));
+    wheels(L, 12, 2.4, 0.5); return mergeG(L);
+  }
+  function minibusGeo(roof) { // 公共小巴：長 7、闊 2.2、高 2.8；紅頂／綠頂係法定顏色（非商標）
+    const L = []; L.push(boxC(2.2, 1.1, 7, 0, 0.85, 0, 0xf2eedc), boxC(2.22, 0.8, 6.0, 0, 1.8, -0.3, GLASS), boxC(2.2, 0.35, 7, 0, 2.35, -0.1, roof),
+      boxC(2.0, 0.9, 0.05, 0, 1.7, 3.51, GLASS), boxC(0.8, 0.25, 0.06, 0, 2.6, 3.0, 0xf2eedc)); wheels(L, 7, 2.1, 0.38); return mergeG(L);
+  }
+  function taxiGeo() { // 市區紅的：車身紅、車頂銀（法定配色）；冇的士公司字樣
+    const L = []; L.push(boxC(1.8, 0.7, 4.6, 0, 0.6, 0, 0xc81e1e), boxC(1.7, 0.55, 2.4, 0, 1.22, -0.2, 0xc8c8c8), boxC(1.72, 0.45, 2.2, 0, 1.2, -0.2, GLASS),
+      boxC(0.5, 0.18, 0.25, 0, 1.58, -0.1, 0xf0f0f0)); wheels(L, 4.6, 1.75, 0.33); return mergeG(L);
+  }
+  function sedanGeo() { // 私家車：白底 × instanceColor 上色
+    const L = []; L.push(boxC(1.8, 0.65, 4.5, 0, 0.58, 0, 0xffffff), boxC(1.66, 0.5, 2.3, 0, 1.15, -0.15, 0x2a2a2a)); wheels(L, 4.5, 1.75, 0.32); return mergeG(L);
+  }
+  function taxiGreenGeo() { const L = []; L.push(boxC(1.8, 0.7, 4.6, 0, 0.6, 0, 0x1e8a3a), boxC(1.7, 0.55, 2.4, 0, 1.22, -0.2, 0xe8e8e0), boxC(1.72, 0.45, 2.2, 0, 1.2, -0.2, GLASS), boxC(0.5, 0.18, 0.25, 0, 1.58, -0.1, 0xf0f0f0)); wheels(L, 4.6, 1.75, 0.33); return mergeG(L); }
+  // 每款固定池（數值 CROWD_CAP：bus／minibus／taxi／priv）
+  const VTYPES = [
+    { k: 'bus', cap: 'bus', geo: busGeo, len: 12, speed: [7, 10], kerb: true },
+    { k: 'mbRed', cap: 'minibus', half: 1, geo: () => minibusGeo(0xc81e1e), len: 7, speed: [9, 13], kerb: true },
+    { k: 'mbGreen', cap: 'minibus', half: 0, geo: () => minibusGeo(0x1e8a3a), len: 7, speed: [8, 12], kerb: true },
+    { k: 'taxiRed', cap: 'taxi', geo: taxiGeo, len: 4.6, speed: [9, 14] },
+    { k: 'taxiGreen', cap: 'taxi', geo: taxiGreenGeo, len: 4.6, speed: [9, 13] },
+    { k: 'priv', cap: 'priv', geo: sedanGeo, len: 4.5, speed: [9, 14], tint: true }
+  ];
+  // 數值 §6：的士紅／綠比例
+  const GREEN_TAXI = { kt: 0.3, tw: 0.3, st: 0.8 };
+  const PRIV_C = [0xf2f2f2, 0x1a1a1a, 0x8a8e94, 0x2a3a5a, 0x6a1a1a, 0xc8c0b0, 0x3a4a3a];
+  function buildCars() {
+    const cap = CAP(), mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.2 });
+    for (const t of VTYPES) {
+      let n = cap[t.cap] || 0; if (t.cap === 'minibus') n = t.half ? Math.ceil(n / 2) : Math.floor(n / 2);
+      const g = Math.max(1, Math.round((cap.taxi || 0) * 0.25)); if (t.k === 'taxiGreen') n = g; if (t.k === 'taxiRed') n = Math.max(0, n - g); // 總數＝CROWD_CAP.taxi
+      if (!n) continue;
+      const im = new THREE.InstancedMesh(t.geo(), mat, n); im.name = 'traffic-' + t.k; im.frustumCulled = false; im.castShadow = !lite;
+      im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); im.userData.noMerge = true;
+      for (let i = 0; i < n; i++) { im.setMatrixAt(i, _hide); if (t.tint) im.setColorAt(i, C.setHex(pick(PRIV_C))); }
+      scene.add(im); CROWD.vmesh[t.k] = im;
+      for (let i = 0; i < n; i++) CROWD.cars.push({ on: false, ty: t, slot: i });
+    }
+  }
+  function spawnCar(c, center, R) {
+    const s = nearSeg(center, R); if (!s || (s.tr.region === 'port' && c.ty.kerb && Math.random() < 0.8)) { c.on = false; return; }
+    if (c.ty.k === 'taxiGreen' && Math.random() > (GREEN_TAXI[s.tr.region] || 0)) { c.on = false; return; }
+    if (c.ty.k === 'taxiRed' && Math.random() < (GREEN_TAXI[s.tr.region] || 0)) { c.on = false; return; }
+    c.on = true; c.tr = s.tr; c.s = s.tr.cum[s.i]; c.dir = Math.random() < 0.5 ? -1 : 1; c.v = rnd(c.ty.speed[0], c.ty.speed[1]); c.max = c.v; c.dwell = 0;
+    c.lane = c.ty.kerb ? s.tr.w * 0.36 : s.tr.w * 0.18; // 巴士小巴靠邊線
+  }
+  function updateCars(dt, center) {
+    const R = CAP().carR;
+    const pc = typeof car !== 'undefined' ? car.pos : null;
+    // 同 trunk 同方向排隊：簡單跟車距離
+    const byLane = new Map();
+    for (const c of CROWD.cars) if (c.on) { const key = c.tr.id + (c.dir > 0 ? '+' : '-') + (c.lane > c.tr.w * 0.27 ? 'o' : 'i'); if (!byLane.has(key)) byLane.set(key, []); byLane.get(key).push(c); }
+    for (const list of byLane.values()) { list.sort((a, b) => (a.s - b.s) * a.dir); for (let i = 0; i < list.length - 1; i++) { const a = list[i], b = list[i + 1]; const gap = Math.abs(b.s - a.s) - (a.ty.len + b.ty.len) / 2; a.lead = gap; } list[list.length - 1].lead = 1e9; }
+    for (const c of CROWD.cars) {
+      const im = CROWD.vmesh[c.ty.k];
+      if (!c.on) { spawnCar(c, center, R); if (!c.on) { im.setMatrixAt(c.slot, _hide); continue; } }
+      at(c.tr, c.s, _P);
+      const nx = -_P.dz, nz = _P.dx, sx = c.dir > 0 ? 1 : -1; // 香港靠左：沿前進方向左邊
+      const x = _P.x + nx * c.lane * sx, z = _P.z + nz * c.lane * sx;
+      // 前面有主角架車／主角 → 減速
+      let target = c.max;
+      if (c.lead < 6) target = 0; else if (c.lead < 18) target = c.max * (c.lead - 6) / 12;
+      if (pc) { const fx = _P.dx * c.dir, fz = _P.dz * c.dir, rx = pc.x - x, rz = pc.z - z, ahead = rx * fx + rz * fz, side = Math.abs(rx * fz - rz * fx); if (ahead > 0 && ahead < 14 && side < 2.2) target = 0; }
+      if (c.ty.k === 'bus' && c.dwell <= 0 && Math.random() < dt * 0.02) c.dwell = rnd(4, 8); // 隨機埋站
+      if (c.dwell > 0) { c.dwell -= dt; target = 0; }
+      c.v = damp(c.v, target, target < c.v ? 4 : 1.2, dt);
+      c.s += c.dir * c.v * dt;
+      if (c.s <= 0 || c.s >= c.tr.len || Math.hypot(x - center.x, z - center.z) > R * 1.2) { c.on = false; im.setMatrixAt(c.slot, _hide); continue; }
+      _qy.setFromAxisAngle(UP, Math.atan2(_P.dx * c.dir, _P.dz * c.dir));
+      _m.compose(_v.set(x, 0.02, z), _qy, ONE); im.setMatrixAt(c.slot, _m);
+    }
+    for (const k in CROWD.vmesh) CROWD.vmesh[k].instanceMatrix.needsUpdate = true;
+  }
+
+  /* ---------- 主循環 ---------- */
+  function setVisible(v) { for (const k in CROWD.meshes) CROWD.meshes[k].visible = v; for (const k in CROWD.vmesh) CROWD.vmesh[k].visible = v; }
+  async function init() {
+    try { const r = await fetch('assets/data/ped-outfits-core27f.json'); if (r.ok) CROWD.outfits = await r.json(); } catch (e) { /* 用內置配色 */ }
+    await loadTrunks();
+    if (!CROWD.segs.length) { console.warn('[crowd] 冇 drive_trunk 資料'); return; }
+    const cap = CAP();
+    const rn = addRoadnet();
+    buildPedMeshes(cap.peds); for (let i = 0; i < cap.peds; i++) CROWD.peds.push({ on: false });
+    buildCars();
+    // 數值：FPS 跌穿 30 → 人數減 25%；回升 50 先慢慢加返
+    let lowT = 0, hiT = 0; HOOKS.frame.push((dt) => { const f = dt > 0 ? 1 / dt : 60; if (f < 30) { lowT += dt; hiT = 0; if (lowT > 2) { CROWD.fpsScale = Math.max(0.4, CROWD.fpsScale * 0.75); lowT = 0; } } else if (f > 50) { hiT += dt; lowT = 0; if (hiT > 6) { CROWD.fpsScale = Math.min(1, CROWD.fpsScale + 0.1); hiT = 0; } } });
+    HOOKS.frame.push((dt) => {
+      if (!CROWD.ready || CROWD.off) return;
+      const inside = (typeof INT !== 'undefined' && INT.active) || (typeof AREA !== 'undefined' && !!AREA.active);
+      setVisible(!inside); if (inside) return;
+      const center = state.mode === 'drive' ? car.pos : player.pos;
+      CROWD.t += dt;
+      updatePeds(Math.min(dt, 0.05), center); updateCars(Math.min(dt, 0.05), center); updateFdw(Math.min(dt, 0.05), center);
+    });
+    CROWD.ready = true;
+    console.info('[core27f] crowd+traffic', { trunks: CROWD.trunks.length, roadnet: rn, segs: CROWD.segs.length, peds: cap.peds, cars: CROWD.cars.length, lite });
+  }
+
+  /* ---------- 騎樓 AABB API：靜態／動態車推返出廊（QA moved）---------- */
+  NT.c27fArcadeBoxes = function () {
+    const boxes = [];
+    for (const k of ['YTM', 'CW', 'KT', 'SSP', 'KCITY', 'WC', 'EAST', 'TW', 'ST']) {
+      const D = NT[k]; if (!D) continue;
+      if (D.arcadeColliders && D.arcadeColliders.length) boxes.push(...D.arcadeColliders);
+      else if (D.group && D.group.userData && D.group.userData.arcadeColliders) boxes.push(...D.group.userData.arcadeColliders);
+    }
+    return boxes;
+  };
+  /** @returns {{moved:number}} 靜態放進廊都會被彈出 */
+  NT.c27fPushArcade = function (who, withDamage) {
+    const out = { moved: 0 };
+    if (!who || !who.pos) return out;
+    const boxes = NT.c27fArcadeBoxes();
+    if (!boxes.length) return out;
+    const rr = Math.max(0.95, (who.halfW || 0.9) + 0.15);
+    let cx = who.pos.x, cz = who.pos.z;
+    for (let n = 0; n < 4; n++) {
+      let hit = false;
+      for (const b of boxes) {
+        const y1 = b.y1 != null ? b.y1 : 4;
+        if (y1 < 1.2) continue;
+        const x0 = Math.min(b.x0, b.x1) - rr, x1 = Math.max(b.x0, b.x1) + rr;
+        const z0 = Math.min(b.z0, b.z1) - rr, z1 = Math.max(b.z0, b.z1) + rr;
+        if (cx < x0 || cx > x1 || cz < z0 || cz > z1) continue;
+        const dl = cx - x0, dr = x1 - cx, db = cz - z0, df = z1 - cz;
+        const m = Math.min(dl, dr, db, df);
+        let nx = 0, nz = 0;
+        if (m === dl) nx = -1; else if (m === dr) nx = 1; else if (m === db) nz = -1; else nz = 1;
+        cx += nx * (m + 0.02); cz += nz * (m + 0.02);
+        out.moved++; hit = true;
+        if (withDamage && who.vel) {
+          const vn = who.vel.x * nx + who.vel.y * nz;
+          if (vn < 0) {
+            who.vel.x -= 1.5 * vn * nx; who.vel.y -= 1.5 * vn * nz;
+            const h = -vn;
+            if (h > 1.2) { who.vel.multiplyScalar(0.6); if (typeof carDamage === 'function') carDamage(Math.min(14, h * 5)); if (h > 2.5) { try { sfx('impact'); } catch (e) {} if (typeof state !== 'undefined') state.shake = Math.min(0.5, h / 18); } }
+            else who.vel.multiplyScalar(0.88);
+          }
+        }
+      }
+      if (!hit) break;
+    }
+    if (out.moved) {
+      who.pos.x = cx; who.pos.z = cz;
+      if (who.root) who.root.position.set(cx, who.root.position.y || 0, cz);
+    }
+    return out;
+  };
+  if (typeof placeCar === 'function' && !placeCar._c27fArc) {
+    const _pc = placeCar;
+    placeCar = function (x, z, h) {
+      const r = _pc.apply(this, arguments);
+      try { if (typeof car !== 'undefined') NT.c27fPushArcade(car, false); } catch (e) { /* */ }
+      return r;
+    };
+    placeCar._c27fArc = true;
+  }
+  if (typeof HOOKS !== 'undefined' && HOOKS.frame && !NT._c27fArcFrame) {
+    NT._c27fArcFrame = true;
+    HOOKS.frame.push(() => {
+      try {
+        if (typeof car === 'undefined' || !car || !car.pos) return;
+        NT.c27fPushArcade(car, false);
+      } catch (e) { /* */ }
+    });
+  }
+
+  /* ---------- 外傭假日中環 · instanced 坐／企／蹲（紙皮墊）---------- */
+  const FDW = { ready: false, meshes: null, cardboard: null, group: null, people: [] };
+  const FDW_ANCHORS = [{ lat: 22.2806, lon: 114.1606 }, { lat: 22.2810, lon: 114.1598 }, { lat: 22.2814, lon: 114.1588 }];
+  function isFdwSunday() {
+    const sun = (typeof state !== 'undefined' && state.date) ? (new Date(state.date).getDay() === 0) : (new Date().getDay() === 0);
+    const day = typeof TOD === 'undefined' || TOD.mode !== 'night';
+    const h = (typeof state !== 'undefined' && state.hour != null) ? state.hour : ((typeof TOD !== 'undefined' && TOD.hour != null) ? TOD.hour : 12);
+    return !!(sun && day && h >= 10 && h < 18);
+  }
+  function putF(k, i, base, yawQ, off, swing, scl) {
+    _qx.setFromAxisAngle(RX, swing || 0); _q.copy(yawQ).multiply(_qx);
+    _v.copy(off).applyQuaternion(yawQ).add(base);
+    _m.compose(_v, _q, scl || ONE); FDW.meshes[k].setMatrixAt(i, _m);
+  }
+  function buildFdw() {
+    if (FDW.ready || typeof hkGeo !== 'function' || !CROWD.meshes.torso) return;
+    const N = lite ? 18 : 36;
+    const g = new THREE.Group(); g.name = 'fdw-sunday-central';
+    const card = new THREE.InstancedMesh(new THREE.BoxGeometry(0.9, 0.02, 1.4), new THREE.MeshStandardMaterial({ color: 0xc8b090, roughness: 0.95 }), N);
+    card.instanceMatrix.setUsage(THREE.DynamicDrawUsage); card.frustumCulled = false; g.add(card); FDW.cardboard = card;
+    const parts = {};
+    for (const k of PARTS) {
+      const src = CROWD.meshes[k]; if (!src) continue;
+      const im = new THREE.InstancedMesh(src.geometry, src.material.clone(), N);
+      im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); im.frustumCulled = false; im.name = 'fdw-' + k;
+      for (let j = 0; j < N; j++) im.setColorAt(j, new THREE.Color(0xffffff));
+      g.add(im); parts[k] = im;
+    }
+    FDW.meshes = parts; FDW.group = g; scene.add(g);
+    const gather = (window.NT && NT.C27F_LAYERS && NT.C27F_LAYERS.districts && NT.C27F_LAYERS.districts.cw
+      && NT.C27F_LAYERS.districts.cw.domestic_sunday_gather) || null;
+    const layerSpawns = (gather && gather.spawn_points) || [];
+    if (layerSpawns.length) console.info('[core27f-domestic-sunday]', layerSpawns.length, 'spots');
+    const poses = ['sit', 'stand', 'squat'];
+    for (let i = 0; i < N; i++) {
+      let bx, bz;
+      if (layerSpawns.length) { const sp = layerSpawns[i % layerSpawns.length]; bx = sp.x; bz = sp.z; }
+      else { const a = FDW_ANCHORS[i % 3], gp = hkGeo(a.lat, a.lon); bx = gp.x; bz = gp.z; }
+      const ang = (i / N) * Math.PI * 2 + (i % 3) * 0.4, r = 4 + (i % 5) * 2.2;
+      FDW.people.push({ x: bx + Math.cos(ang) * r, z: bz + Math.sin(ang) * r, yaw: ang + Math.PI, pose: poses[i % 3], ph: Math.random() * 6.28 });
+      const O = CROWD.outfits && CROWD.outfits.archetypes && CROWD.outfits.archetypes.helper;
+      const v = O && O.v && O.v[i % O.v.length];
+      const hx = (x) => parseInt(String(x).replace('#', ''), 16);
+      const top = v ? hx(Math.random() < 0.4 ? v.shirt : v.jacket) : pick(CROWD.styles.helper.top);
+      const bot = v ? hx(v.pants) : pick(CROWD.styles.helper.bottom);
+      const skin = v ? hx(v.skin) : pick(SKIN), hair = v ? hx(v.hair) : pick(HAIR);
+      parts.torso.setColorAt(i, C.setHex(top)); parts.armL.setColorAt(i, C.setHex(skin)); parts.armR.setColorAt(i, C);
+      parts.legL.setColorAt(i, C.setHex(bot)); parts.legR.setColorAt(i, C); parts.head.setColorAt(i, C.setHex(skin)); parts.hair.setColorAt(i, C.setHex(hair));
+      parts.bag.setColorAt(i, C.setHex(0xd8c8b0)); parts.hat.setColorAt(i, C.setHex(0x2a2a2a));
+    }
+    for (const k of PARTS) if (parts[k].instanceColor) parts[k].instanceColor.needsUpdate = true;
+    FDW.ready = true;
+  }
+  function poseFdw(i, p) {
+    const base = _b.set(p.x, 0, p.z); _qy.setFromAxisAngle(UP, p.yaw); const h = 0.96; _sc.set(h, h, h);
+    if (p.pose === 'sit' || p.pose === 'squat') { _m.compose(_v.set(p.x, 0.02, p.z), _qy, ONE); FDW.cardboard.setMatrixAt(i, _m); }
+    else FDW.cardboard.setMatrixAt(i, _hide);
+    const O = (k) => _off.copy(OFF[k]).multiplyScalar(h);
+    if (p.pose === 'sit') {
+      putF('legL', i, base, _qy, _off.set(-0.12, 0.28, 0.35).multiplyScalar(h), 1.15, _sc);
+      putF('legR', i, base, _qy, _off.set(0.12, 0.28, 0.35).multiplyScalar(h), 1.15, _sc);
+      putF('torso', i, base, _qy, _off.set(0, 0.55, -0.05).multiplyScalar(h), 0.2, _sc);
+      putF('armL', i, base, _qy, _off.set(-0.28, 0.7, 0.1).multiplyScalar(h), 0.6, _sc);
+      putF('armR', i, base, _qy, _off.set(0.28, 0.7, 0.1).multiplyScalar(h), 0.6, _sc);
+      putF('head', i, base, _qy, _off.set(0, 0.95, 0).multiplyScalar(h), 0, _sc);
+      putF('hair', i, base, _qy, _off.set(0, 0.97, -0.01).multiplyScalar(h), 0, _sc);
+      putF('bag', i, base, _qy, _off.set(0.35, 0.35, 0.2).multiplyScalar(h), 0, _sc);
+      FDW.meshes.hat.setMatrixAt(i, _hide);
+    } else if (p.pose === 'squat') {
+      putF('legL', i, base, _qy, _off.set(-0.12, 0.4, 0.15).multiplyScalar(h), 1.4, _sc);
+      putF('legR', i, base, _qy, _off.set(0.12, 0.4, 0.15).multiplyScalar(h), 1.4, _sc);
+      putF('torso', i, base, _qy, _off.set(0, 0.7, 0).multiplyScalar(h), 0.35, _sc);
+      putF('armL', i, base, _qy, _off.set(-0.25, 0.55, 0.2).multiplyScalar(h), 0.9, _sc);
+      putF('armR', i, base, _qy, _off.set(0.25, 0.55, 0.25).multiplyScalar(h), 0.5, _sc);
+      putF('head', i, base, _qy, _off.set(0, 1.05, 0.05).multiplyScalar(h), 0.2, _sc);
+      putF('hair', i, base, _qy, _off.set(0, 1.07, 0.04).multiplyScalar(h), 0.2, _sc);
+      putF('bag', i, base, _qy, _off.set(0.3, 0.25, 0.15).multiplyScalar(h), 0, _sc);
+      FDW.meshes.hat.setMatrixAt(i, _hide);
+    } else {
+      base.y = Math.sin(p.ph) * 0.01;
+      putF('legL', i, base, _qy, O('legL'), 0.05, _sc); putF('legR', i, base, _qy, O('legR'), -0.05, _sc);
+      putF('torso', i, base, _qy, O('torso'), 0, _sc);
+      putF('armL', i, base, _qy, O('armL'), 0.15, _sc); putF('armR', i, base, _qy, O('armR'), -0.1, _sc);
+      putF('head', i, base, _qy, O('head'), 0, _sc); putF('hair', i, base, _qy, O('hair'), 0, _sc);
+      putF('bag', i, base, _qy, O('bag'), 0, _sc); FDW.meshes.hat.setMatrixAt(i, _hide);
+    }
+  }
+  function updateFdw(dt, center) {
+    if (!isFdwSunday()) { if (FDW.group) FDW.group.visible = false; return; }
+    if (!FDW.ready) buildFdw();
+    if (!FDW.ready) return;
+    const near = Math.hypot(center.x - FDW.people[0].x, center.z - FDW.people[0].z) < 220;
+    FDW.group.visible = near; if (!near) return;
+    for (let i = 0; i < FDW.people.length; i++) { FDW.people[i].ph += dt * 0.6; poseFdw(i, FDW.people[i]); }
+    for (const k of PARTS) if (FDW.meshes[k]) FDW.meshes[k].instanceMatrix.needsUpdate = true;
+    FDW.cardboard.instanceMatrix.needsUpdate = true;
+  }
+
+  setTimeout(() => init().catch((e) => console.warn('[crowd]', e && e.message)), 1200);
+  Object.assign(window.NT, { CROWD });
+})();
+/*__CORE27F_CROWD_END__*/
+/*__CORE27F_FDW_NEAR_BEGIN__*/
+/* =========================================================================
+ * core27f · 外傭假日中環 · 3 個近景具名街坊（人物設計）
+ *  · 星期日 + 日頭 10:00–18:00；錨點真 lat/lon
+ *  · 便服 OUTFITS（跟 ped-outfits helper）；say() 抽普通粵語，零口音笑位
+ *  · 禁真 NGO／領事館名／機構道具；唔掂 Pages 合入——交 Grok Bot 貼標記段
+ * ========================================================================= */
+(function () {
+  if (typeof OUTFITS === 'undefined') return;
+  Object.assign(OUTFITS, {
+    fdw_a: { jacket: 0xe87a5a, shirt: 0xe87a5a, tie: 0xe87a5a, pants: 0x3a4a6a, shoe: 0xe8e8e8, skin: 0xa87a56, hair: 0x1a120c },
+    fdw_b: { jacket: 0x3a8aa8, shirt: 0x3a8aa8, tie: 0x3a8aa8, pants: 0x1a1a1a, shoe: 0x101010, skin: 0xb07c58, hair: 0x0e0a08 },
+    fdw_c: { jacket: 0x5a5a8a, shirt: 0xf0ece4, tie: 0xf0ece4, pants: 0x2a2a2a, shoe: 0x2a2a2a, skin: 0xa8805c, hair: 0x2a1a10 }
+  });
+  // [id, name, lat, lon, dx, dz, yaw, outfit, lines]
+  const PEDS = [
+    ['npc_cn_sun_a', '休息區姐姐', 22.2806, 114.1606, 2, -1, 2.5, 'fdw_a',
+      ['呢度遮陽啲，坐陣先。', '午後先去超市買餸。']],
+    ['npc_cn_sun_b', '影相朋友', 22.2810, 114.1598, -1, 2, 4.0, 'fdw_b',
+      ['借借呀，我影張相。', '朋友喺對面等緊我。']],
+    ['npc_cn_sun_c', '散步阿姨', 22.2814, 114.1588, 1, 1, 1.2, 'fdw_c',
+      ['今日放假，慢慢行。', '唔好意思，膠袋唔好踩親。']]
+  ];
+  const ST = { live: {}, cd: {}, t: 0, w: {} };
+
+  function isSundayDay() {
+    try {
+      if (typeof TOD === 'undefined' || TOD.mode !== 'day') return false;
+      // 遊戲日曆：優先 NT.gameDate；否則用真實星期日方便試（?fdwsun 強制）
+      if (/[?&]fdwsun\b/.test(location.search)) return true;
+      if (window.NT && NT.gameDate && typeof NT.gameDate.getDay === 'function') return NT.gameDate.getDay() === 0;
+      return new Date().getDay() === 0;
+    } catch (e) { return false; }
+  }
+  function inClock() {
+    try {
+      if (window.NT && NT.DAY27C && NT.DAY27C.clockMin != null) {
+        const m = NT.DAY27C.clockMin | 0; return m >= 10 * 60 && m < 18 * 60;
+      }
+    } catch (e) {}
+    return true; // 無鐘就只靠日頭＋星期
+  }
+  function wpos(p) {
+    const k = p[0];
+    if (!ST.w[k] && typeof hkGeo === 'function') {
+      const g = hkGeo(p[2], p[3]); if (g) ST.w[k] = { x: g.x + p[4], z: g.z + p[5] };
+    }
+    return ST.w[k];
+  }
+  function inHK() {
+    return !(typeof TW !== 'undefined' && TW.active) && !(typeof AREA !== 'undefined' && AREA.active)
+      && !(typeof INT !== 'undefined' && INT.active);
+  }
+
+  function tick(dt) {
+    ST.t -= dt; if (ST.t > 0) return; ST.t = 0.5;
+    if (typeof spawnNPC !== 'function' || !HUMAN || !HUMAN.gltf || !player) return;
+    const ok = inHK() && isSundayDay() && inClock();
+    const pp = player.pos, now = performance.now() / 1000;
+    for (const p of PEDS) {
+      const w = wpos(p); if (!w) continue;
+      const d = Math.hypot(w.x - pp.x, w.z - pp.z);
+      let n = ST.live[p[0]];
+      if (n && (!n.alive || !ok || d > 420)) {
+        if (n.alive && typeof removeNPC === 'function') removeNPC(n);
+        delete ST.live[p[0]]; n = null;
+      }
+      if (!n && ok && d < 320) {
+        n = spawnNPC('civ', w.x, w.z, p[6], {
+          hostile: false, unarmed: true, hp: 60, cash: 20,
+          outfit: OUTFITS[p[7]], state: 'idle', tag: 'fdw-central-sunday'
+        });
+        if (n) { n.kind = 'civ'; n.hostile = false; n.pedName = p[1]; ST.live[p[0]] = n; }
+      }
+      if (n && n.alive && d < 3.2 && (ST.cd[p[0]] || 0) < now && typeof say === 'function') {
+        ST.cd[p[0]] = now + 22;
+        const L = p[8]; say(p[1], L[(Math.random() * L.length) | 0], 3.0);
+      }
+    }
+  }
+  if (typeof HOOKS !== 'undefined' && HOOKS.sim) HOOKS.sim.push(tick);
+  Object.assign(window.NT = window.NT || {}, { FDW_CENTRAL: { PEDS, ST, isSundayDay } });
+})();
+
+/*__CORE27F_FDW_NEAR_END__*/
+
 </script>
 </body>
 </html>

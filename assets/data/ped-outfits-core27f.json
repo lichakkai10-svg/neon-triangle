@@ -1,0 +1,435 @@
+{
+ "version": "core27f",
+ "schema": "OUTFITS 欄位（jacket/shirt/tie/pants/shoe/skin/hair，hex 字串，用 parseInt(x,16)）；tie 同 shirt 色＝隱藏 Business Man 領帶",
+ "archetypes": {
+  "office": {
+   "label": "上班族",
+   "weight": {
+    "central": 0.45,
+    "wanchai": 0.35,
+    "quarrybay": 0.45,
+    "ssp": 0.12,
+    "kc": 0.1,
+    "tst": 0.25
+   },
+   "v": [
+    {
+     "jacket": "0x2a2e36",
+     "shirt": "0xe8e8ea",
+     "tie": "0x3a1e28",
+     "pants": "0x22262e",
+     "shoe": "0x141414",
+     "skin": "0xc89878",
+     "hair": "0x0e0a08",
+     "note": "深灰西裝＋白恤衫＋暗紅呔"
+    },
+    {
+     "jacket": "0x1e2a44",
+     "shirt": "0xd8e2ee",
+     "tie": "0x2a3a5a",
+     "pants": "0x1e2a44",
+     "shoe": "0x1a1410",
+     "skin": "0xd4a882",
+     "hair": "0x1c140e",
+     "note": "海軍藍西裝＋淺藍恤衫"
+    },
+    {
+     "jacket": "0xe8e8ea",
+     "shirt": "0xe8e8ea",
+     "tie": "0xe8e8ea",
+     "pants": "0x3a3e46",
+     "shoe": "0x141414",
+     "skin": "0xb88a68",
+     "hair": "0x1c140e",
+     "note": "夏天白恤衫唔著外套＋灰褲"
+    },
+    {
+     "jacket": "0x7a7468",
+     "shirt": "0xf0ece4",
+     "tie": "0xf0ece4",
+     "pants": "0x2a2a2e",
+     "shoe": "0x3a2418",
+     "skin": "0xe0b896",
+     "hair": "0x2a1a10",
+     "note": "卡其西裝褸＋米白衫（女）"
+    },
+    {
+     "jacket": "0x111214",
+     "shirt": "0xf2f2f2",
+     "tie": "0xf2f2f2",
+     "pants": "0x111214",
+     "shoe": "0x111214",
+     "skin": "0xd4a882",
+     "hair": "0x0e0a08",
+     "note": "全黑套裝（女）"
+    },
+    {
+     "jacket": "0xa8b4c0",
+     "shirt": "0xa8b4c0",
+     "tie": "0xa8b4c0",
+     "pants": "0x2a3040",
+     "shoe": "0x2a2420",
+     "skin": "0xa87a58",
+     "hair": "0x0e0a08",
+     "note": "淺藍恤衫＋深色西褲"
+    },
+    {
+     "jacket": "0x5a2a36",
+     "shirt": "0xe6e1d8",
+     "tie": "0xe6e1d8",
+     "pants": "0x222226",
+     "shoe": "0x141414",
+     "skin": "0xc89878",
+     "hair": "0x4a3020",
+     "note": "酒紅針織外套（女）"
+    },
+    {
+     "jacket": "0x3a3e46",
+     "shirt": "0xd8d2c6",
+     "tie": "0x1e2a44",
+     "pants": "0x3a3e46",
+     "shoe": "0x141414",
+     "skin": "0xb88a68",
+     "hair": "0x8a8a8a",
+     "note": "灰西裝、灰髮中年"
+    }
+   ]
+  },
+  "student": {
+   "label": "學生",
+   "weight": {
+    "central": 0.08,
+    "wanchai": 0.15,
+    "quarrybay": 0.12,
+    "ssp": 0.18,
+    "kc": 0.2,
+    "tst": 0.12
+   },
+   "v": [
+    {
+     "jacket": "0xf4f4f0",
+     "shirt": "0xf4f4f0",
+     "tie": "0xf4f4f0",
+     "pants": "0x2a3448",
+     "shoe": "0x101010",
+     "skin": "0xd4a882",
+     "hair": "0x0e0a08",
+     "note": "白校恤＋深藍校褲"
+    },
+    {
+     "jacket": "0xf4f4f0",
+     "shirt": "0xf4f4f0",
+     "tie": "0xf4f4f0",
+     "pants": "0x5a6a80",
+     "shoe": "0xf0f0f0",
+     "skin": "0xe0b896",
+     "hair": "0x1c140e",
+     "note": "白校恤＋灰藍校裙＋白波鞋"
+    },
+    {
+     "jacket": "0x6a9ac8",
+     "shirt": "0x6a9ac8",
+     "tie": "0x6a9ac8",
+     "pants": "0x6a9ac8",
+     "shoe": "0xf0f0f0",
+     "skin": "0xc89878",
+     "hair": "0x0e0a08",
+     "note": "淺藍校服長衫（女）"
+    },
+    {
+     "jacket": "0x1e3a6a",
+     "shirt": "0xf4f4f0",
+     "tie": "0xf4f4f0",
+     "pants": "0x1e3a6a",
+     "shoe": "0x101010",
+     "skin": "0xd4a882",
+     "hair": "0x0e0a08",
+     "note": "冬季深藍校褸"
+    },
+    {
+     "jacket": "0x2a2a2a",
+     "shirt": "0x2a2a2a",
+     "tie": "0x2a2a2a",
+     "pants": "0x3a4a6a",
+     "shoe": "0xe8e8e8",
+     "skin": "0xb88a68",
+     "hair": "0x2a1a10",
+     "note": "放學換黑 hoodie＋牛仔"
+    },
+    {
+     "jacket": "0xc8402a",
+     "shirt": "0xf0f0f0",
+     "tie": "0xf0f0f0",
+     "pants": "0x1a1a1a",
+     "shoe": "0xf0f0f0",
+     "skin": "0xc89878",
+     "hair": "0x0e0a08",
+     "note": "紅色運動校服外套＋黑運動褲"
+    }
+   ]
+  },
+  "auntie": {
+   "label": "阿姨",
+   "weight": {
+    "central": 0.06,
+    "wanchai": 0.15,
+    "quarrybay": 0.13,
+    "ssp": 0.28,
+    "kc": 0.25,
+    "tst": 0.1
+   },
+   "v": [
+    {
+     "jacket": "0xc85a7a",
+     "shirt": "0xc85a7a",
+     "tie": "0xc85a7a",
+     "pants": "0x2a2a30",
+     "shoe": "0x1a1a1a",
+     "skin": "0xb88a68",
+     "hair": "0x8a8a8a",
+     "note": "桃紅碎花恤衫＋黑褲"
+    },
+    {
+     "jacket": "0x6a8a5a",
+     "shirt": "0xe8dcc8",
+     "tie": "0xe8dcc8",
+     "pants": "0x3a3a42",
+     "shoe": "0x5a3a2a",
+     "skin": "0xc89878",
+     "hair": "0x1c140e",
+     "note": "橄欖綠背心外套"
+    },
+    {
+     "jacket": "0x8a4a9a",
+     "shirt": "0x8a4a9a",
+     "tie": "0x8a4a9a",
+     "pants": "0x2a2a2a",
+     "shoe": "0x101010",
+     "skin": "0xa87a58",
+     "hair": "0xc8c8c8",
+     "note": "紫色針織＋銀髮"
+    },
+    {
+     "jacket": "0xe8c86a",
+     "shirt": "0xe8c86a",
+     "tie": "0xe8c86a",
+     "pants": "0x4a4438",
+     "shoe": "0xd0c8b8",
+     "skin": "0xc89878",
+     "hair": "0x4a3020",
+     "note": "黃花上衣＋拖鞋米色"
+    },
+    {
+     "jacket": "0x2f6a9a",
+     "shirt": "0xd8b070",
+     "tie": "0x2f6a9a",
+     "pants": "0x3a3a42",
+     "shoe": "0x1f6a3a",
+     "skin": "0xb88a68",
+     "hair": "0x1c140e",
+     "note": "藍圍裙＋綠水鞋（買餸）"
+    },
+    {
+     "jacket": "0xb0a898",
+     "shirt": "0xb0a898",
+     "tie": "0xb0a898",
+     "pants": "0x3a3e46",
+     "shoe": "0x2a2a2a",
+     "skin": "0xd4a882",
+     "hair": "0x8a8a8a",
+     "note": "灰米外套、捲髮"
+    }
+   ]
+  },
+  "helper": {
+   "label": "外傭",
+   "weight": {
+    "central": 0.1,
+    "wanchai": 0.08,
+    "quarrybay": 0.1,
+    "ssp": 0.06,
+    "kc": 0.06,
+    "tst": 0.08
+   },
+   "sundayCentralBoost": 3.0,
+   "v": [
+    {
+     "jacket": "0xf0f0ea",
+     "shirt": "0xf0f0ea",
+     "tie": "0xf0f0ea",
+     "pants": "0x2a3448",
+     "shoe": "0xf0f0f0",
+     "skin": "0xa87a58",
+     "hair": "0x0e0a08",
+     "note": "白 T＋牛仔＋波鞋（返工買餸）"
+    },
+    {
+     "jacket": "0x3a8aa8",
+     "shirt": "0x3a8aa8",
+     "tie": "0x3a8aa8",
+     "pants": "0x1a1a1a",
+     "shoe": "0x101010",
+     "skin": "0x8c6244",
+     "hair": "0x0e0a08",
+     "note": "湖水藍上衣＋黑褲"
+    },
+    {
+     "jacket": "0xe87a5a",
+     "shirt": "0xe87a5a",
+     "tie": "0xe87a5a",
+     "pants": "0x3a4a6a",
+     "shoe": "0xe8e8e8",
+     "skin": "0xa87a58",
+     "hair": "0x1c140e",
+     "note": "珊瑚橙 T＋牛仔（假日）"
+    },
+    {
+     "jacket": "0x5a5a8a",
+     "shirt": "0xf0ece4",
+     "tie": "0xf0ece4",
+     "pants": "0x2a2a2a",
+     "shoe": "0x2a2a2a",
+     "skin": "0xb88a68",
+     "hair": "0x0e0a08",
+     "note": "深紫開胸外套"
+    },
+    {
+     "jacket": "0xf2d8e0",
+     "shirt": "0xf2d8e0",
+     "tie": "0xf2d8e0",
+     "pants": "0xe8e4dc",
+     "shoe": "0xc8a888",
+     "skin": "0x8c6244",
+     "hair": "0x0e0a08",
+     "note": "粉色上衣＋白長裙（假日）"
+    },
+    {
+     "jacket": "0x2a2a2a",
+     "shirt": "0x2a2a2a",
+     "tie": "0x2a2a2a",
+     "pants": "0x5a6a80",
+     "shoe": "0xf0f0f0",
+     "skin": "0xa87a58",
+     "hair": "0x0e0a08",
+     "note": "黑 hoodie＋灰藍褲"
+    }
+   ]
+  },
+  "tourist": {
+   "label": "遊客",
+   "weight": {
+    "central": 0.14,
+    "wanchai": 0.1,
+    "quarrybay": 0.04,
+    "ssp": 0.1,
+    "kc": 0.12,
+    "tst": 0.32
+   },
+   "v": [
+    {
+     "jacket": "0xf0e8d0",
+     "shirt": "0xf0e8d0",
+     "tie": "0xf0e8d0",
+     "pants": "0xc8b48a",
+     "shoe": "0xf0f0f0",
+     "skin": "0xe0b896",
+     "hair": "0x6a4a2a",
+     "note": "米色亞麻衫＋卡其短褲"
+    },
+    {
+     "jacket": "0xe0503a",
+     "shirt": "0xe0503a",
+     "tie": "0xe0503a",
+     "pants": "0x2a3a5a",
+     "shoe": "0xe8e8e8",
+     "skin": "0xd4a882",
+     "hair": "0x0e0a08",
+     "note": "紅色風褸＋牛仔＋背囊"
+    },
+    {
+     "jacket": "0x6a9a5a",
+     "shirt": "0xf0f0f0",
+     "tie": "0xf0f0f0",
+     "pants": "0x3a3a42",
+     "shoe": "0x5a4a3a",
+     "skin": "0xc89878",
+     "hair": "0x2a1a10",
+     "note": "綠色漁夫背心（影相）"
+    },
+    {
+     "jacket": "0xf4f4f4",
+     "shirt": "0xf4f4f4",
+     "tie": "0xf4f4f4",
+     "pants": "0x8aa8c8",
+     "shoe": "0xf0f0f0",
+     "skin": "0xe0b896",
+     "hair": "0xc8c8c8",
+     "note": "白 T＋淺藍短褲、金白髮"
+    },
+    {
+     "jacket": "0x2a4a7a",
+     "shirt": "0xe8c84a",
+     "tie": "0xe8c84a",
+     "pants": "0x1a1a1a",
+     "shoe": "0x1a1a1a",
+     "skin": "0x6e4a32",
+     "hair": "0x0e0a08",
+     "note": "藍外套＋黃 T"
+    },
+    {
+     "jacket": "0xd8a8c0",
+     "shirt": "0xd8a8c0",
+     "tie": "0xd8a8c0",
+     "pants": "0xf0ece4",
+     "shoe": "0xe8e8e8",
+     "skin": "0xd4a882",
+     "hair": "0x1c140e",
+     "note": "粉紅防曬衫＋白褲"
+    }
+   ]
+  }
+ },
+ "rules": [
+  "同一畫面同一套配色最多 2 個",
+  "日頭（07:00–18:00）加 ±6% 隨機亮度抖動避免一式一樣",
+  "夜晚 office 比例 ×0.4、student ×0.2",
+  "外傭只做普通市民日常造型，唔做口音、唔做笑位；星期日中環比例×3 係真實社區聚會，坐地鋪紙皮動畫可選，唔可以醜化",
+  "冇任何品牌 logo、真校徽、真公司制服"
+ ],
+ "helper_sunday_central": {
+  "status": "boss_approved_2026-10-24",
+  "rules": [
+   "ordinary_civilian_clothes_only",
+   "no_accent_joke_in_vo_or_dialogue",
+   "parody_signs_only",
+   "no_real_ngo_or_consulate_names",
+   "no_stereotype_props"
+  ],
+  "when": "Sunday 10:00–18:00 HKT (game TOD day + weekday==0)",
+  "where": [
+   {
+    "id": "chater_garden_edge",
+    "lat": 22.2806,
+    "lon": 114.1606,
+    "r_m": 80,
+    "note": "遮打花園周邊行人路"
+   },
+   {
+    "id": "statue_sq_north",
+    "lat": 22.281,
+    "lon": 114.1598,
+    "r_m": 70,
+    "note": "皇后像廣場北行人帶"
+   },
+   {
+    "id": "chater_rd_sidewalk",
+    "lat": 22.2814,
+    "lon": 114.1588,
+    "r_m": 90,
+    "note": "遮打道行人路"
+   }
+  ],
+  "density_boost": "sundayCentralBoost already ×3 on helper archetype in central; near-scene use helper weight ≥0.45 within r_m",
+  "outfits": "use existing helper v[] only; mix tourist lightly ≤0.15; no special uniform mesh"
+ }
+}

@@ -1,0 +1,20 @@
+<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:#9ab">
+<script type="importmap">{"imports":{"three":"../../vendor/three@0.186.1/build/three.module.js","three/addons/":"../../vendor/three@0.186.1/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three'; import * as BGU from 'three/addons/utils/BufferGeometryUtils.js';
+window.THREE = Object.assign({}, THREE, { BufferGeometryUtils: BGU });
+const s = document.createElement('script'); s.src = 'modZe_tram_core28.js'; s.charset = 'utf-8'; s.onload = go; document.body.appendChild(s);
+function go() {
+  const r = new THREE.WebGLRenderer({ antialias: true }); r.setSize(1100, 600); r.shadowMap.enabled = true; document.body.appendChild(r.domElement);
+  const sc = new THREE.Scene(); sc.background = new THREE.Color(0x9ab4cc);
+  const cam = new THREE.PerspectiveCamera(40, 1100 / 600, 0.1, 200); cam.position.set(11, 5, 13); cam.lookAt(0, 2.2, 0);
+  sc.add(new THREE.HemisphereLight(0xeef4ff, 0x8a7a68, 1.2)); const d = new THREE.DirectionalLight(0xffffff, 2.2); d.position.set(8, 14, 10); d.castShadow = true; sc.add(d);
+  const gnd = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshStandardMaterial({ color: 0x3a3c3e })); gnd.rotation.x = -Math.PI / 2; gnd.receiveShadow = true; sc.add(gnd);
+  for (const z of [-0.533, 0.533]) { const rail = new THREE.Mesh(new THREE.BoxGeometry(60, 0.03, 0.07), new THREE.MeshStandardMaterial({ color: 0x9a9a9a, metalness: 0.8, roughness: 0.3 })); rail.position.set(0, 0.015, z); sc.add(rail); }
+  const t1 = NT.makeTram({ livery: 0, ad: '金河電腦城', dest: '筲箕灣' }); sc.add(t1);
+  const t2 = NT.makeTram({ livery: 1, ad: '金象泰菜館', dest: '堅尼地城' }); t2.position.set(-14, 0, -4); sc.add(t2);
+  r.render(sc, cam); r.render(sc, cam);
+  let calls = 0; r.info.autoReset = false; r.info.reset(); r.render(sc, cam); calls = r.info.render.calls;
+  window.__done = { calls, tris: r.info.render.triangles, h: t1.userData.height };
+}
+</script></body></html>

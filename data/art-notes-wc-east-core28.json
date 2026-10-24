@@ -1,0 +1,33 @@
+{
+  "updated": "2026-10-19T19:50:00+08:00",
+  "for": "core28 灣仔＋東區",
+  "ban": [
+    "photo plates",
+    "Google mesh",
+    "real brands"
+  ],
+  "wan_chai": {
+    "path": "tex/facade/wc/",
+    "modules": [
+      "wc_tonglau_verandah_green.jpg",
+      "wc_composite_mosaic_60s.jpg",
+      "wc_office_glass_curtain.jpg",
+      "wc_market_shopfront_awning.jpg",
+      "wc_harbour_promenade_railing.jpg",
+      "wc_sidewalk_granite.jpg"
+    ],
+    "hint": "tonglau_verandah_green 戰前唐樓騎樓（藍屋／茂蘿街味）；market_shopfront_awning 交加街／太原街街市；office_glass_curtain 灣仔北／金鐘邊寫字樓"
+  },
+  "eastern": {
+    "path": "tex/facade/east/",
+    "modules": [
+      "east_northpoint_composite_ac.jpg",
+      "east_quarrybay_industrial_strip.jpg",
+      "east_taikooshing_bay_window.jpg",
+      "east_skw_tonglau_shopfront.jpg",
+      "east_quarrybay_boardwalk_railing.jpg",
+      "east_sidewalk_beige.jpg"
+    ],
+    "hint": "northpoint_composite_ac 北角商住；quarrybay_industrial_strip 鰂魚涌工廈；taikooshing_bay_window 太古城屋苑；quarrybay_boardwalk_railing 鰂魚涌海濱木棧道（用 boardwalk 下半做地面）"
+  }
+}

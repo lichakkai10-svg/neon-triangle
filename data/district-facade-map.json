@@ -2,7 +2,7 @@
   "updated": "2026-10-19T13:02:00+08:00",
   "aligns_with": "data/osm-hk18-skeleton-core23.json districts[].id",
   "labels_doc": "docs/hk-18-districts-labels.md",
-  "path": "m1c/assets/tex/facade/district/",
+  "path": "tex/facade/district/",
   "hook": "世界路網擠出門面：按 player 所在 district id 換 facade_d_* RepeatWrapping；區牌短標用 labels；禁相板",
   "kwai_tsing": "facade_d_kc + Kenney；可行駛必須掛 elbow arterials points，唔好 kt_straight",
   "districts": [
@@ -12,7 +12,7 @@
       "dx": -6100.0,
       "dz": -12124.4,
       "facade_file": "facade_d_cw.jpg",
-      "facade_path": "m1c/assets/tex/facade/district/facade_d_cw.jpg",
+      "facade_path": "tex/facade/district/facade_d_cw.jpg",
       "accent": "#8A9AA8",
       "modules_path": "tex/facade/cw/",
       "modules": [
@@ -30,8 +30,17 @@
       "dx": -8385.6,
       "dz": -12937.2,
       "facade_file": "facade_d_cwb.jpg",
-      "facade_path": "m1c/assets/tex/facade/district/facade_d_cwb.jpg",
-      "accent": "#C4A574"
+      "facade_path": "tex/facade/district/facade_d_cwb.jpg",
+      "accent": "#C4A574",
+      "modules_path": "tex/facade/wc/",
+      "modules": [
+        "wc_tonglau_verandah_green.jpg",
+        "wc_composite_mosaic_60s.jpg",
+        "wc_office_glass_curtain.jpg",
+        "wc_market_shopfront_awning.jpg",
+        "wc_harbour_promenade_railing.jpg",
+        "wc_sidewalk_granite.jpg"
+      ]
     },
     {
       "id": "eastern",
@@ -39,8 +48,17 @@
       "dx": -16215.2,
       "dz": -11776.1,
       "facade_file": "facade_d_cwb.jpg",
-      "facade_path": "m1c/assets/tex/facade/district/facade_d_cwb.jpg",
-      "accent": "#B8A888"
+      "facade_path": "tex/facade/district/facade_d_cwb.jpg",
+      "accent": "#B8A888",
+      "modules_path": "tex/facade/east/",
+      "modules": [
+        "east_northpoint_composite_ac.jpg",
+        "east_quarrybay_industrial_strip.jpg",
+        "east_taikooshing_bay_window.jpg",
+        "east_skw_tonglau_shopfront.jpg",
+        "east_quarrybay_boardwalk_railing.jpg",
+        "east_sidewalk_beige.jpg"
+      ]
     },
     {
       "id": "southern",
@@ -48,7 +66,7 @@
       "dx": -6331.7,
       "dz": -17913.0,
       "facade_file": "facade_d_s_wch.jpg",
-      "facade_path": "m1c/assets/tex/facade/district/facade_d_s_wch.jpg",
+      "facade_path": "tex/facade/district/facade_d_s_wch.jpg",
       "accent": "#D8D0C4"
     },
     {
@@ -57,16 +75,16 @@
       "dx": -7876.0,
       "dz": -7297.9,
       "facade_file": "facade_d_mk.jpg",
-      "facade_path": "m1c/assets/tex/facade/district/facade_d_mk.jpg",
+      "facade_path": "tex/facade/district/facade_d_mk.jpg",
       "accent": "#3A3E44",
       "modules_path": "tex/facade/ytm/",
       "modules": [
-        "ytm_gf_shop_mosaic",
-        "ytm_mk_window_ac",
-        "ytm_tst_glass_podium",
-        "ytm_arcade_teal",
-        "ytm_neon_box_blank",
-        "ytm_sidewalk_granite"
+        "ytm_gf_shop_mosaic.jpg",
+        "ytm_mk_window_ac.jpg",
+        "ytm_tst_glass_podium.jpg",
+        "ytm_arcade_teal.jpg",
+        "ytm_neon_box_blank.jpg",
+        "ytm_sidewalk_granite.jpg"
       ]
     },
     {
@@ -75,7 +93,7 @@
       "dx": -6640.5,
       "dz": -4146.5,
       "facade_file": "facade_d_ssp.jpg",
-      "facade_path": "m1c/assets/tex/facade/district/facade_d_ssp.jpg",
+      "facade_path": "tex/facade/district/facade_d_ssp.jpg",
       "accent": "#C9A84A",
       "modules_path": "tex/facade/ssp/",
       "modules": [
@@ -93,7 +111,7 @@
       "dx": -11273.4,
       "dz": -4478.2,
       "facade_file": "facade_d_kcw.jpg",
-      "facade_path": "m1c/assets/tex/facade/district/facade_d_kcw.jpg",
+      "facade_path": "tex/facade/district/facade_d_kcw.jpg",
       "accent": "#8B4A3A",
       "modules_path": "tex/facade/kcity/",
       "modules": [
@@ -111,7 +129,7 @@
       "dx": -11736.7,
       "dz": -2156.2,
       "facade_file": "facade_d_wts.jpg",
-      "facade_path": "m1c/assets/tex/facade/district/facade_d_wts.jpg",
+      "facade_path": "tex/facade/district/facade_d_wts.jpg",
       "accent": "#D4B8B0"
     },
     {
@@ -120,7 +138,7 @@
       "dx": -16524.1,
       "dz": -6966.2,
       "facade_file": "facade_d_kt.jpg",
-      "facade_path": "m1c/assets/tex/facade/district/facade_d_kt.jpg",
+      "facade_path": "tex/facade/district/facade_d_kt.jpg",
       "accent": "#6A7A88"
     },
     {
@@ -129,7 +147,7 @@
       "dx": -1389.9,
       "dz": 331.7,
       "facade_file": "facade_d_kc.jpg",
-      "facade_path": "m1c/assets/tex/facade/district/facade_d_kc.jpg",
+      "facade_path": "tex/facade/district/facade_d_kc.jpg",
       "accent": "#7A8088",
       "note": "葵涌工廈／碼頭；路跟 kwai_chung_elbow.arterials[].points",
       "modules_path": "tex/facade/kc/",
@@ -148,8 +166,17 @@
       "dx": 772.2,
       "dz": 2653.8,
       "facade_file": "facade_d_tw.jpg",
-      "facade_path": "m1c/assets/tex/facade/district/facade_d_tw.jpg",
-      "accent": "#9AA4AE"
+      "facade_path": "tex/facade/district/facade_d_tw.jpg",
+      "accent": "#9AA4AE",
+      "modules_path": "tex/facade/tw/",
+      "modules": [
+        "tw_publichousing_yellow.jpg",
+        "tw_newtown_mall_glass.jpg",
+        "tw_old_industrial_shutter.jpg",
+        "tw_village_house_balcony.jpg",
+        "tw_waterfront_railing.jpg",
+        "tw_sidewalk_redbrick.jpg"
+      ]
     },
     {
       "id": "tuen_mun",
@@ -157,7 +184,7 @@
       "dx": 21929.1,
       "dz": 5971.0,
       "facade_file": "facade_d_tm.jpg",
-      "facade_path": "m1c/assets/tex/facade/district/facade_d_tm.jpg",
+      "facade_path": "tex/facade/district/facade_d_tm.jpg",
       "accent": "#E8E0D0"
     },
     {
@@ -166,7 +193,7 @@
       "dx": 14207.6,
       "dz": 14927.5,
       "facade_file": "facade_d_yl.jpg",
-      "facade_path": "m1c/assets/tex/facade/district/facade_d_yl.jpg",
+      "facade_path": "tex/facade/district/facade_d_yl.jpg",
       "accent": "#2E8B57",
       "market": "tex/market/"
     },
@@ -176,7 +203,7 @@
       "dx": -2934.2,
       "dz": 23220.5,
       "facade_file": "facade_d_n.jpg",
-      "facade_path": "m1c/assets/tex/facade/district/facade_d_n.jpg",
+      "facade_path": "tex/facade/district/facade_d_n.jpg",
       "accent": "#C4B090"
     },
     {
@@ -185,7 +212,7 @@
       "dx": -7721.5,
       "dz": 15756.8,
       "facade_file": "facade_d_tp.jpg",
-      "facade_path": "m1c/assets/tex/facade/district/facade_d_tp.jpg",
+      "facade_path": "tex/facade/district/facade_d_tp.jpg",
       "accent": "#7A9A7A"
     },
     {
@@ -194,8 +221,17 @@
       "dx": -10655.7,
       "dz": 4478.2,
       "facade_file": "facade_d_st.jpg",
-      "facade_path": "m1c/assets/tex/facade/district/facade_d_st.jpg",
-      "accent": "#6BA88A"
+      "facade_path": "tex/facade/district/facade_d_st.jpg",
+      "accent": "#6BA88A",
+      "modules_path": "tex/facade/st/",
+      "modules": [
+        "st_publichousing_blue.jpg",
+        "st_newtown_mall_stone.jpg",
+        "st_fotan_industrial_shutter.jpg",
+        "st_village_house_pink.jpg",
+        "st_shingmun_river_railing.jpg",
+        "st_sidewalk_tactile.jpg"
+      ]
     },
     {
       "id": "sai_kung",
@@ -203,7 +239,7 @@
       "dx": -23627.9,
       "dz": 4478.2,
       "facade_file": "facade_d_sk.jpg",
-      "facade_path": "m1c/assets/tex/facade/district/facade_d_sk.jpg",
+      "facade_path": "tex/facade/district/facade_d_sk.jpg",
       "accent": "#F0F4F8"
     },
     {
@@ -212,9 +248,9 @@
       "dx": 27179.8,
       "dz": -11444.4,
       "facade_file": "facade_d_is_taio.jpg",
-      "facade_path": "m1c/assets/tex/facade/district/facade_d_is_taio.jpg",
+      "facade_path": "tex/facade/district/facade_d_is_taio.jpg",
       "accent": "#6B5A48",
-      "facade_alt": "m1c/assets/tex/facade/district/facade_d_is_lantau.jpg"
+      "facade_alt": "tex/facade/district/facade_d_is_lantau.jpg"
     }
   ],
   "files": [

@@ -1,0 +1,269 @@
+diff --git a/index.html b/index.html
+index daec74c..2d2f1e8 100644
+--- a/index.html
++++ b/index.html
+@@ -23244,6 +23244,32 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
+         }
+       }
+     } catch (e) { console.warn('[hk18] core27 ssp/kc spines skip', e && e.message); }
++    // core28：灣仔＋東區真 OSM 主幹（data/core28-wc-eastern-spines.json）取代 hub_link harbour_central／eastern_isle；告士打道／東區走廊／東隧唔可駛
++    try {
++      const c28 = await hk18FetchJson([
++        'data/core28-wc-eastern-spines.json',
++        '../data/core28-wc-eastern-spines.json',
++        './assets/data/core28-wc-eastern-spines.json'
++      ]);
++      if (c28 && c28.districts) {
++        try { SPCLR.add(c28, 'core28'); } catch (e) { /* core27c2 */ }
++        const add = [];
++        for (const did of ['wan_chai', 'eastern', 'central_west']) {
++          const D = c28.districts[did];
++          if (!D || !Array.isArray(D.spines)) continue;
++          for (const sp of D.spines) {
++            if (sp.drivable === false || !sp.points || sp.points.length < 2) continue;
++            add.push({ id: sp.id, name_zh: sp.name_zh, from: did, to: did, kind: sp.kind, speed: sp.speed, width: sp.width, tram: !!sp.tram, points: sp.points, core28: true });
++          }
++        }
++        if (add.length) {
++          const drop = new Set((c28.connections || []).map((c) => c.replaces_hub_link).filter(Boolean));
++          data.spines = (data.spines || []).filter((sp) => !drop.has(sp.id)).concat(add);
++          HK18.core28 = { entries: { wan_chai: c28.districts.wan_chai.entries, eastern: c28.districts.eastern.entries },
++            blocked: (c28.blocked_roads || []).map((b) => b.name_zh), spines: add.length };
++        }
++      }
++    } catch (e) { console.warn('[hk18] core28 wc/eastern spines skip', e && e.message); }
+     HK18.data = data;
+     const root = new THREE.Group();
+     root.name = 'hk18-district-skeleton';
+@@ -23264,7 +23290,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
+       const pts = sp.points || [];
+       if (pts.length < 2) continue;
+       const kind = sp.kind || '';
+-      const w = /osm_arterial|arterial/.test(kind) ? 11 : (sp.speed === 'walk' ? 6 : 8); // core27 鴨寮街 walk 收窄
++      const w = sp.width > 0 ? sp.width : (/osm_arterial|arterial/.test(kind) ? 11 : (sp.speed === 'walk' ? 6 : 8)); // core27 鴨寮街 walk 收窄；core28 用 width
+       const mat = /osm_arterial|arterial/.test(kind) ? aspMajor : asp;
+       const n = hk18RoadPolyline(gSpines, pts, w, 'hk18_spine_' + (sp.id || 'x'), mat);
+       spineSegs += n;
+@@ -23778,6 +23804,222 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
+   Object.assign(window.NT = window.NT || {}, { C27ENF: E });
+ })();
+ 
++/* core28 · modZe_wceast_calm_core28（關卡與地圖設計師）*/
++/* =========================================================================
++ * core28 · 灣仔＋東區 實體減速點／電車站島／封路欄（modZe_wceast_calm_core28）
++ *  · 讀 data/core28-wc-eastern-spines.json（tools/osm/core28_wc_eastern_spines.py；© OSM contributors ODbL）
++ *  · calming[]：直路 >400 先加，一律 design_not_osm → 燈柱＋停車線＋斑馬＋安全島（碰撞）／交錯路緣島（碰撞）
++ *    （跟 core27b modZc 一樣做法；電車路／主幹只用燈位，唔放交錯島阻路軌）
++ *  · tram_stops[]：OSM railway=tram_stop → 路中電車站島（月台＋上蓋＋欄杆，碰撞）——電車路段迫慢
++ *  · blocked_roads[].barriers：告士打道／東區走廊／東區海底隧道接駁位 → 水馬欄（碰撞）＋「道路封閉」牌
++ *  · 燈號 14 秒循環；紅燈 AI 車停線、玩家 >18 km/h 越線 → issueFine('hk_red_light')（同 core27b）
++ *  · SPCLR.add(core28)：主幹走廊淨空（core27c2）
++ *  · Safari／iPhone／LOW_MEM：略過上蓋／斜紋裝飾，碰撞照舊；唔放葵涌；禁相板／真 logo／GTA 命名
++ * ========================================================================= */
++(function () {
++  const C = { ready: false, group: null, calming: 0, tramStops: 0, barriers: 0, colliders: 0, lite: false, phase: 'G', calmingData: [] };
++  const LITE = (typeof IS_SAFARI !== 'undefined' && IS_SAFARI) || (typeof IS_IPHONE !== 'undefined' && IS_IPHONE)
++    || (typeof LOW_MEM !== 'undefined' && LOW_MEM) || !!(typeof NT !== 'undefined' && NT.safariLite);
++  C.lite = LITE;
++  const M = {};
++  function mats() {
++    if (M.ok) return;
++    const S = (c, r, m, e, ei) => { const o = { color: c, roughness: r, metalness: m || 0 }; if (e != null) { o.emissive = new THREE.Color(e); o.emissiveIntensity = ei || 0; } return new THREE.MeshStandardMaterial(o); };
++    M.pole = S(0x4a5056, 0.5, 0.6); M.kerb = S(0x8a8c88, 0.85); M.white = S(0xeeeeea, 0.6); M.yel = S(0xe0b000, 0.65);
++    M.black = S(0x141414, 0.6); M.bollard = S(0xe8e8e8, 0.5, 0.1, 0x8aa0c0, 0.25);
++    M.lampR = S(0x401010, 0.4, 0, 0xff2a1a, 0); M.lampA = S(0x403010, 0.4, 0, 0xffb020, 0); M.lampG = S(0x104020, 0.4, 0, 0x30ff70, 0);
++    M.platform = S(0x9a968c, 0.88); M.rail = S(0x6f8a5e, 0.6, 0.3); M.roof = S(0x3c5a44, 0.7, 0.2);
++    M.water = S(0xd84a2a, 0.7); M.waterW = S(0xf2f2ee, 0.7);
++    M.ok = true;
++  }
++  function addCol(x, z, hw, hd, h) { if (typeof addCollider === 'function') { addCollider(x, z, hw, hd, h); C.colliders++; } }
++  function colRect(cx, cz, tx, tz, len, wid, h) {
++    const lx = tz, lz = -tx; const s = Math.min(1.2, wid, len);
++    const nu = Math.max(1, Math.round(len / s)), nv = Math.max(1, Math.round(wid / s));
++    for (let i = 0; i < nu; i++) for (let j = 0; j < nv; j++) {
++      const u = -len / 2 + (i + 0.5) * len / nu, v = -wid / 2 + (j + 0.5) * wid / nv;
++      addCol(cx + tx * u + lx * v, cz + tz * u + lz * v, s * 0.5, s * 0.5, h);
++    }
++  }
++  function boxAt(parent, cx, cz, tx, tz, len, wid, h, mat, y) {
++    const m = new THREE.Mesh(new THREE.BoxGeometry(wid, h, len), mat);
++    m.position.set(cx, (y || 0) + h / 2, cz); m.rotation.y = Math.atan2(tx, tz); parent.add(m); return m;
++  }
++  function trafficLight(parent, x, z, faceYaw) {
++    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = faceYaw; g.name = 'c28_traffic_light';
++    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 3.4, 8), M.pole); p.position.y = 1.7; g.add(p);
++    const head = new THREE.Mesh(new THREE.BoxGeometry(0.36, 1.0, 0.26), M.black); head.position.set(0, 3.0, 0.12); g.add(head);
++    [[M.lampR, 3.32], [M.lampA, 3.0], [M.lampG, 2.68]].forEach(([mt, y]) => { const l = new THREE.Mesh(new THREE.CircleGeometry(0.12, 12), mt); l.position.set(0, y, 0.26); g.add(l); });
++    parent.add(g); addCol(x, z, 0.15, 0.15, 3.4);
++  }
++  function bollard(parent, x, z) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 1.0, 8), M.bollard); b.position.set(x, 0.5, z); parent.add(b); }
++
++  // 燈位過路處（跟 core27b）：斑馬＋停車線＋燈柱×2＋中央安全島（碰撞）＋路緣伸出
++  function buildCrossing(parent, c) {
++    const { x, z, tx, tz } = c; const W = c.road_w; const lx = tz, lz = -tx;
++    const g = new THREE.Group(); g.name = c.id; parent.add(g);
++    const n = Math.floor(W / 1.0);
++    const im = new THREE.InstancedMesh(new THREE.BoxGeometry(0.5, 0.03, 3.0), M.white, n); const o = new THREE.Object3D();
++    for (let i = 0; i < n; i++) { const v = -W / 2 + 0.5 + i * (W - 1) / Math.max(1, n - 1); o.position.set(x + lx * v, 0.075, z + lz * v); o.rotation.set(0, Math.atan2(tx, tz), 0); o.updateMatrix(); im.setMatrixAt(i, o.matrix); }
++    im.userData.noMerge = true; g.add(im);
++    for (const sgn of [1, -1]) {
++      const u = -sgn * 4.2, v = sgn * W / 4;
++      boxAt(g, x + tx * u + lx * v, z + tz * u + lz * v, tx, tz, 0.35, W / 2 - 0.3, 0.03, M.white, 0.06);
++      const lu = -sgn * 4.6, lv = sgn * (W / 2 + 0.8);
++      trafficLight(g, x + tx * lu + lx * lv, z + tz * lu + lz * lv, Math.atan2(-tx * sgn, -tz * sgn));
++    }
++    const isl = 1.2, islL = 6.0;
++    boxAt(g, x, z, tx, tz, islL, isl, 0.25, M.kerb); colRect(x, z, tx, tz, islL, isl, 1.0);
++    bollard(g, x + tx * (islL / 2 - 0.3), z + tz * (islL / 2 - 0.3)); bollard(g, x - tx * (islL / 2 - 0.3), z - tz * (islL / 2 - 0.3));
++    const bo = Math.max(0, Math.min(1.6, (W - isl - 2 * 3.3) / 2));
++    if (bo >= 0.6) for (const sgn of [1, -1]) { const v = sgn * (W / 2 - bo / 2); boxAt(g, x + lx * v, z + lz * v, tx, tz, 7.0, bo, 0.2, M.kerb); colRect(x + lx * v, z + lz * v, tx, tz, 7.0, bo, 1.0); }
++    C.calming++;
++  }
++  // 交錯路緣島（chicane）
++  function buildLaneShift(parent, c) {
++    const { x, z, tx, tz } = c; const W = c.road_w; const lx = tz, lz = -tx;
++    const g = new THREE.Group(); g.name = c.id; parent.add(g);
++    const iw = W / 2, il = 6.0, gap = 8.0;
++    for (const sgn of [1, -1]) {
++      const u = sgn * gap, v = sgn * (W / 2 - iw / 2), cx = x + tx * u + lx * v, cz = z + tz * u + lz * v;
++      boxAt(g, cx, cz, tx, tz, il, iw, 0.22, M.kerb);
++      if (!LITE) boxAt(g, cx, cz, tx, tz, il - 0.6, iw - 0.6, 0.05, M.yel, 0.22);
++      colRect(cx, cz, tx, tz, il, iw, 1.0);
++      for (const k of [-1, 1]) for (const q of [0.3, 0.75]) { const bu = u + k * (il / 2 - 0.3), bv = sgn * (W / 2 - iw * q); bollard(g, x + tx * bu + lx * bv, z + tz * bu + lz * bv); }
++    }
++    C.calming++;
++  }
++  // 電車站島：路中月台（18×2.0，碰撞）＋欄杆＋上蓋（Lite 略上蓋）
++  function buildTramStop(parent, s) {
++    const { x, z, tx, tz } = s; const lx = tz, lz = -tx;
++    const g = new THREE.Group(); g.name = s.id; parent.add(g);
++    const L = 18, Wd = 2.0;
++    boxAt(g, x, z, tx, tz, L, Wd, 0.25, M.platform); colRect(x, z, tx, tz, L, Wd, 1.0);
++    for (const sgn of [1, -1]) boxAt(g, x + lx * sgn * (Wd / 2 - 0.05), z + lz * sgn * (Wd / 2 - 0.05), tx, tz, L - 2, 0.05, 0.9, M.rail, 0.25);
++    if (!LITE) {
++      for (const u of [-6, 0, 6]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.6, 6), M.pole); p.position.set(x + tx * u, 1.55, z + tz * u); g.add(p); }
++      boxAt(g, x, z, tx, tz, 14, 2.2, 0.08, M.roof, 2.85);
++    }
++    for (const sgn of [1, -1]) bollard(g, x + tx * sgn * (L / 2 + 0.4), z + tz * sgn * (L / 2 + 0.4));
++    C.tramStops++;
++  }
++  // 封路水馬欄（橫跨封路行車線）＋道路封閉牌
++  let closedTex = null;
++  function buildBarrier(parent, b) {
++    const { x, z, tx, tz } = b; const lx = tz, lz = -tx; const len = b.len || 10;
++    const g = new THREE.Group(); g.name = b.id; parent.add(g);
++    const n = Math.max(2, Math.round(len / 2));
++    for (let i = 0; i < n; i++) {
++      const v = -len / 2 + (i + 0.5) * len / n, cx = x + lx * v, cz = z + lz * v;
++      const m = boxAt(g, cx, cz, lx, lz, len / n - 0.1, 0.55, 0.9, i % 2 ? M.waterW : M.water);
++      m.castShadow = !LITE;
++    }
++    colRect(x, z, lx, lz, len, 0.6, 1.1);
++    if (!LITE && typeof canvasTex === 'function') {
++      if (!closedTex) closedTex = canvasTex(256, 128, (c, w, h) => { c.fillStyle = '#c81e1e'; c.fillRect(0, 0, w, h); c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = `bold ${Math.round(h * 0.38)}px "PingFang HK","Noto Sans TC",sans-serif`; c.fillText('道路封閉', w / 2, h * 0.38); c.font = `${Math.round(h * 0.2)}px Arial,sans-serif`; c.fillText('ROAD CLOSED', w / 2, h * 0.76); });
++      const sg = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.7, 0.04), new THREE.MeshStandardMaterial({ map: closedTex, roughness: 0.6 }));
++      sg.position.set(x, 1.45, z); sg.rotation.y = Math.atan2(tx, tz); g.add(sg);
++    }
++    C.barriers++;
++  }
++  function projOn(points, x, z) {
++    let best = null;
++    for (let i = 0; i + 1 < points.length; i++) {
++      const a = points[i], b = points[i + 1]; const dx = b.dx - a.dx, dz = b.dz - a.dz, L2 = dx * dx + dz * dz || 1e-9;
++      const t = Math.max(0, Math.min(1, ((x - a.dx) * dx + (z - a.dz) * dz) / L2)); const px = a.dx + t * dx, pz = a.dz + t * dz; const d = Math.hypot(x - px, z - pz);
++      if (!best || d < best.d) { const L = Math.sqrt(L2); best = { d, x: px, z: pz, tx: dx / L, tz: dz / L }; }
++    }
++    return best;
++  }
++  let phaseT = 0;
++  function signalTick(dt) {
++    phaseT = (phaseT + (dt || 0.016)) % 14;
++    const p = phaseT < 8 ? 'G' : (phaseT < 10 ? 'A' : 'R');
++    M.lampG.emissiveIntensity = p === 'G' ? 2.2 : 0; M.lampA.emissiveIntensity = p === 'A' ? 2.2 : 0; M.lampR.emissiveIntensity = p === 'R' ? 2.2 : 0;
++    C.phase = p;
++  }
++  // 執法（同 core27b 燈位執法）
++  const E = { fines: 0, aiHolds: 0, pts: null, cool: 0 };
++  function sim(dt) {
++    if (!C.ready) return;
++    if (!E.pts) E.pts = C.calmingData.filter((c) => c.type !== 'lane_shift').map((c) => ({ x: c.x, z: c.z, fx: c.tx, fz: c.tz, half: (c.road_w || 10) / 2, prev: 0 }));
++    const ph = C.phase; E.cool = Math.max(0, E.cool - (dt || 0));
++    const driving = typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined' && car.pos;
++    for (const L of E.pts) {
++      if (driving) {
++        const dx = car.pos.x - L.x, dz = car.pos.z - L.z;
++        if (Math.abs(dx) < 40 && Math.abs(dz) < 40) {
++          const along = dx * L.fx + dz * L.fz, lat = Math.abs(-dx * L.fz + dz * L.fx);
++          const side = lat > L.half + 1 ? 0 : (along > 4.2 ? 1 : (along < -4.2 ? -1 : 2));
++          if (side === 2 && (L.prev === 1 || L.prev === -1) && ph === 'R' && (car.speedKmh || 0) > 18 && E.cool <= 0) { E.cool = 25; E.fines++; if (typeof issueFine === 'function') issueFine('hk_red_light', '衝紅燈'); }
++          L.prev = side;
++        } else L.prev = 0;
++      }
++      if (ph === 'G' || typeof VEHS === 'undefined') continue;
++      for (const v of VEHS) {
++        if (!v.pos || v.kind === 'police' || v.ai === 'park') continue;
++        const ex = v.pos.x - L.x, ez = v.pos.z - L.z;
++        if (Math.abs(ex) > 32 || Math.abs(ez) > 32 || Math.abs(-ex * L.fz + ez * L.fx) > L.half + 2) continue;
++        const hx = Math.sin(v.heading || 0), hz = Math.cos(v.heading || 0); if (hx * ex + hz * ez >= 0) continue;
++        const dist = Math.abs(ex * L.fx + ez * L.fz); if (dist < 5 || dist > 30) continue;
++        const vmax = Math.max(0, (dist - 5.5) * 0.9); if (v.speed > vmax) { v.speed = vmax; E.aiHolds++; }
++      }
++    }
++  }
++  async function fetchJson(f) {
++    for (const u of ['data/' + f, './assets/data/' + f, '../data/' + f]) { try { const r = await fetch(u, { cache: 'no-store' }); if (r && r.ok) return await r.json(); } catch (e) { /* */ } }
++    return null;
++  }
++  async function build() {
++    const data = await fetchJson('core28-wc-eastern-spines.json');
++    if (!data || !data.districts) { console.warn('[core28] core28-wc-eastern-spines.json 未到手'); return; }
++    try { if (typeof SPCLR !== 'undefined') SPCLR.add(data, 'core28'); } catch (e) { /* */ }
++    mats();
++    const root = new THREE.Group(); root.name = 'core28-wc-east-calm'; root.userData.noMerge = true; scene.add(root); C.group = root;
++    const byD = {}; const ctr = {};
++    for (const [did, D] of Object.entries(data.districts)) {
++      const g = new THREE.Group(); g.name = 'c28_' + did; g.userData.noMerge = true; root.add(g); byD[did] = g;
++      let sx = 0, sz = 0, n = 0;
++      for (const c of (D.calming || [])) {
++        if (Math.abs(c.x) < 3000) continue; // 保險：唔放葵涌
++        if (c.type === 'lane_shift') buildLaneShift(g, c); else buildCrossing(g, c);
++        C.calmingData.push(c); sx += c.x; sz += c.z; n++;
++      }
++      for (const sp of (D.spines || [])) {
++        if (sp.drivable === false) continue;
++        for (const ts of (sp.tram_stops || [])) {
++          const q = projOn(sp.points, ts.dx, ts.dz); if (!q) continue;
++          buildTramStop(g, { id: 'c28_tram_stop_' + ts.osm_node, x: q.x, z: q.z, tx: q.tx, tz: q.tz }); sx += q.x; sz += q.z; n++;
++        }
++      }
++      ctr[did] = n ? { x: sx / n, z: sz / n } : null;
++    }
++    const gB = new THREE.Group(); gB.name = 'c28_blocked_barriers'; gB.userData.noMerge = true; root.add(gB);
++    let bx = 0, bz = 0, bn = 0;
++    for (const br of (data.blocked_roads || [])) for (const b of (br.barriers || [])) { buildBarrier(gB, b); bx += b.x; bz += b.z; bn++; }
++    byD.blocked = gB; ctr.blocked = bn ? { x: bx / bn, z: bz / bn } : null;
++    if (typeof HOOKS !== 'undefined') {
++      HOOKS.frame = HOOKS.frame || []; let acc = 0;
++      HOOKS.frame.push(function core28Calm(dt) {
++        signalTick(typeof dt === 'number' && dt < 1 ? dt : 0.016);
++        acc += 1; if (acc % 20) return;
++        const p = (typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined') ? car.pos : (typeof player !== 'undefined' ? player.pos : null);
++        if (!p) return;
++        for (const k in byD) { const c = ctr[k]; const v = !c || Math.hypot(p.x - c.x, p.z - c.z) < 3200; if (byD[k].visible !== v) byD[k].visible = v; } // 碰撞常在
++      });
++      if (HOOKS.sim) HOOKS.sim.push(sim);
++    }
++    C.ready = true; C.data = data;
++    console.info('[core28] wc+eastern calm', { calming: C.calming, tramStops: C.tramStops, barriers: C.barriers, colliders: C.colliders, lite: LITE });
++  }
++  const t0 = setInterval(() => {
++    if (typeof scene === 'undefined' || typeof THREE === 'undefined') return;
++    clearInterval(t0);
++    build().catch((e) => console.warn('[core28]', e && e.message));
++  }, 470);
++  Object.assign(window.NT = window.NT || {}, { C28CALM: C, C28ENF: E });
++})();
++
+ /* core27b · modYt_kowloonamb（深水埗＋九龍城真街點環境音；座標跟 core27-ssp-kc-spines 錨點）*/
+ 
+ /* =========================================================================

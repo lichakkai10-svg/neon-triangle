@@ -1,0 +1,84 @@
+{
+ "version": "core27f",
+ "hk_tonglau_arcade": {
+  "depth_m": [
+   1.5,
+   2.5
+  ],
+  "clear_height_m": 2.7,
+  "column_spacing_m": [
+   3.5,
+   5.0
+  ],
+  "game_unit_scale": 1.5,
+  "depth_gu": [
+   2.25,
+   3.75
+  ],
+  "clear_height_gu": 4.05,
+  "column_spacing_gu": [
+   5.25,
+   7.5
+  ],
+  "columns_on_private_lot": "provisional: center outside shop threshold, not in carriageway",
+  "continuous_priority": [
+   {
+    "district": "yau_tsim_mong",
+    "streets": [
+     "上海街 600-626"
+    ]
+   },
+   {
+    "district": "sham_shui_po",
+    "streets": [
+     "基隆街",
+     "北河街",
+     "鴨寮街"
+    ]
+   },
+   {
+    "district": "central_west",
+    "streets": [
+     "永利街",
+     "荷李活道",
+     "文咸東街"
+    ]
+   }
+  ],
+  "column_measured": {
+   "center_to_kerb_m": 1.5,
+   "center_to_kerb_range_m": [
+    1.2,
+    2.0
+   ],
+   "center_to_shop_door_m": [
+    1.2,
+    1.5
+   ],
+   "center_to_shop_door_range_m": [
+    1.0,
+    1.8
+   ],
+   "mostly_on_private_lot": true,
+   "arcade_spans_footway": true,
+   "invade_carriageway": false,
+   "clear_footway_min_m": 2.0,
+   "status": "owner_field_measure_2026-10-24"
+  }
+ },
+ "macau_arcade_do_not_copy_hk": {
+  "depth_m": [
+   3,
+   4
+  ],
+  "clear_height_m": [
+   4,
+   5
+  ],
+  "note": "deeper and taller than HK tong lau"
+ },
+ "deferred": [
+  "footbridge_network",
+  "central_midlevels_escalator"
+ ]
+}

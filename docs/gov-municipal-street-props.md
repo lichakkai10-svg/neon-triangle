@@ -2,7 +2,7 @@
 負責人：@政府部門/大公司  
 對齊：`docs/streetscape-authenticity-checklist.md`、`docs/streetscape-p0-props-stub.md`、`docs/legal-risk-and-parody-assets.md`  
 原則：稀疏、真有先加；牌面戲仿、唔印真警徽／真路政標誌編號。  
-更新：2026-10-10 22:54 HKT · 聽日可玩唔阻；本表＝P1 下一輪
+更新：2026-10-24 HKT · 加假日臨時行人／封閉牌；工地仍用 `sign_works`
 
 ---
 
@@ -19,6 +19,9 @@
 | `rail_police_blue` | 警署外藍／灰金屬欄 | 署門外圍 | `kln_central_ps`（戲仿警署） |
 | `cone_temp` | 橙臨時雪糕筒 | 掘路／封一條線 | 各區可隨機極稀 |
 | `sign_works` | 「小心行人／工程進行」黃牌（戲仿） | 圍板旁 | 港市區 P1 |
+| `sign_temp_ped` | 臨時行人區／假日封閉（白底黑字） | 遮打道日／假期行人化 | 中環假日；詳見 `gov-temp-pedestrian-closure-signs.md` |
+| `sign_temp_divert` | 「請改道」臨時牌 | 封段兩端 | 同上 |
+| `sign_temp_closed` | 「此路段暫時封閉」 | 短支路完全封 | 同上 |
 
 ---
 
@@ -45,6 +48,8 @@
 | `sign_height` | `限高 3.5 m`（數字可調） | `高度限制 3,5 m`／夾 `altura` 極短 | `限高 3.5 公尺` |
 | `sign_lane` | `前方靠左`／`單線路口` | `單行`＋小字葡語可選 | `請依標線行駛` |
 | `sign_works` | `工程進行中 · 小心行人` | 同左（澳粵牌常見中文為主） | `施工中 請小心` |
+| `sign_temp_ped` | `臨時行人區`（假日句，見專文） | 同左中文為主 | `臨時行人區` |
+| `sign_temp_divert` | `請改道` | `請改道` | `請改道` |
 | 口岸黃線旁立牌 | `請跟車道前進` | `請跟指示通道`／`siga a faixa` 一句 | `請依車道前進` |
 
 **禁止：** 真「路政署」全徽、真隧道營辦商 logo、真警察局徽章。

@@ -1,0 +1,582 @@
+{
+ "project": "霓虹三角 Neon Triangle",
+ "for_version": "core27c",
+ "updated": "2026-10-19T22:30:00+08:00",
+ "owner_zh": "關卡與地圖設計師",
+ "time_of_day": "day（URL &day；art-day-preset-core27c.json）",
+ "geo": {
+  "origin": [
+   22.355,
+   114.119
+  ],
+  "K": 1.5,
+  "axes_zh": "-X 係東、+Z 係北；1 m = 1.5 單位"
+ },
+ "license_note": "路線幾何源自 OSM（ODbL，© OpenStreetMap contributors），經 core23/core27 數據包",
+ "rules_zh": [
+  "只用已存在、可行／可駛幾何",
+  "步行鏡 HUD 隱藏",
+  "戲仿名、唔出真 logo",
+  "葵涌只拍唔放"
+ ],
+ "routes": [
+  {
+   "id": "promo_tst_nathan_drive",
+   "title_zh": "彌敦道（尖沙咀）日景駕駛：經重慶坊（戲仿）",
+   "mode": "drive",
+   "source_geometry": "osm-hk18-skeleton-core23.json spines.nathan_corridor",
+   "walk_or_drive_on": "彌敦道北行左線（香港靠左；中線向西 +X 偏 3 單位）",
+   "speed_kmh": 35,
+   "speed_game_units_s": 14.58,
+   "length_game": 450.6,
+   "duration_s": 30.9,
+   "hud": "minimal_speedo_off",
+   "camera": {
+    "rig": "chase",
+    "height": 3.4,
+    "back": 8.5,
+    "fov": 58,
+    "lerp": 0.08
+   },
+   "look_targets": [
+    {
+     "name_zh": "沿線前望",
+     "type": "path_ahead",
+     "ahead_game": 30,
+     "y": 1.2
+    },
+    {
+     "name_zh": "重慶坊（戲仿）OSM 樓腳形心",
+     "x": -8299.2,
+     "y": 22,
+     "z": -9724.5,
+     "lat": 22.29637,
+     "lon": 114.172741
+    }
+   ],
+   "waypoints": [
+    {
+     "x": -8231.4,
+     "z": -9988.3,
+     "lat": 22.294779,
+     "lon": 114.172302
+    },
+    {
+     "x": -8228.7,
+     "z": -9947.7,
+     "lat": 22.295024,
+     "lon": 114.172284
+    },
+    {
+     "x": -8222.6,
+     "z": -9852.2,
+     "lat": 22.2956,
+     "lon": 114.172245
+    },
+    {
+     "x": -8218.4,
+     "z": -9790.0,
+     "lat": 22.295975,
+     "lon": 114.172217
+    },
+    {
+     "x": -8212.6,
+     "z": -9705.3,
+     "lat": 22.296485,
+     "lon": 114.17218
+    },
+    {
+     "x": -8221.9,
+     "z": -9628.3,
+     "lat": 22.296949,
+     "lon": 114.17224
+    },
+    {
+     "x": -8204.8,
+     "z": -9540.6,
+     "lat": 22.297478,
+     "lon": 114.172129
+    }
+   ],
+   "geo_referenced": true,
+   "notes_zh": "北行（+Z）。鏡頭中段向右（東，-X）帶重慶坊（戲仿）OSM 樓立面；喺 z −9540 前收鏡（再北 27 單位被 kc-ytm 舊快速公路走廊牆擋）。只用 nathan_corridor 骨架（core24 ytm 拉伸可駛）；樓名一律「重慶坊（戲仿）」，唔出真名／真 logo。"
+  },
+  {
+   "id": "promo_ckm_parody_walk",
+   "title_zh": "重慶坊（戲仿）門前步行：彌敦道東側行人路",
+   "mode": "walk",
+   "source_geometry": "osm-hk18-skeleton-core23.json spines.nathan_corridor（東側偏 5）＋ osm-ytm-drive-extrude-core24.json buildings[重慶大廈]",
+   "walk_or_drive_on": "彌敦道東側行人路",
+   "speed_kmh": 5.5,
+   "speed_game_units_s": 2.29,
+   "length_game": 104.1,
+   "duration_s": 45.4,
+   "hud": "hidden",
+   "camera": {
+    "rig": "gimbal_follow",
+    "height": 1.62,
+    "back": 2.4,
+    "side": 0.6,
+    "fov": 52,
+    "lerp": 0.06,
+    "player_visible": true
+   },
+   "look_targets": [
+    {
+     "name_zh": "重慶坊（戲仿）西立面（OSM 樓腳西邊）",
+     "x": -8246.0,
+     "y": 12.0,
+     "z": -9724.5,
+     "lat": 22.29637,
+     "lon": 114.172396
+    },
+    {
+     "name_zh": "彌敦道北望",
+     "x": -8215.6,
+     "y": 6.0,
+     "z": -9600.0,
+     "lat": 22.29712,
+     "lon": 114.172199
+    }
+   ],
+   "waypoints": [
+    {
+     "x": -8227.4,
+     "z": -9804.6,
+     "lat": 22.295887,
+     "lon": 114.172276
+    },
+    {
+     "x": -8226.4,
+     "z": -9789.5,
+     "lat": 22.295978,
+     "lon": 114.172269
+    },
+    {
+     "x": -8220.6,
+     "z": -9705.1,
+     "lat": 22.296486,
+     "lon": 114.172232
+    },
+    {
+     "x": -8221.2,
+     "z": -9700.8,
+     "lat": 22.296512,
+     "lon": 114.172235
+    }
+   ],
+   "geo_referenced": true,
+   "notes_zh": "北行，貼東側（-X）行人路。用 core24 ytm 拉伸嘅 OSM 樓腳（osm way 39315991）做主體，名一律「重慶坊（戲仿）」。注意：M4 舊彌敦道佈景（平移 HKM.T 後喺 x≈−8273）喺 headless 探針入面成段（85 個取樣中 78 個）被碰撞推開，唔可以用嚟拍。"
+  },
+  {
+   "id": "promo_apliu_walk",
+   "title_zh": "鴨寮街地攤步行（北河街交界）",
+   "mode": "walk",
+   "source_geometry": "core27-ssp-kc-spines.json ssp_apliu_st",
+   "walk_or_drive_on": "鴨寮街（walk 速度區）",
+   "speed_kmh": 5.5,
+   "speed_game_units_s": 2.29,
+   "length_game": 89.9,
+   "duration_s": 39.2,
+   "hud": "hidden",
+   "camera": {
+    "rig": "gimbal_follow",
+    "height": 1.6,
+    "back": 2.2,
+    "side": -0.5,
+    "fov": 50,
+    "lerp": 0.05,
+    "player_visible": true
+   },
+   "look_targets": [
+    {
+     "name_zh": "鴨寮街×北河街（地攤段中點）",
+     "x": -6692.3,
+     "y": 1.8,
+     "z": -4159.3,
+     "lat": 22.329923,
+     "lon": 114.162335
+    },
+    {
+     "name_zh": "深水埗站出口方向",
+     "x": -6830.5,
+     "y": 3.0,
+     "z": -4126.6,
+     "lat": 22.33012,
+     "lon": 114.16323
+    }
+   ],
+   "waypoints": [
+    {
+     "x": -6643.1,
+     "z": -4116.8,
+     "lat": 22.330179,
+     "lon": 114.162017
+    },
+    {
+     "x": -6693.1,
+     "z": -4158.4,
+     "lat": 22.329929,
+     "lon": 114.16234
+    },
+    {
+     "x": -6712.9,
+     "z": -4173.5,
+     "lat": 22.329838,
+     "lon": 114.162469
+    }
+   ],
+   "geo_referenced": true,
+   "notes_zh": "東南行。需先合 core27c2-apliu-clear 補丁（否則中段被樓擋）。中線偏 1.2 單位走，避開桂林街路牌柱（2.81 偏移）。"
+  },
+  {
+   "id": "promo_kc_ngatsinwai_namkok_walk",
+   "title_zh": "九龍城：衙前圍道街市→南角道泰菜街轉角",
+   "mode": "walk",
+   "source_geometry": "core27-ssp-kc-spines.json kc_nga_tsin_wai_rd + kc_nam_kok_rd",
+   "walk_or_drive_on": "衙前圍道／南角道（slow）",
+   "speed_kmh": 5.5,
+   "speed_game_units_s": 2.29,
+   "length_game": 110.0,
+   "duration_s": 48.0,
+   "hud": "hidden",
+   "camera": {
+    "rig": "gimbal_follow",
+    "height": 1.6,
+    "back": 2.4,
+    "side": 0.5,
+    "fov": 52,
+    "lerp": 0.05,
+    "player_visible": true
+   },
+   "look_targets": [
+    {
+     "name_zh": "九龍城街市（衙前圍道市政大樓）",
+     "x": -10811.7,
+     "y": 8.0,
+     "z": -4277.6,
+     "lat": 22.32921,
+     "lon": 114.18901
+    },
+    {
+     "name_zh": "南角道／泰菜街轉角",
+     "x": -10944.0,
+     "y": 2.5,
+     "z": -4250.0,
+     "lat": 22.329376,
+     "lon": 114.189867
+    }
+   ],
+   "waypoints": [
+    {
+     "x": -10880.0,
+     "z": -4329.3,
+     "lat": 22.328898,
+     "lon": 114.189452
+    },
+    {
+     "x": -10939.9,
+     "z": -4331.5,
+     "lat": 22.328885,
+     "lon": 114.189841
+    },
+    {
+     "x": -10939.6,
+     "z": -4328.5,
+     "lat": 22.328903,
+     "lon": 114.189838
+    },
+    {
+     "x": -10941.5,
+     "z": -4281.5,
+     "lat": 22.329186,
+     "lon": 114.189851
+    }
+   ],
+   "geo_referenced": true,
+   "notes_zh": "先東行（-X）衙前圍道，喺南角道口左轉北行。兩條都係 slow 區；轉角用 0.8 秒 ease。"
+  },
+  {
+   "id": "promo_kc_prince_edward_e_drive",
+   "title_zh": "太子道東日景駕駛：九龍城→啟德方向",
+   "mode": "drive",
+   "source_geometry": "core27-ssp-kc-spines.json kc_prince_edward_rd_e",
+   "walk_or_drive_on": "太子道東東北行內線",
+   "speed_kmh": 50,
+   "speed_game_units_s": 20.83,
+   "length_game": 720.3,
+   "duration_s": 34.6,
+   "hud": "minimal_speedo_off",
+   "camera": {
+    "rig": "chase",
+    "height": 3.2,
+    "back": 8.0,
+    "fov": 60,
+    "lerp": 0.08
+   },
+   "look_targets": [
+    {
+     "name_zh": "沿線前望",
+     "type": "path_ahead",
+     "ahead_game": 30,
+     "y": 1.2
+    },
+    {
+     "name_zh": "九龍寨城公園（園林，唔重建城寨）",
+     "x": -11006.3,
+     "y": 6.0,
+     "z": -3784.9,
+     "lat": 22.33218,
+     "lon": 114.19027
+    }
+   ],
+   "waypoints": [
+    {
+     "x": -11197.6,
+     "z": -4449.6,
+     "lat": 22.328172,
+     "lon": 114.191509
+    },
+    {
+     "x": -11220.3,
+     "z": -4428.7,
+     "lat": 22.328299,
+     "lon": 114.191656
+    },
+    {
+     "x": -11243.0,
+     "z": -4407.8,
+     "lat": 22.328425,
+     "lon": 114.191803
+    },
+    {
+     "x": -11265.7,
+     "z": -4386.8,
+     "lat": 22.328551,
+     "lon": 114.19195
+    },
+    {
+     "x": -11288.5,
+     "z": -4365.9,
+     "lat": 22.328678,
+     "lon": 114.192097
+    },
+    {
+     "x": -11311.2,
+     "z": -4344.9,
+     "lat": 22.328804,
+     "lon": 114.192244
+    },
+    {
+     "x": -11333.9,
+     "z": -4324.0,
+     "lat": 22.32893,
+     "lon": 114.192391
+    },
+    {
+     "x": -11356.5,
+     "z": -4303.1,
+     "lat": 22.329056,
+     "lon": 114.192538
+    },
+    {
+     "x": -11377.5,
+     "z": -4281.4,
+     "lat": 22.329187,
+     "lon": 114.192674
+    },
+    {
+     "x": -11398.5,
+     "z": -4259.7,
+     "lat": 22.329318,
+     "lon": 114.19281
+    },
+    {
+     "x": -11419.5,
+     "z": -4238.0,
+     "lat": 22.329449,
+     "lon": 114.192946
+    },
+    {
+     "x": -11440.5,
+     "z": -4216.3,
+     "lat": 22.32958,
+     "lon": 114.193082
+    },
+    {
+     "x": -11461.6,
+     "z": -4194.5,
+     "lat": 22.329711,
+     "lon": 114.193218
+    },
+    {
+     "x": -11482.6,
+     "z": -4172.8,
+     "lat": 22.329842,
+     "lon": 114.193354
+    },
+    {
+     "x": -11503.6,
+     "z": -4151.1,
+     "lat": 22.329972,
+     "lon": 114.19349
+    },
+    {
+     "x": -11524.6,
+     "z": -4129.4,
+     "lat": 22.330103,
+     "lon": 114.193626
+    },
+    {
+     "x": -11545.6,
+     "z": -4107.6,
+     "lat": 22.330234,
+     "lon": 114.193762
+    },
+    {
+     "x": -11566.6,
+     "z": -4085.9,
+     "lat": 22.330365,
+     "lon": 114.193899
+    },
+    {
+     "x": -11587.6,
+     "z": -4064.2,
+     "lat": 22.330496,
+     "lon": 114.194035
+    },
+    {
+     "x": -11608.7,
+     "z": -4042.5,
+     "lat": 22.330627,
+     "lon": 114.194171
+    },
+    {
+     "x": -11615.7,
+     "z": -4035.2,
+     "lat": 22.330671,
+     "lon": 114.194216
+    },
+    {
+     "x": -11621.1,
+     "z": -4026.5,
+     "lat": 22.330724,
+     "lon": 114.194251
+    },
+    {
+     "x": -11628.1,
+     "z": -4019.2,
+     "lat": 22.330768,
+     "lon": 114.194296
+    },
+    {
+     "x": -11635.1,
+     "z": -4012.0,
+     "lat": 22.330811,
+     "lon": 114.194342
+    },
+    {
+     "x": -11643.7,
+     "z": -4006.3,
+     "lat": 22.330846,
+     "lon": 114.194397
+    },
+    {
+     "x": -11650.7,
+     "z": -3999.0,
+     "lat": 22.330889,
+     "lon": 114.194443
+    },
+    {
+     "x": -11671.7,
+     "z": -3977.3,
+     "lat": 22.33102,
+     "lon": 114.194579
+    },
+    {
+     "x": -11692.7,
+     "z": -3955.6,
+     "lat": 22.331151,
+     "lon": 114.194715
+    },
+    {
+     "x": -11706.7,
+     "z": -3941.1,
+     "lat": 22.331239,
+     "lon": 114.194806
+    }
+   ],
+   "geo_referenced": true,
+   "notes_zh": "由九龍城迴旋處一帶向東北駛，靠左線；喺 (-11630.6,-4019.9) 跟 core27 lane-shift 安全島向外繞 2.2 單位。core27b 紅燈會罰（>18 km/h 過紅燈 $900）：拍攝時要開 signal green 或跟 C27SIGNS phase 計時起步，唔好拍到衝紅燈。"
+  },
+  {
+   "id": "promo_kwai_elbow_drive",
+   "title_zh": "葵涌碼頭肘形主幹：貨櫃碼頭路彎位",
+   "mode": "drive",
+   "source_geometry": "osm-hk18-skeleton-core23.json kwai_chung_elbow.arterials[arterial_elbow_trunk_drive][1:6] 截至 z −500",
+   "walk_or_drive_on": "肘形主幹（14 闊）",
+   "speed_kmh": 50,
+   "speed_game_units_s": 20.83,
+   "length_game": 795.0,
+   "duration_s": 38.2,
+   "hud": "minimal_speedo_off",
+   "camera": {
+    "rig": "chase_low",
+    "height": 2.6,
+    "back": 9.0,
+    "fov": 62,
+    "lerp": 0.07
+   },
+   "look_targets": [
+    {
+     "name_zh": "沿線前望",
+     "type": "path_ahead",
+     "ahead_game": 30,
+     "y": 1.2
+    },
+    {
+     "name_zh": "肘位彎頂",
+     "x": -873.0,
+     "y": 4.0,
+     "z": -630.0,
+     "lat": 22.351202,
+     "lon": 114.124653
+    }
+   ],
+   "waypoints": [
+    {
+     "x": -835.3,
+     "z": -1259.5,
+     "lat": 22.347406,
+     "lon": 114.124409
+    },
+    {
+     "x": -896.2,
+     "z": -889.1,
+     "lat": 22.34964,
+     "lon": 114.124803
+    },
+    {
+     "x": -843.5,
+     "z": -652.0,
+     "lat": 22.351069,
+     "lon": 114.124462
+    },
+    {
+     "x": -895.9,
+     "z": -608.6,
+     "lat": 22.35133,
+     "lon": 114.124801
+    },
+    {
+     "x": -897.0,
+     "z": -500.0,
+     "lat": 22.351986,
+     "lon": 114.124809
+    }
+   ],
+   "geo_referenced": true,
+   "notes_zh": "北行（+Z）。只係鏡頭路線，冇喺葵涌新增任何物件。用 kwai_chung_elbow.arterial_elbow_trunk_drive 第 2–6 點，喺 z −500 收鏡：z −491→−450 有一個 141×243、高 40 嘅 AABB 碰撞盒（x −925→−784, z −491→−248）壓住主幹，車會撞停（已報，未改）。"
+  }
+ ]
+}

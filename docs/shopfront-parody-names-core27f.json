@@ -1,0 +1,291 @@
+{
+  "for_version": "core27f",
+  "note": "地舖戲仿名，全部虛構。禁用真連鎖名（翠華、澳牛、周大福、周生生、六福、中原、美聯、利嘉閣、萬寧、屈臣氏、再興、甘牌等）。冇字位就用 type 通稱。街市／主題街 key 跟地道人 `core27f-district-building-shop-mix.md`。",
+  "types": {
+    "cha_chaan_teng": {
+      "generic": "茶餐廳",
+      "names": [
+        "新華星茶餐廳",
+        "金碟冰室",
+        "好時光餐廳",
+        "旺記茶冰廳",
+        "港灣小廚",
+        "大牌檔咖啡"
+      ]
+    },
+    "pharmacy": {
+      "generic": "藥房",
+      "names": [
+        "健康之寶藥房",
+        "仁心藥行",
+        "百安藥房",
+        "利民藥房",
+        "平安堂",
+        "福壽藥行"
+      ]
+    },
+    "goldsmith": {
+      "generic": "金行",
+      "names": [
+        "金滿堂珠寶",
+        "富貴金行",
+        "鴻運金舖",
+        "千足珠寶",
+        "金福行",
+        "龍鳳金號"
+      ]
+    },
+    "estate_agency": {
+      "generic": "地產",
+      "names": [
+        "置安地產",
+        "樂居地產",
+        "旺置業",
+        "安心物業代理",
+        "好家地產",
+        "興隆地產"
+      ]
+    },
+    "roast_meat": {
+      "generic": "燒臘",
+      "names": [
+        "炳記燒臘",
+        "金豬燒味",
+        "明火燒臘飯店",
+        "老火燒味",
+        "勝記燒臘",
+        "皇牌叉燒"
+      ]
+    },
+    "hardware": {
+      "generic": "五金",
+      "names": [
+        "永發五金",
+        "合興五金",
+        "利華五金電料",
+        "大成五金",
+        "裕隆鐵器",
+        "新昌五金"
+      ]
+    },
+    "shuttered": {
+      "generic": "",
+      "names": [],
+      "note": "落閘：鐵閘，只畫手寫『旺舖招租』或『東主有喜』，唔使店名"
+    },
+    "wet_market_stall": {
+      "generic": "街市檔",
+      "names": [
+        "新鮮菜檔",
+        "鮮魚檔",
+        "燒味檔",
+        "豆腐芽菜",
+        "靚肉檔",
+        "豆品糖水"
+      ]
+    },
+    "fabric": {
+      "generic": "布行",
+      "names": [
+        "基隆街布行",
+        "花邊鈕扣行",
+        "成衣布匹",
+        "膠袋綑貨",
+        "汝州布莊",
+        "針織物料"
+      ]
+    },
+    "electronics": {
+      "generic": "電器",
+      "names": [
+        "鴨寮零件",
+        "二手手機行",
+        "電池插頭屋",
+        "旺角電子",
+        "信旺手機",
+        "電訊配件"
+      ]
+    },
+    "convenience": {
+      "generic": "便利店",
+      "names": [
+        "8仔",
+        "OK 迷你店",
+        "全日便利",
+        "夜半便利",
+        "街口士多",
+        "通宵便利"
+      ]
+    },
+    "money_exchange": {
+      "generic": "找換店",
+      "names": [
+        "新旺找換",
+        "彌敦找換",
+        "金馬倫找換",
+        "通宵找換",
+        "快匯找換",
+        "港匯找換"
+      ]
+    },
+    "footwear": {
+      "generic": "波鞋",
+      "names": [
+        "花園街波鞋",
+        "運動鞋行",
+        "球鞋倉",
+        "步行鞋屋",
+        "球板鞋店",
+        "慢跑鞋行"
+      ]
+    },
+    "fashion": {
+      "generic": "時裝",
+      "names": [
+        "通菜街時裝",
+        "批發成衣",
+        "平價时装",
+        "潮流服飾",
+        "寶靈街成衣",
+        "夜市衫舖"
+      ]
+    },
+    "thai_eatery": {
+      "generic": "泰菜",
+      "names": [
+        "南角泰菜",
+        "城寨泰式",
+        "泰雜貨舖",
+        "冬蔭功檔",
+        "咖喱蟹檔",
+        "泰式甜品"
+      ]
+    },
+    "watch_shop": {
+      "generic": "錶行",
+      "names": [
+        "加連威時計",
+        "名表行",
+        "二手表行",
+        "鐘錶維修",
+        "金城時計",
+        "廣東道名表"
+      ]
+    },
+    "pawn_shop": {
+      "generic": "當舖",
+      "names": [
+        "金城大押",
+        "如意大押",
+        "富貴大押",
+        "平安當",
+        "興隆大押",
+        "德福大押"
+      ]
+    }
+  },
+  "theme_streets": {
+    "note": "主題街地舖權重提示（跟地道人 shop-mix）；代碼抽 ground_shop 時可加權",
+    "yau_tsim_mong": {
+      "mong_kok_nathan": [
+        "electronics",
+        "pharmacy",
+        "footwear",
+        "money_exchange",
+        "convenience",
+        "goldsmith"
+      ],
+      "tst_nathan": [
+        "goldsmith",
+        "watch_shop",
+        "pharmacy",
+        "money_exchange",
+        "electronics"
+      ],
+      "jordan_yau_ma_tei": [
+        "cha_chaan_teng",
+        "pharmacy",
+        "goldsmith",
+        "pawn_shop"
+      ]
+    },
+    "sham_shui_po": {
+      "ap_liu": [
+        "electronics",
+        "shuttered"
+      ],
+      "ki_lung_yu_chau": [
+        "fabric"
+      ],
+      "pei_ho_market": [
+        "wet_market_stall",
+        "cha_chaan_teng"
+      ],
+      "cheung_sha_wan": [
+        "fashion",
+        "fabric",
+        "cha_chaan_teng"
+      ]
+    },
+    "kowloon_city": {
+      "south_horn": [
+        "thai_eatery",
+        "roast_meat",
+        "goldsmith",
+        "cha_chaan_teng"
+      ]
+    },
+    "wan_chai": {
+      "hennessy": [
+        "cha_chaan_teng",
+        "pharmacy",
+        "estate_agency"
+      ],
+      "johnston": [
+        "cha_chaan_teng",
+        "pawn_shop",
+        "hardware"
+      ]
+    },
+    "eastern": {
+      "north_point": [
+        "cha_chaan_teng",
+        "pharmacy",
+        "goldsmith",
+        "wet_market_stall"
+      ],
+      "chun_yeung": [
+        "wet_market_stall"
+      ]
+    }
+  },
+  "ground_shop_keys": [
+    "cha_chaan_teng",
+    "convenience",
+    "electronics",
+    "estate_agency",
+    "fabric",
+    "fashion",
+    "footwear",
+    "goldsmith",
+    "hardware",
+    "money_exchange",
+    "pawn_shop",
+    "pharmacy",
+    "roast_meat",
+    "shuttered",
+    "thai_eatery",
+    "watch_shop",
+    "wet_market_stall"
+  ],
+  "sign_vs_ambient": {
+    "signs_and_nav": "真街名（通菜街、花園街、園圃街、鴨寮街、基隆街、北河街、春秧街）",
+    "ambient_banner_only": [
+      "女人街",
+      "波鞋街",
+      "金魚街",
+      "雀仔街"
+    ],
+    "note": "地道人更正 2026-10-24：花名唔寫上招牌 mesh"
+  }
+}
