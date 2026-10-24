@@ -348,28 +348,41 @@ const CONT = { W: 2.44, H: 2.59, L20: 6.06, L40: 12.19 }; // ISO 貨櫃尺寸（
  * 真機要讀到「盆地＋巨型 STS」，唔係玩具吊臂。詳 docs/boss-fail-kwai-terminal-scale-core27f.md
  */
 const KWAI_SCALE = {
-  /* 對齊 assets/gltf/hk-port/hk-kwai-port-scale.json · glTF 優先、程序後備同尺 */
+  /* 對齊 assets/gltf/hk-port/hk-kwai-port-scale.json · glTF 優先、程序後備同尺 · STS~70 */
   cont: CONT, // ISO 20/40 1:1
   sts: {
-    gauge: 30.0,     // 軌距 m（舊 ~16；JSON 30）
+    gauge: 30.5,     // 軌距 m（dims_sts；舊 16／30）
     along: 20.0,     // 沿岸門架進深
-    portalH: 55,     // 門架腳高（舊 42）
-    boomLen: 58,     // 海側外伸（JSON outreach 58）
-    boomY: 58,       // 吊臂高度
+    portalH: 70,     // 門架腳高 ~70 m（禁 ×0.9）
+    boomLen: 65,     // 海側外伸／outreach
+    boomY: 62,       // 吊臂高度
     cabinH: 5.0,
-    tipY: 78,        // 航空紅燈
+    tipY: 85,        // 航空紅燈 ≈ tip_y_approx
     legW: 2.2
   },
   ship: { beam: 18, freeboard: 8, bridgeH: 6, lenMin: 120, lenMul: 1.0 }, // 對齊 hull GLB ~120×18×8
   stack: { maxH_lane0: 5, maxH_laneN: 6 },
   craneScale: { partA: 1.0, partB: 1.0, partC: 1.0 }, // 禁 ×0.9 玩具縮；遠景都用真尺
   quay: { faceH: 4.5, faceThick: 0.7, apron: 3.5, moduleLen: 24 },
+  infra: {
+    flyoverSpan: 18,   // hk-flyover-undercroft-bay
+    flyoverClear: 5.2,
+    flyoverDeck: 12,
+    tunnelClearW: 10,
+    tunnelClearH: 5,
+    indBayW: 12,
+    indBayH: 28
+  },
   gltf: {
     crane: 'gltf/hk-port/hk-sts-quay-crane.glb',
     ship: 'gltf/hk-port/hk-port-ship-hull.glb',
     wall: 'gltf/hk-port/hk-quay-wall-module.glb',
     stack: 'gltf/hk-port/hk-container-yard-stack.glb',
-    scaleJson: 'gltf/hk-port/hk-kwai-port-scale.json'
+    flyover: 'gltf/hk-port/hk-flyover-undercroft-bay.glb',
+    tunnel: 'gltf/hk-port/hk-tunnel-portal.glb',
+    indWall: 'gltf/hk-port/hk-industrial-wall-bay.glb',
+    scaleJson: 'gltf/hk-port/hk-kwai-port-scale.json',
+    gisOverlay: 'assets/data/kwai-terminal-gis-overlay-p0.json'
   }
 };
 const ROAD_HALF = 7.0;                                // 行車道半闊（兩線雙程，每線 3.5 米）
@@ -810,9 +823,12 @@ addStrip(0.12, -2, 0.12, BERTH_Z * 2);
  * ========================================================================= */
 const colliders = []; // { minX,maxX,minZ,maxZ,maxY }
 function addCollider(cx, cz, hw, hd, h) {
-  if (typeof KWAI !== 'undefined' && KWAI._colHub && typeof KWAI_GEO !== 'undefined') {
-    cx += KWAI_GEO.hubX; cz += KWAI_GEO.hubZ;
-  }
+  // LOCAL QA patch: avoid TDZ on const KWAI (declared ~L17047) during early mast/lamp calls
+  try {
+    if (KWAI && KWAI._colHub && typeof KWAI_GEO !== 'undefined') {
+      cx += KWAI_GEO.hubX; cz += KWAI_GEO.hubZ;
+    }
+  } catch (e) { /* KWAI not init yet */ }
   colliders.push({ minX: cx - hw, maxX: cx + hw, minZ: cz - hd, maxZ: cz + hd, maxY: h });
 }
 const shootables = [ground]; // 子彈可擊中的物件（不包括玩家及自己的車）
@@ -17121,7 +17137,7 @@ function kwBollard(parent, x, z) {
 /** 船舷剪影（遠泊，唔印真船名） */
 
 /** 葵涌碼頭 P0 真尺 glTF（hk-port）；失敗先留程序後備。唔用 ×0.9 玩具 scale。 */
-KWAI.portGltf = KWAI.portGltf || { crane: null, ship: null, wall: null, stack: null, loading: {} };
+KWAI.portGltf = KWAI.portGltf || { crane: null, ship: null, wall: null, stack: null, flyover: null, tunnel: null, indWall: null, loading: {} };
 function kwPortLoad(key, url) {
   if (KWAI.portGltf[key]) return Promise.resolve(KWAI.portGltf[key]);
   if (KWAI.portGltf.loading[key]) return KWAI.portGltf.loading[key];
@@ -17379,7 +17395,7 @@ function kwOnTod(mode) {
  *  唔拆現有直路碰撞——聽日可玩；完整拆直路 P1
  */
 function kwProcCrane(parent, x, z, scale, yaw) {
-  /* P0：真 STS 55／58／30 m；忽略舊玩具 scale（0.7–0.95） */
+  /* P0：真 STS ~70／65／30.5 m；scale 參數忽略（一律 1.0）；禁 ×0.9 */
   const g = new THREE.Group();
   g.position.set(x, 0, z); g.rotation.y = yaw || 0;
   g.userData.kwaichung = true; g.userData.noMerge = true; g.name = 'kt-quay-crane';
@@ -17438,6 +17454,212 @@ function kwYardStack(parent, x, z, yaw) {
     g.add(cl);
   }).catch(() => {});
   return g;
+}
+
+/** 葵涌基建 glTF hang（高架／隧口／工廈牆）· docs/kwai-infra-gltf-hang-2026-10-24.md
+ *  剖面：葵芳→工廈→高架／隧→肘閘→堆場→海峽→青衣吊
+ *  優先讀 GIS overlay polyline／footprint；缺則 context stub（禁穿堆場中軸）
+ */
+async function kwFetchGisOverlay() {
+  if (KWAI._gisOverlay) return KWAI._gisOverlay;
+  const urls = [
+    KWAI_SCALE.gltf.gisOverlay,
+    'assets/data/kwai-terminal-gis-overlay-p0.json',
+    './assets/data/kwai-terminal-gis-overlay-p0.json',
+    'data/kwai-terminal-gis-overlay-p0.json'
+  ];
+  for (const u of urls) {
+    try {
+      const r = await fetch(u, { cache: 'no-store' });
+      if (r && r.ok) { KWAI._gisOverlay = await r.json(); return KWAI._gisOverlay; }
+    } catch (e) { /* next */ }
+  }
+  return null;
+}
+function kwHubLocalFromWorld(wx, wz) {
+  return { x: wx - KWAI_GEO.hubX, z: wz - KWAI_GEO.hubZ };
+}
+/** 高架橋底 bay tile → kt_flyover_north；禁穿堆場中軸（|x|<28 且 |z|<BOUND.z） */
+function kwFlyoverTileRow(parent, pts, yawHint) {
+  const g = new THREE.Group();
+  g.name = 'kt_flyover_north';
+  g.userData.kwaichung = true; g.userData.noMerge = true;
+  parent.add(g);
+  const span = (KWAI_SCALE.infra && KWAI_SCALE.infra.flyoverSpan) || 18;
+  kwPortLoad('flyover', KWAI_SCALE.gltf.flyover).then((proto) => {
+    if (!proto || !g.parent) return;
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      // 禁：高架直穿堆場中軸
+      if (Math.abs(p.x) < 28 && Math.abs(p.z) < (typeof BOUND !== 'undefined' ? BOUND.z : 280) - 10) continue;
+      const cl = proto.clone(true);
+      cl.position.set(p.x, 0, p.z);
+      const yaw = (p.yaw != null) ? p.yaw : (yawHint || 0);
+      cl.rotation.y = yaw;
+      cl.userData.kwaichung = true; cl.userData.noMerge = true;
+      g.add(cl);
+      if (typeof addCollider === 'function') {
+        // 橋墩粗碰（淨空感由 mesh；碰撞矮柱）
+        addCollider(p.x, p.z, 1.2, span * 0.35, 5.2);
+      }
+    }
+    console.info('[kw-infra] flyover tiles', g.children.length);
+  }).catch((e) => console.warn('[kw-infra] flyover', e && e.message));
+  return g;
+}
+function kwTunnelPortalAt(parent, x, z, yaw) {
+  const g = new THREE.Group();
+  g.name = 'kt_tunnel_portal';
+  g.position.set(x, 0, z); g.rotation.y = yaw || 0;
+  g.userData.kwaichung = true; g.userData.noMerge = true;
+  parent.add(g);
+  kwPortLoad('tunnel', KWAI_SCALE.gltf.tunnel).then((proto) => {
+    if (!proto || !g.parent) return;
+    const cl = proto.clone(true);
+    cl.userData.kwaichung = true; cl.userData.noMerge = true;
+    g.add(cl);
+    if (typeof addCollider === 'function') addCollider(x, z, 6, 4, 5);
+  }).catch((e) => console.warn('[kw-infra] tunnel', e && e.message));
+  return g;
+}
+function kwIndWallBayRow(parent, pts) {
+  const g = new THREE.Group();
+  g.name = 'kt_ind_block_n';
+  g.userData.kwaichung = true; g.userData.noMerge = true;
+  parent.add(g);
+  kwPortLoad('indWall', KWAI_SCALE.gltf.indWall).then((proto) => {
+    if (!proto || !g.parent) return;
+    for (const p of pts) {
+      const cl = proto.clone(true);
+      cl.position.set(p.x, 0, p.z);
+      cl.rotation.y = p.yaw || 0;
+      cl.userData.kwaichung = true; cl.userData.noMerge = true;
+      g.add(cl);
+      if (typeof addCollider === 'function') addCollider(p.x, p.z, 6, 4, 14);
+    }
+    console.info('[kw-infra] ind wall bays', g.children.length);
+  }).catch((e) => console.warn('[kw-infra] indWall', e && e.message));
+  return g;
+}
+/** 葵芳站戲仿 stub（程序盒＋牌；禁寫「葵涌站」） */
+function kwKwaiFongStub(parent, x, z) {
+  if (typeof kwStationKwaiFong === 'function') {
+    return kwStationKwaiFong(parent, x, z, null);
+  }
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.name = 'kt_station_kwai_fong';
+  g.userData.kwaichung = true;
+  const conc = new THREE.MeshStandardMaterial({ color: 0x8a9096, roughness: 0.8 });
+  const hall = new THREE.Mesh(new THREE.BoxGeometry(18, 6, 12), conc);
+  hall.position.y = 3; g.add(hall);
+  const signMat = new THREE.MeshStandardMaterial({ color: 0x1a4a8a, roughness: 0.45 });
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(7, 1.2, 0.12), signMat);
+  sign.position.set(0, 7.2, 6.2); g.add(sign);
+  parent.add(g);
+  if (typeof addCollider === 'function') addCollider(x, z, 9, 6, 6);
+  return g;
+}
+function kwInfraStubPts() {
+  /* context stub：北側／內陸高架 ≥120–200 m；唔穿堆場中軸 */
+  const span = (KWAI_SCALE.infra && KWAI_SCALE.infra.flyoverSpan) || 18;
+  const fly = [];
+  const x0 = -92; // 內陸 −X
+  for (let i = 0; i < 10; i++) {
+    fly.push({ x: x0, z: -80 + i * span, yaw: 0 }); // 沿 +Z
+  }
+  const ind = [];
+  // 閘口兩側／貨櫃碼頭路（肘內陸臂）≥4–8
+  const indSpecs = [
+    [-40, 48, Math.PI / 2], [-40, 64, Math.PI / 2], [-40, 80, Math.PI / 2], [-40, 96, Math.PI / 2],
+    [-58, 52, -Math.PI / 2], [-58, 70, -Math.PI / 2], [-58, 88, -Math.PI / 2], [-74, 60, Math.PI / 2]
+  ];
+  for (const [x, z, yaw] of indSpecs) ind.push({ x, z, yaw });
+  return {
+    flyover: fly,
+    tunnel: { x: -88, z: -98, yaw: 0 }, // 嘴 +Z；高架南端／敘事帶
+    ind,
+    station: { x: -120, z: 130 } // 肘盡頭北側；唔寫葵涌站
+  };
+}
+function kwInfraPtsFromOverlay(ov) {
+  if (!ov || !ov.layers) return null;
+  const hubX = KWAI_GEO.hubX, hubZ = KWAI_GEO.hubZ;
+  const bridges = ov.layers.bridge_roads || [];
+  // 內陸／北側：localX < -40（唔穿中軸）、距 hub < 550
+  let flyPts = [];
+  for (const b of bridges) {
+    const lx = b.x - hubX, lz = b.z - hubZ;
+    const r = Math.hypot(lx, lz);
+    if (r > 550) continue;
+    if (lx > -40 && lx < 28) continue; // 避中軸／海側 apron
+    if (lx >= -40) continue; // 只要內陸 −X
+    flyPts.push({ x: lx, z: lz, yaw: 0, r });
+  }
+  flyPts.sort((a, b) => a.z - b.z);
+  // 若 OSM 點太疏／太少，用 stub
+  if (flyPts.length < 4) flyPts = null;
+  else {
+    // 沿 Z 重採樣成 ~18 m 跨
+    const span = (KWAI_SCALE.infra && KWAI_SCALE.infra.flyoverSpan) || 18;
+    const z0 = flyPts[0].z, z1 = flyPts[flyPts.length - 1].z;
+    const xAvg = flyPts.reduce((s, p) => s + p.x, 0) / flyPts.length;
+    if (xAvg > -40) flyPts = null;
+    else {
+      const out = [];
+      const zMin = Math.min(z0, z1), zMax = Math.max(z0, z1);
+      const len = Math.max(zMax - zMin, 120);
+      const n = Math.max(7, Math.min(12, Math.round(len / span)));
+      for (let i = 0; i < n; i++) out.push({ x: xAvg, z: zMin + (i / Math.max(1, n - 1)) * len, yaw: 0 });
+      flyPts = out;
+    }
+  }
+  const inds = ov.layers.industrial_bldg || [];
+  let indPts = [];
+  for (const b of inds) {
+    const lx = b.x - hubX, lz = b.z - hubZ;
+    const r = Math.hypot(lx, lz);
+    // 閘／肘內陸帶：−X、偏北
+    if (r > 480 || lx > -20) continue;
+    if (lz < 20 || lz > 280) continue;
+    indPts.push({ x: lx, z: lz, yaw: Math.PI / 2, r });
+  }
+  indPts.sort((a, b) => a.r - b.r);
+  indPts = indPts.slice(0, 8);
+  if (indPts.length < 4) indPts = null;
+  // tunnel=0 → context stub
+  const tun = (ov.layers.tunnel_roads && ov.layers.tunnel_roads.length)
+    ? (() => {
+        const t = ov.layers.tunnel_roads[0];
+        return { x: t.x - hubX, z: t.z - hubZ, yaw: 0 };
+      })()
+    : null;
+  return { flyover: flyPts, ind: indPts, tunnel: tun };
+}
+function kwBuildInfraGltf(parent) {
+  if (!parent || KWAI._infraGltfBuilt) return;
+  KWAI._infraGltfBuilt = true;
+  const stub = kwInfraStubPts();
+  const apply = (pts) => {
+    const fly = (pts && pts.flyover) || stub.flyover;
+    const ind = (pts && pts.ind) || stub.ind;
+    const tun = (pts && pts.tunnel) || stub.tunnel;
+    kwFlyoverTileRow(parent, fly, 0);
+    kwTunnelPortalAt(parent, tun.x, tun.z, tun.yaw || 0);
+    kwIndWallBayRow(parent, ind);
+    // 葵芳戲仿：hub 側可見 stub（P1 若已掛遠距 OSM 再唔重複名）
+    if (!parent.getObjectByName('kt_station_kwai_fong')) {
+      kwKwaiFongStub(parent, stub.station.x, stub.station.z);
+    }
+    if (KWAI.zones) {
+      KWAI.zones.flyover = 'kt_flyover_north';
+      KWAI.zones.tunnel = 'kt_tunnel_portal';
+      KWAI.zones.industry = 'kt_ind_block_n';
+      KWAI.zones.station = 'kt_station_kwai_fong';
+    }
+  };
+  kwFetchGisOverlay().then((ov) => {
+    const fromOv = kwInfraPtsFromOverlay(ov);
+    apply(fromOv);
+  }).catch(() => apply(null));
 }
 
 
@@ -17839,13 +18061,20 @@ function kwBuildThreePartStub() {
     root.add(mast);
   }
 
+  // 基建 glTF：高架／隧口／工廈牆／葵芳 stub（STS 已 1.0）
+  if (typeof kwBuildInfraGltf === 'function') kwBuildInfraGltf(root);
+
     KWAI._colHub = false;
   KWAI.threePart = true; KWAI.zones = {
     partA: 'kt_part_a_yard',
     partB: 'kt_part_b_ct8_hint',
     partC: 'kt_part_c_tsingyi_skyline',
     water: 'kt_rambler_water',
-    bridges: ['kt_tsing_ma_silhouette', 'kt_ting_kau_silhouette']
+    bridges: ['kt_tsing_ma_silhouette', 'kt_ting_kau_silhouette'],
+    flyover: 'kt_flyover_north',
+    tunnel: 'kt_tunnel_portal',
+    industry: 'kt_ind_block_n',
+    station: 'kt_station_kwai_fong'
   };
 }
 
@@ -18983,7 +19212,8 @@ function kwBuildDockPlus() {
   const root = (typeof kwEnsureGroup === 'function' ? kwEnsureGroup() : null) || KWAI.group || new THREE.Group();
   if (!KWAI.group) { root.name = 'kwaichung-dock'; KWAI.group = root; scene.add(root); }
   if (typeof kwEnsureGroup === 'function') kwEnsureGroup();
-  KWAI._colHub = true; else if (KWAI.group && typeof KWAI_GEO !== 'undefined') KWAI.group.position.set(KWAI_GEO.hubX, 0, KWAI_GEO.hubZ);
+  KWAI._colHub = true;
+  if (KWAI.group && typeof KWAI_GEO !== 'undefined') KWAI.group.position.set(KWAI_GEO.hubX, 0, KWAI_GEO.hubZ);
   if (typeof kwEnsureGroup === 'function') kwEnsureGroup();
   const bx = typeof BOUND !== 'undefined' ? BOUND.x : 90;
   const bz = typeof BOUND !== 'undefined' ? BOUND.z : 280;
@@ -20184,7 +20414,8 @@ function kwEnforceElbowDrive() {
   const root = (typeof kwEnsureGroup === 'function' ? kwEnsureGroup() : null) || KWAI.group || new THREE.Group();
   if (!KWAI.group) { root.name = 'kwaichung-dock'; KWAI.group = root; scene.add(root); }
   if (typeof kwEnsureGroup === 'function') kwEnsureGroup();
-  KWAI._colHub = true; else if (KWAI.group && typeof KWAI_GEO !== 'undefined') KWAI.group.position.set(KWAI_GEO.hubX, 0, KWAI_GEO.hubZ);
+  KWAI._colHub = true;
+  if (KWAI.group && typeof KWAI_GEO !== 'undefined') KWAI.group.position.set(KWAI_GEO.hubX, 0, KWAI_GEO.hubZ);
   if (typeof kwEnsureGroup === 'function') kwEnsureGroup();
   const g = new THREE.Group();
   g.name = 'kt_elbow_drive_core23';
@@ -21224,14 +21455,16 @@ function portAmbPlayerXZ() {
 /** 粗分區：靠海／Part B 南／Part C 遠岸／工廈帶／Part A 堆場 */
 function portAmbZone(x, z) {
   const bx = (typeof BOUND !== 'undefined') ? BOUND.x : 90;
-  const bz = (typeof BOUND !== 'undefined') ? BOUND.z : 280;
+  const bz = (typeof BOUND !== 'undefined') ? BOUND.z : 280; // core28a P0 岸線 ≥500 m → Z ±280
   const hx = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237;
   const hz = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145;
   const lx = x - hx, lz = z - hz; // 本地相對 hub
   if (lx > bx + 120) return 'kt_part_c_tsingyi_skyline';
   if (lz < -bz + 20 && lx > bx - 10) return 'kt_part_b_ct8_hint';
-  if (lx > bx - 8) return 'kt_quay_edge';
-  if (lx > -90 && lx < -12 && lz > 28 && lz < 135) return 'kt_ind_street';
+  // 岸壁：X 貼岸；Z −280…+280（跟 core28a-kwai-dock-p0-scales）
+  if (lx > bx - 8 && lz > -bz && lz < bz) return 'kt_quay_edge';
+  // 肘幹＋內陸臂（閘→市區）；Z 肘折點 ±80 量級；人潮床唔加
+  if (lx > -140 && lx < -8 && lz > -80 && lz < 160) return 'kt_ind_street';
   return 'kt_part_a_yard';
 }
 
@@ -21295,7 +21528,7 @@ function portAmbSim(dt) {
   const _hz = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145;
   const nearPallet = (zone === 'kt_part_a_yard' || zone === 'kt_quay_edge')
     && (p.x - _hx) > 2 && (p.x - _hx) < (typeof BOUND !== 'undefined' ? BOUND.x : 90) + 2
-    && (p.z - _hz) > -30 && (p.z - _hz) < 75;
+    && (p.z - _hz) > -140 && (p.z - _hz) < 140; // core28a 岸線放大
   if (nearPallet && PORTAMB.palletCool <= 0 && Math.random() < dt * 0.04) {
     PORTAMB.palletCool = 10 + Math.random() * 16;
     sfx('pallet_clack', 0.55);

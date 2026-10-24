@@ -1,9 +1,9 @@
 {
   "version": "kwai-port-p0-2026-10-24",
   "ban": "禁相板／真船公司 logo／真碼頭名",
-  "scale": "meters 1:1 (height and props); do not apply ×0.9 toy scale",
+  "scale": "meters 1:1 (height and props); do not apply ×0.9 toy scale; KWAI_SCALE.craneScale all 1.0",
   "replace": {
-    "kwProcCrane": "hk-sts-quay-crane.glb — portal 55m, boom outreach 58m, gauge 30m; origin between landside legs, +X seaward",
+    "kwProcCrane": "hk-sts-quay-crane.glb — portal ~70m, boom outreach 65m, gauge 30.5m; +X seaward; scale 1.0 only",
     "quay": "tile hk-quay-wall-module.glb along berth (24m modules); +Z=sea",
     "containers": "prefer hk-container-yard-stack.glb for mass; ISO 20/40 singles for fill",
     "ship": "hk-port-ship-hull.glb ~120×18×8 — replace kwHull toy boxes"
@@ -12,32 +12,32 @@
   "colliders": {
     "crane_legs": [
       {
-        "x": -15,
+        "x": -15.25,
         "z": -10,
         "hw": 1.4,
         "hd": 1.4,
-        "hh": 55
+        "hh": 70
       },
       {
-        "x": 15,
+        "x": -15.25,
+        "z": 10,
+        "hw": 1.4,
+        "hd": 1.4,
+        "hh": 70
+      },
+      {
+        "x": 15.25,
         "z": -10,
         "hw": 1.4,
         "hd": 1.4,
-        "hh": 55
+        "hh": 70
       },
       {
-        "x": -15,
+        "x": 15.25,
         "z": 10,
         "hw": 1.4,
         "hd": 1.4,
-        "hh": 55
-      },
-      {
-        "x": 15,
-        "z": 10,
-        "hw": 1.4,
-        "hd": 1.4,
-        "hh": 55
+        "hh": 70
       }
     ],
     "quay_module": {
@@ -56,5 +56,27 @@
       "hd": 3.03,
       "hh": 2.59
     }
+  },
+  "index_const": "KWAI_SCALE in index.html (synced 2026-10-24)",
+  "sts_lock": {
+    "gauge": 30.5,
+    "portalH": 70,
+    "boomOutreach": 65,
+    "boomY": 62,
+    "tipY": 85,
+    "along": 20
+  },
+  "sts_updated": "2026-10-24T21:41+08",
+  "infra": {
+    "flyover_undercroft": "hk-flyover-undercroft-bay.glb — clear 5.2m, span 18m, deck width 12m; tile along elevated road",
+    "tunnel_portal": "hk-tunnel-portal.glb — clear 5.0×10; mouth +Z; YB hazard + height bar",
+    "industrial_wall": "hk-industrial-wall-bay.glb — ~12×28m facade bay + loading; no photo tex"
+  },
+  "dims_sts": {
+    "portal_h": 70,
+    "boom_y": 62,
+    "outreach": 65,
+    "gauge": 30.5,
+    "tip_y_approx": 85
   }
 }
