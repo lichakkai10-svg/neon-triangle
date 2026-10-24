@@ -17147,10 +17147,12 @@ function kwPortLoad(key, url) {
       if (typeof loadGLTF === 'function') {
         root = await loadGLTF(url, 20000);
       } else if (typeof gltfLoader !== 'undefined' && gltfLoader) {
-        const gltf = await gltfLoader.loadAsync(url.startsWith('assets/') ? url : ('assets/' + url));
-        root = gltf && (gltf.scene || gltf);
+        root = await gltfLoader.loadAsync(url.startsWith('assets/') ? url : ('assets/' + url));
       }
+      // loadGLTF／GLTFLoader 回傳 { scene, … }；要解包先有 .traverse／.clone
+      root = root && (root.scene || root.scenes && root.scenes[0] || root);
       if (!root) throw new Error('empty');
+      if (typeof root.traverse !== 'function') throw new Error('no traverse (forgot .scene?)');
       root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.userData.noMerge = true; } });
       KWAI.portGltf[key] = root;
       return root;
@@ -17432,7 +17434,7 @@ function kwQuayWallRow(parent, x0, z0, n, yaw) {
   g.userData.kwaichung = true; g.name = 'kt-quay-wall-row';
   parent.add(g);
   kwPortLoad('wall', KWAI_SCALE.gltf.wall).then((proto) => {
-    if (!proto) return;
+    if (!proto) { console.warn('[kw-port] wall empty proto'); return; }
     const count = Math.max(1, n | 0);
     for (let i = 0; i < count; i++) {
       const cl = proto.clone(true);
@@ -17448,7 +17450,7 @@ function kwYardStack(parent, x, z, yaw) {
   g.userData.kwaichung = true; g.name = 'kt-yard-stack';
   parent.add(g);
   kwPortLoad('stack', KWAI_SCALE.gltf.stack).then((proto) => {
-    if (!proto || !g.parent) return;
+    if (!proto || !g.parent) { console.warn('[kw-port] stack empty proto'); return; }
     const cl = proto.clone(true);
     cl.userData.kwaichung = true; cl.userData.noMerge = true;
     g.add(cl);
@@ -17487,7 +17489,10 @@ function kwFlyoverTileRow(parent, pts, yawHint) {
   parent.add(g);
   const span = (KWAI_SCALE.infra && KWAI_SCALE.infra.flyoverSpan) || 18;
   kwPortLoad('flyover', KWAI_SCALE.gltf.flyover).then((proto) => {
-    if (!proto || !g.parent) return;
+    if (!proto || !g.parent) {
+      console.warn('[kw-infra] flyover empty proto', !!proto, !!g.parent);
+      return;
+    }
     for (let i = 0; i < pts.length; i++) {
       const p = pts[i];
       // 禁：高架直穿堆場中軸
@@ -17503,7 +17508,8 @@ function kwFlyoverTileRow(parent, pts, yawHint) {
         addCollider(p.x, p.z, 1.2, span * 0.35, 5.2);
       }
     }
-    console.info('[kw-infra] flyover tiles', g.children.length);
+    if (!g.children.length) console.warn('[kw-infra] flyover sz=0 after tile');
+    else console.info('[kw-infra] flyover tiles', g.children.length);
   }).catch((e) => console.warn('[kw-infra] flyover', e && e.message));
   return g;
 }
@@ -17514,11 +17520,15 @@ function kwTunnelPortalAt(parent, x, z, yaw) {
   g.userData.kwaichung = true; g.userData.noMerge = true;
   parent.add(g);
   kwPortLoad('tunnel', KWAI_SCALE.gltf.tunnel).then((proto) => {
-    if (!proto || !g.parent) return;
+    if (!proto || !g.parent) {
+      console.warn('[kw-infra] tunnel empty proto', !!proto, !!g.parent);
+      return;
+    }
     const cl = proto.clone(true);
     cl.userData.kwaichung = true; cl.userData.noMerge = true;
     g.add(cl);
     if (typeof addCollider === 'function') addCollider(x, z, 6, 4, 5);
+    console.info('[kw-infra] tunnel portal hung');
   }).catch((e) => console.warn('[kw-infra] tunnel', e && e.message));
   return g;
 }
@@ -17528,7 +17538,10 @@ function kwIndWallBayRow(parent, pts) {
   g.userData.kwaichung = true; g.userData.noMerge = true;
   parent.add(g);
   kwPortLoad('indWall', KWAI_SCALE.gltf.indWall).then((proto) => {
-    if (!proto || !g.parent) return;
+    if (!proto || !g.parent) {
+      console.warn('[kw-infra] indWall empty proto', !!proto, !!g.parent);
+      return;
+    }
     for (const p of pts) {
       const cl = proto.clone(true);
       cl.position.set(p.x, 0, p.z);
@@ -17537,7 +17550,8 @@ function kwIndWallBayRow(parent, pts) {
       g.add(cl);
       if (typeof addCollider === 'function') addCollider(p.x, p.z, 6, 4, 14);
     }
-    console.info('[kw-infra] ind wall bays', g.children.length);
+    if (!g.children.length) console.warn('[kw-infra] indWall sz=0 after tile');
+    else console.info('[kw-infra] ind wall bays', g.children.length);
   }).catch((e) => console.warn('[kw-infra] indWall', e && e.message));
   return g;
 }

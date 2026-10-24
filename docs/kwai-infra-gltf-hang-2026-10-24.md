@@ -31,3 +31,6 @@
 - 隧道真 OSM（bbox `tunnel=yes`=0；等 GIS／房7）
 - 高架跟青葵公路真 polyline 精貼（而家內陸 stub／overlay 篩選）
 - 合 tip／升 `?v=`
+
+## Loader 修（sz=0）
+`kwPortLoad`：`loadGLTF` 回傳整份 glTF → 必須 `root = g.scene || g` 再 `traverse`／`clone`。未解包會 `traverse is not a function`，infra hang `sz=0`。
