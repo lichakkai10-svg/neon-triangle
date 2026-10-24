@@ -9877,7 +9877,26 @@ HKM.go = function (id) {
   HKM.raw.placeCar(x, z, h); car.root.position.set(x, 0, z); camState.init = false; HKM.lastFill.set(1e9, 0, 1e9); HKM.streamT = 0;
   return true;
 };
-{ const q = new URLSearchParams(location.search).get('hkzone'); if (q) { const t0 = setInterval(() => { if (!NT.ready) return; clearInterval(t0); setTimeout(() => HKM.go(q), 300); }, 200); } }
+{ const q = new URLSearchParams(location.search).get('hkzone'); if (q) {
+  const HKZONE_ALIAS = {
+    wch: 'wan_chai', wc: 'wan_chai', wanchai: 'wan_chai', 'wan-chai': 'wan_chai',
+    cen: 'central_west', cw: 'central_west', central: 'central_west', 'central-west': 'central_west',
+    ytm: 'yau_tsim_mong', mk: 'yau_tsim_mong', mongkok: 'yau_tsim_mong',
+    ssp: 'sham_shui_po', kcity: 'kowloon_city', kc: 'kowloon_city',
+    east: 'eastern', cwb: 'eastern',
+    kt: 'kwai_tsing', kwai: 'kwai_tsing', tw: 'tsuen_wan', st: 'sha_tin', sht: 'sha_tin'
+  };
+  const t0 = setInterval(() => {
+    if (!NT.ready) return; clearInterval(t0);
+    setTimeout(() => {
+      const id = HKZONE_ALIAS[String(q).toLowerCase()] || q;
+      let ok = false;
+      try { if (typeof NT.hk18Go === 'function') ok = !!NT.hk18Go(id); } catch (e) { /* */ }
+      if (!ok) try { ok = !!HKM.go(q) || !!HKM.go(id); } catch (e2) { /* */ }
+      if (!ok) console.warn('[hkzone] unknown', q, '→', id);
+    }, 300);
+  }, 200);
+} }
 Object.assign(window.NT, { HKM, HKR, hkRouteNearest, hkGo: (id) => HKM.go(id), zoneOf: (p) => zoneOf(p), car, camState });
 /* =========================================================================
  * Gap-fill（醫院之後）
@@ -21314,9 +21333,9 @@ function voCueForLine(who, line) {
   if (/水客出千/.test(t) && /司警入場前/.test(t)) return 'vo_dealer_whisper';
   if (/Senhor.*documentos/i.test(t) || /documentos, por favor/i.test(t)) return 'vo_sec_docs';
   if (/^司警[。.]/.test(t) || (/司警/.test(t) && /手放枱上/.test(t))) return 'vo_pj_freeze';
-  if (/二手叉電線十蚊/.test(t)) return 'vo_ssp_fat_01';
+  if (/二手叉電線平賣/.test(t) || /二手叉電線十蚊/.test(t)) return 'vo_ssp_fat_01';
   if (/冇單冇保養/.test(t)) return 'vo_ssp_fat_02';
-  if (/菜心十蚊一斤/.test(t)) return 'vo_ssp_veg_01';
+  if (/菜心新鮮/.test(t) || /菜心十蚊一斤/.test(t)) return 'vo_ssp_veg_01';
   if (/Sawasdee/i.test(t) && /幾多位/.test(t)) return 'vo_klc_lin_01';
   if (/冬陰功同船麵/.test(t)) return 'vo_klc_lin_02';
   if (/香茅、魚露、椰汁/.test(t)) return 'vo_klc_chung_01';
@@ -22000,14 +22019,24 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       const len = Math.hypot(b.dx - a.dx, b.dz - a.dz);
       if (len < 4) continue;
       const yaw = Math.atan2(b.dx - a.dx, b.dz - a.dz);
+      const mx = (a.dx + b.dx) * 0.5, mz = (a.dz + b.dz) * 0.5;
       const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, 0.08, len), mat);
-      mesh.position.set((a.dx + b.dx) * 0.5, 0.03, (a.dz + b.dz) * 0.5);
+      mesh.position.set(mx, 0.03, mz);
       mesh.rotation.y = yaw;
       mesh.receiveShadow = true;
       mesh.userData.noMerge = true;
       mesh.userData.cw = true;
       mesh.name = 'cw_drive_trunk';
       parent.add(mesh);
+      if (CW.mats.sidewalk) {
+        const swW = 2.4, nx = Math.cos(yaw), nz = -Math.sin(yaw), off = width * 0.5 + swW * 0.5 + 0.05;
+        for (const s of [-1, 1]) {
+          const sw = new THREE.Mesh(new THREE.BoxGeometry(swW, 0.06, len), CW.mats.sidewalk);
+          sw.position.set(mx + nx * off * s, 0.045, mz + nz * off * s);
+          sw.rotation.y = yaw; sw.receiveShadow = true; sw.userData.noMerge = true; sw.name = 'cw_sidewalk';
+          parent.add(sw);
+        }
+      }
       if (n % 2 === 0 && CW.mats.yel) {
         for (const side of [] /* core27f：舊 ±42% 黃線取消，改 kerb 雙黃 */) {
           const edge = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.03, Math.min(len, 48)), CW.mats.yel);
@@ -22749,14 +22778,27 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
 
     function ribbon(parent, pts, width) { if (pts) pts._w = width;
       let n = 0;
+      const swW = 2.4; /* 行人路寬（階磚感） */
       for (let i = 0; i + 1 < pts.length; i++) {
         const a = pts[i], b = pts[i + 1];
         const len = Math.hypot(b.dx - a.dx, b.dz - a.dz); if (len < 4) continue;
         const yaw = Math.atan2(b.dx - a.dx, b.dz - a.dz);
+        const mx = (a.dx + b.dx) * 0.5, mz = (a.dz + b.dz) * 0.5;
         const m = new THREE.Mesh(new THREE.BoxGeometry(width, 0.08, len), D.mats.road);
-        m.position.set((a.dx + b.dx) * 0.5, 0.03, (a.dz + b.dz) * 0.5); m.rotation.y = yaw;
+        m.position.set(mx, 0.03, mz); m.rotation.y = yaw;
         m.receiveShadow = true; m.userData.noMerge = true; m.name = cfg.id + '_drive_trunk';
         parent.add(m);
+        /* 兩側行人路：淺階磚 vs 深瀝青 */
+        if (D.mats.sidewalk) {
+          const nx = Math.cos(yaw), nz = -Math.sin(yaw);
+          const off = width * 0.5 + swW * 0.5 + 0.05;
+          for (const s of [-1, 1]) {
+            const sw = new THREE.Mesh(new THREE.BoxGeometry(swW, 0.06, len), D.mats.sidewalk);
+            sw.position.set(mx + nx * off * s, 0.045, mz + nz * off * s); sw.rotation.y = yaw;
+            sw.receiveShadow = true; sw.userData.noMerge = true; sw.name = cfg.id + '_sidewalk';
+            parent.add(sw);
+          }
+        }
         if (n % 2 === 0) {
           for (const side of [] /* core27f：舊 ±42% 黃線取消，改 kerb 雙黃 */) {
             const e = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.03, Math.min(len, 48)), D.mats.yel);
@@ -24545,7 +24587,25 @@ Promise.race([
   updateCashHUD(0);
   const mq = URLQ.get('m');
   try {
-    if (mq && MISSIONS[mq]) startMission(mq); else if (!URLQ.has('free')) startMission('manifest');
+    /* 預設入市區自由行（地道人 core28）；故事要顯式 ?m=manifest */
+    if (mq && MISSIONS[mq]) startMission(mq);
+    else {
+      SAVE.decided = true;
+      const tHub = setInterval(() => {
+        if (!NT.ready) return;
+        clearInterval(tHub);
+        const z = URLQ.get('hkzone');
+        if (z) return; /* 交俾 hkzone hook */
+        const go = () => {
+          if (typeof NT.hk18Go === 'function' && NT.hk18Go('yau_tsim_mong')) return true;
+          if (typeof HKM !== 'undefined' && HKM.go && HKM.go('ytm')) return true;
+          return false;
+        };
+        if (!go()) setTimeout(go, 1200);
+        try { if (typeof titleCard === 'function') titleCard('油尖旺', '自由行動'); } catch (e0) { /* */ }
+        try { if (typeof setObjective === 'function') setObjective(''); } catch (e1) { /* */ }
+      }, 200);
+    }
   } catch (e) { console.warn('startMission', e); }
 }).catch((e) => {
   console.warn('boot fatal', e);
@@ -24849,6 +24909,51 @@ body.cine #h2Left{visibility:hidden}`;
   // 街道傢俬（美術模組，用爬蟲 OSM 真點；電線桿只限葵涌）
   try { import('./assets/js/street-furniture-core27d.js').then((m) => m.attachAll(THREE, ['./assets/data/osm-street-furniture-core27d.json', './assets/data/osm-street-furniture-core28.json'])) /* core29 合併時加 core29.json */.catch((e) => console.warn('[core27d-furniture]', e)); } catch (e) { /* */ }
   try { import('./assets/js/building-extras-core27f.js').then((m) => m.attachAll(THREE)).catch((e) => console.warn('[core27f-extras]', e)); } catch (e) { /* */ }
+  /* core28：灣仔／中西電車軌（街景 layers → 嵌瀝青雙軌） */
+  (function c27fTramTracks() {
+    const boot = () => {
+      const L = (window.NT && NT.C27F_LAYERS) || null;
+      if (!L || !L.districts) { setTimeout(boot, 800); return; }
+      if (typeof scene === 'undefined' || typeof THREE === 'undefined') { setTimeout(boot, 400); return; }
+      if (window.NT && NT._c27fTram) return;
+      const g = new THREE.Group(); g.name = 'c27f_tram_tracks'; g.userData.noMerge = true;
+      const matRail = new THREE.MeshStandardMaterial({ color: 0x3a3c40, roughness: 0.45, metalness: 0.55 });
+      const matBed = new THREE.MeshStandardMaterial({ color: 0x2e3032, roughness: 0.9, metalness: 0.05 });
+      let segs = 0;
+      for (const did of ['cw', 'wc']) {
+        const tracks = (L.districts[did] && L.districts[did].tram_tracks) || [];
+        for (const tr of tracks) {
+          const P = tr.points || [];
+          for (let i = 0; i + 1 < P.length; i++) {
+            const a = P[i], b = P[i + 1];
+            const len = Math.hypot(b.dx - a.dx, b.dz - a.dz); if (len < 2) continue;
+            const yaw = Math.atan2(b.dx - a.dx, b.dz - a.dz);
+            const mx = (a.dx + b.dx) * 0.5, mz = (a.dz + b.dz) * 0.5;
+            const bed = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.04, len), matBed);
+            bed.position.set(mx, 0.05, mz); bed.rotation.y = yaw; g.add(bed);
+            for (const s of [-0.35, 0.35]) {
+              const nx = Math.cos(yaw), nz = -Math.sin(yaw);
+              const rail = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, len), matRail);
+              rail.position.set(mx + nx * s, 0.08, mz + nz * s); rail.rotation.y = yaw; g.add(rail);
+            }
+            segs++;
+          }
+        }
+      }
+      scene.add(g);
+      Object.assign(window.NT = window.NT || {}, { _c27fTram: true, C27F_TRAM: { segs, group: g } });
+      console.info('[c27f-tram]', segs, 'segs');
+    };
+    // 確保 layers 已 fetch
+    const pull = () => {
+      if (window.NT && NT.C27F_LAYERS) { boot(); return; }
+      fetch('./assets/data/hk-street-reality-layers-core27f.json').then((r) => r.ok ? r.json() : null).then((j) => {
+        if (j) Object.assign(window.NT = window.NT || {}, { C27F_LAYERS: j });
+        boot();
+      }).catch(() => setTimeout(boot, 1500));
+    };
+    setTimeout(pull, 1200);
+  })();
 
   // HUD core27d（QA iPhone 844×390）：小地圖 92px 疊喺右下掣上面、隔 ≥12px、貼右；身份／暗網入血條下；字幕同倒數避位
   if (HUD2_ON) {
@@ -24980,6 +25085,14 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
         } catch (e) { /* */ }
       };
       snap(); setTimeout(snap, 3500); // 懶載區啱啱 build 完再貼一次
+      // 港島 densify：一傳送即刻建，唔等 idle（灣仔載入先空）
+      try {
+        const key = (C28_HUBKEY[id] || '').toUpperCase();
+        if (key === 'WC' && typeof NT.wcBuild === 'function') NT.wcBuild();
+        if (key === 'EAST' && typeof NT.eastBuild === 'function') NT.eastBuild();
+        if (key === 'CW' && NT.CW && typeof NT.CW.build === 'function') NT.CW.build();
+        if (key === 'YTM' && NT.YTM && typeof NT.YTM.build === 'function') NT.YTM.build();
+      } catch (eB) { /* */ }
       return ok;
     };
     NT.hk18Go._c28snap = true;
