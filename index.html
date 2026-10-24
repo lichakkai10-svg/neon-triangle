@@ -24953,26 +24953,30 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
               && NT.C27F_LAYERS.districts.cw.domestic_sunday_gather) || null;
             const sp = g && g.spawn_points && g.spawn_points[0];
             const bb = g && g.bbox;
-            if (sp && sp.x != null) { tx = sp.x; tz = sp.z; }
-            else if (bb && bb.center_x != null) { tx = bb.center_x; tz = bb.center_z; }
-            else { tx = -6287.7; tz = -12267.0; } /* 皇后像廣場 hkGeo 鎖死 */
+            // 優先 bbox 中心（休憩感）；spawn 次之——唔落德輔／干諾（似碼頭）
+            if (bb && bb.center_x != null) { tx = bb.center_x; tz = bb.center_z; }
+            else if (sp && sp.x != null) { tx = sp.x; tz = sp.z; }
+            else { tx = -6390.3; tz = -12287.5; }
           }
           const s2 = c28SnapRoad(tx, tz, C28_HUBKEY[id]) || c28SnapRoad(tx, tz);
           let px = tx, pz = tz, yaw = 0;
-          if (s2) {
-            // 中西 gather：寧可靠近廣場，唔好被 snap 拉去干諾／繞道（似碼頭）
-            if (id === 'central_west' || id === 'central_western') {
+          if (id === 'central_west' || id === 'central_western') {
+            // 鎖死廣場座標；只喺 <90u 先貼路邊。朝南（heading=π → −Z）望內陸樓，唔望維港碼頭
+            px = tx; pz = tz; yaw = Math.PI;
+            if (s2) {
               const dRoad = Math.hypot(s2[0].dx - tx, s2[0].dz - tz);
-              if (dRoad < 380) { px = s2[0].dx; pz = s2[0].dz; yaw = Math.atan2(s2[1].dx - s2[0].dx, s2[1].dz - s2[0].dz); }
-              else { px = tx; pz = tz; yaw = Math.PI * 0.15; }
-            } else {
-              px = s2[0].dx; pz = s2[0].dz;
-              yaw = Math.atan2(s2[1].dx - s2[0].dx, s2[1].dz - s2[0].dz);
+              if (dRoad < 90) { px = s2[0].dx; pz = s2[0].dz; }
             }
+          } else if (s2) {
+            px = s2[0].dx; pz = s2[0].dz;
+            yaw = Math.atan2(s2[1].dx - s2[0].dx, s2[1].dz - s2[0].dz);
           }
           if (typeof HKM !== 'undefined' && HKM.raw && HKM.raw.placeCar) HKM.raw.placeCar(px, pz, yaw);
           else if (typeof placeCar === 'function') placeCar(px, pz, yaw);
+          try { if (typeof car !== 'undefined' && car) { car.heading = yaw; if (car.root) car.root.rotation.y = yaw; } } catch (e0) { /* */ }
+          try { if (typeof state !== 'undefined') { state.camYaw = yaw; state.yawOffset = 0; } } catch (e1) { /* */ }
           if (typeof camState !== 'undefined') camState.init = false;
+          try { if (typeof NT.c27fPushArcade === 'function' && typeof car !== 'undefined') NT.c27fPushArcade(car, false); } catch (e2) { /* */ }
         } catch (e) { /* */ }
       };
       snap(); setTimeout(snap, 3500); // 懶載區啱啱 build 完再貼一次
@@ -25960,19 +25964,21 @@ const CROWD = {
     }
     return boxes;
   };
-  /** @returns {{moved:number}} 靜態放進廊都會被彈出 */
+  /** @returns {{moved:number, dx:number, dz:number}} 靜態放進廊都會被彈出 */
   NT.c27fPushArcade = function (who, withDamage) {
-    const out = { moved: 0 };
+    const out = { moved: 0, dx: 0, dz: 0 };
     if (!who || !who.pos) return out;
     const boxes = NT.c27fArcadeBoxes();
     if (!boxes.length) return out;
-    const rr = Math.max(0.95, (who.halfW || 0.9) + 0.15);
-    let cx = who.pos.x, cz = who.pos.z;
-    for (let n = 0; n < 4; n++) {
+    const rr = Math.max(0.95, (who.halfW || 0.9) + 0.2);
+    const xIn = who.pos.x, zIn = who.pos.z;
+    let cx = xIn, cz = zIn;
+    for (let n = 0; n < 6; n++) {
       let hit = false;
       for (const b of boxes) {
+        // 騎樓廊 y1≈3；行人矮盒唔擋車
         const y1 = b.y1 != null ? b.y1 : 4;
-        if (y1 < 1.2) continue;
+        if (y1 < 2.0) continue;
         const x0 = Math.min(b.x0, b.x1) - rr, x1 = Math.max(b.x0, b.x1) + rr;
         const z0 = Math.min(b.z0, b.z1) - rr, z1 = Math.max(b.z0, b.z1) + rr;
         if (cx < x0 || cx > x1 || cz < z0 || cz > z1) continue;
@@ -25980,7 +25986,7 @@ const CROWD = {
         const m = Math.min(dl, dr, db, df);
         let nx = 0, nz = 0;
         if (m === dl) nx = -1; else if (m === dr) nx = 1; else if (m === db) nz = -1; else nz = 1;
-        cx += nx * (m + 0.02); cz += nz * (m + 0.02);
+        cx += nx * (m + 0.05); cz += nz * (m + 0.05);
         out.moved++; hit = true;
         if (withDamage && who.vel) {
           const vn = who.vel.x * nx + who.vel.y * nz;
@@ -25994,29 +26000,59 @@ const CROWD = {
       }
       if (!hit) break;
     }
+    out.dx = cx - xIn; out.dz = cz - zIn;
     if (out.moved) {
       who.pos.x = cx; who.pos.z = cz;
       if (who.root) who.root.position.set(cx, who.root.position.y || 0, cz);
     }
     return out;
   };
-  if (typeof placeCar === 'function' && !placeCar._c27fArc) {
-    const _pc = placeCar;
-    placeCar = function (x, z, h) {
+  /** QA：塞入指定世界座標，即刻推，回 moved */
+  NT.c27fArcadeSmoke = function (x, z) {
+    if (typeof car === 'undefined' || !car) return { moved: 0, err: 'no car' };
+    const ox = car.pos.x, oz = car.pos.z;
+    car.pos.x = x; car.pos.z = z;
+    if (car.root) car.root.position.set(x, 0, z);
+    const r = NT.c27fPushArcade(car, false);
+    r.from = { x: x, z: z }; r.to = { x: car.pos.x, z: car.pos.z }; r.boxes = NT.c27fArcadeBoxes().length;
+    return r;
+  };
+  const _arcWrapPlace = (fn) => {
+    if (!fn || fn._c27fArc) return fn;
+    const _pc = fn;
+    const w = function (x, z, h) {
       const r = _pc.apply(this, arguments);
       try { if (typeof car !== 'undefined') NT.c27fPushArcade(car, false); } catch (e) { /* */ }
       return r;
     };
-    placeCar._c27fArc = true;
-  }
-  if (typeof HOOKS !== 'undefined' && HOOKS.frame && !NT._c27fArcFrame) {
+    w._c27fArc = true;
+    return w;
+  };
+  if (typeof placeCar === 'function') placeCar = _arcWrapPlace(placeCar);
+  try {
+    if (typeof HKM !== 'undefined' && HKM.raw && typeof HKM.raw.placeCar === 'function') {
+      HKM.raw.placeCar = _arcWrapPlace(HKM.raw.placeCar);
+    }
+  } catch (e) { /* */ }
+  // 延遲再 wrap 一次（HKM.raw 可能較晏先掛）
+  setTimeout(() => {
+    try {
+      if (typeof placeCar === 'function') placeCar = _arcWrapPlace(placeCar);
+      if (typeof HKM !== 'undefined' && HKM.raw && typeof HKM.raw.placeCar === 'function') {
+        HKM.raw.placeCar = _arcWrapPlace(HKM.raw.placeCar);
+      }
+    } catch (e) { /* */ }
+  }, 2000);
+  if (typeof HOOKS !== 'undefined' && !NT._c27fArcFrame) {
     NT._c27fArcFrame = true;
-    HOOKS.frame.push(() => {
+    const _arcTick = () => {
       try {
         if (typeof car === 'undefined' || !car || !car.pos) return;
         NT.c27fPushArcade(car, false);
       } catch (e) { /* */ }
-    });
+    };
+    if (HOOKS.frame) HOOKS.frame.push(_arcTick);
+    if (HOOKS.sim) HOOKS.sim.push(_arcTick); // NT.step 煙測都推
   }
 
   /* ---------- 外傭假日中環 · instanced 坐／企／蹲（紙皮墊）---------- */
