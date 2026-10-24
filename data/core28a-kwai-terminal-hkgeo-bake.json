@@ -1,0 +1,522 @@
+{
+  "project": "neon-triangle",
+  "id": "core28a-kwai-terminal-hkgeo-bake",
+  "updated": "2026-10-24T21:42:43+08:00",
+  "owner_zh": "開放數據與 GIS 專員",
+  "for_version": "core28a",
+  "priority": "P0",
+  "license_note": "Geometry from OpenStreetMap / Wikipedia coordinates. © OpenStreetMap contributors, ODbL 1.0. Parody in-game; no LandsD survey accuracy claim.",
+  "geo": {
+    "hk0": {
+      "lat": 22.355,
+      "lon": 114.119
+    },
+    "K": 1.5,
+    "formula": "hkGeo: x=-(lon-114.119)*cos(22.355°)*111320*K, z=(lat-22.355)*110574*K (−X=東 +Z=北)",
+    "sources": [
+      "OSM Nominatim relation 10507292",
+      "OSM way Lai King station",
+      "Wikipedia coords for MTR/bridges/tunnels"
+    ]
+  },
+  "scale_lock": {
+    "terminal_gu": [
+      4110,
+      5250
+    ],
+    "terminal_km": [
+      2.7,
+      3.5
+    ],
+    "obsolete_zh": "舊 ±28×186／小 BOUND 作廢"
+  },
+  "layers": {
+    "terminal_whole": {
+      "lat_lon": [
+        22.3208955,
+        114.110782,
+        22.3524033,
+        114.137438
+      ],
+      "x": [
+        -2847.4,
+        1269.1
+      ],
+      "z": [
+        -5656.6,
+        -430.7
+      ],
+      "w_gu": 4116.5,
+      "d_gu": 5225.9,
+      "note_zh": "葵青貨櫃碼頭全框 OSM relation 10507292"
+    },
+    "berth_face_kc": {
+      "lat_lon": [
+        22.328,
+        114.128,
+        22.345,
+        114.136
+      ],
+      "x": [
+        -2625.3,
+        -1389.9
+      ],
+      "z": [
+        -4478.2,
+        -1658.6
+      ],
+      "w_gu": 1235.4,
+      "d_gu": 2819.6,
+      "note_zh": "葵涌泊位岸線"
+    },
+    "crane_strip_kc": {
+      "lat_lon": [
+        22.33,
+        114.131,
+        22.345,
+        114.136
+      ],
+      "x": [
+        -2625.3,
+        -1853.2
+      ],
+      "z": [
+        -4146.5,
+        -1658.6
+      ],
+      "w_gu": 772.1,
+      "d_gu": 2487.9,
+      "note_zh": "岸橋帶深~80m≈120GU；STS高80–100m"
+    },
+    "yard_kc": {
+      "lat_lon": [
+        22.33,
+        114.12,
+        22.348,
+        114.13
+      ],
+      "x": [
+        -1698.7,
+        -154.4
+      ],
+      "z": [
+        -4146.5,
+        -1161.0
+      ],
+      "w_gu": 1544.3,
+      "d_gu": 2985.5,
+      "note_zh": "葵涌堆場"
+    },
+    "ct9_ty": {
+      "lat_lon": [
+        22.33,
+        114.108,
+        22.348,
+        114.118
+      ],
+      "x": [
+        154.4,
+        1698.7
+      ],
+      "z": [
+        -4146.5,
+        -1161.0
+      ],
+      "w_gu": 1544.3,
+      "d_gu": 2985.5,
+      "note_zh": "青衣CT9側"
+    },
+    "elevated_tsing_kwai": {
+      "lat_lon": [
+        22.33,
+        114.128,
+        22.355,
+        114.138
+      ],
+      "x": [
+        -2934.2,
+        -1389.9
+      ],
+      "z": [
+        -4146.5,
+        0.0
+      ],
+      "w_gu": 1544.3,
+      "d_gu": 4146.5,
+      "note_zh": "L2青葵高架走廊（唔直入堆場）"
+    },
+    "mtr_lai_king_kwai_fong": {
+      "lat_lon": [
+        22.347,
+        114.125,
+        22.358,
+        114.132
+      ],
+      "x": [
+        -2007.6,
+        -926.6
+      ],
+      "z": [
+        -1326.9,
+        497.6
+      ],
+      "w_gu": 1081.0,
+      "d_gu": 1824.5,
+      "note_zh": "對面港鐵荔景→葵芳帶"
+    },
+    "industrial_envelope": {
+      "lat_lon": [
+        22.348,
+        114.12,
+        22.362,
+        114.14
+      ],
+      "x": [
+        -3243.0,
+        -154.4
+      ],
+      "z": [
+        -1161.0,
+        1161.0
+      ],
+      "w_gu": 3088.6,
+      "d_gu": 2322.0,
+      "note_zh": "閘外工廈包圍北／東臂"
+    },
+    "north_expand_kwai_fong": {
+      "lat_lon": [
+        22.352,
+        114.12,
+        22.365,
+        114.135
+      ],
+      "x": [
+        -2470.9,
+        -154.4
+      ],
+      "z": [
+        -497.6,
+        1658.6
+      ],
+      "w_gu": 2316.5,
+      "d_gu": 2156.2,
+      "note_zh": "北擴至葵芳／葵興剪影"
+    },
+    "cheung_tsing_tunnel_seg": {
+      "lat_lon": [
+        22.343,
+        114.1,
+        22.352,
+        114.116
+      ],
+      "x": [
+        463.3,
+        2934.2
+      ],
+      "z": [
+        -1990.3,
+        -497.6
+      ],
+      "w_gu": 2470.9,
+      "d_gu": 1492.7,
+      "note_zh": "長青隧／橋遠景段"
+    },
+    "stonecutters_bridge": {
+      "lat_lon": [
+        22.32,
+        114.112,
+        22.33,
+        114.125
+      ],
+      "x": [
+        -926.6,
+        1081.0
+      ],
+      "z": [
+        -5805.1,
+        -4146.5
+      ],
+      "w_gu": 2007.6,
+      "d_gu": 1658.6,
+      "note_zh": "昂船洲大橋"
+    }
+  },
+  "anchors": [
+    {
+      "id": "kt_shore_yard_anchor",
+      "role": "prologue_40m",
+      "name_zh": "岸線∩堆場交接（序章）",
+      "lat": 22.3385,
+      "lon": 114.1305,
+      "layer": "L0",
+      "x": -1776.0,
+      "z": -2736.7
+    },
+    {
+      "id": "kt_gate_a_weigh",
+      "role": "gate",
+      "name_zh": "閘A·地磅（南）",
+      "lat": 22.3368,
+      "lon": 114.1288,
+      "layer": "L0_L1",
+      "x": -1513.4,
+      "z": -3018.7
+    },
+    {
+      "id": "kt_gate_b_weigh",
+      "role": "gate",
+      "name_zh": "閘B·地磅（北）",
+      "lat": 22.342,
+      "lon": 114.1275,
+      "layer": "L0_L1",
+      "x": -1312.7,
+      "z": -2156.2
+    },
+    {
+      "id": "kt_l1_roundabout",
+      "role": "roundabout",
+      "name_zh": "L1 貨櫃碼頭南路迴旋",
+      "lat": 22.3402,
+      "lon": 114.1265,
+      "layer": "L1",
+      "x": -1158.2,
+      "z": -2454.7
+    },
+    {
+      "id": "kt_l1_cpr_south",
+      "role": "road_node",
+      "name_zh": "貨櫃碼頭南路節點",
+      "lat": 22.3421,
+      "lon": 114.1296,
+      "layer": "L1",
+      "x": -1637.0,
+      "z": -2139.6
+    },
+    {
+      "id": "kt_l1_cpr",
+      "role": "road_node",
+      "name_zh": "貨櫃碼頭路節點",
+      "lat": 22.3457,
+      "lon": 114.1244,
+      "layer": "L1",
+      "x": -833.9,
+      "z": -1542.5
+    },
+    {
+      "id": "kt_l2_tsing_kwai",
+      "role": "elevated",
+      "name_zh": "L2 青葵公路樣本",
+      "lat": 22.3419,
+      "lon": 114.1272,
+      "layer": "L2",
+      "x": -1266.3,
+      "z": -2172.8
+    },
+    {
+      "id": "kt_l2_ramp_hint",
+      "role": "ramp_silhouette",
+      "name_zh": "匝道剪影（唔直入堆場）",
+      "lat": 22.3394,
+      "lon": 114.1317,
+      "layer": "L2",
+      "x": -1961.3,
+      "z": -2587.4
+    },
+    {
+      "id": "kt_cheung_tsing_tunnel",
+      "role": "tunnel",
+      "name_zh": "長青隧道",
+      "lat": 22.34877,
+      "lon": 114.11188,
+      "layer": "far",
+      "x": 1099.5,
+      "z": -1033.3
+    },
+    {
+      "id": "kt_cheung_tsing_bridge",
+      "role": "bridge",
+      "name_zh": "長青橋",
+      "lat": 22.34944,
+      "lon": 114.11344,
+      "layer": "far",
+      "x": 858.6,
+      "z": -922.2
+    },
+    {
+      "id": "kt_kwai_tsing_bridge",
+      "role": "bridge",
+      "name_zh": "葵青橋",
+      "lat": 22.34844,
+      "lon": 114.11385,
+      "layer": "far",
+      "x": 795.3,
+      "z": -1088.0
+    },
+    {
+      "id": "kt_ha_kwai_chung_tunnel",
+      "role": "tunnel",
+      "name_zh": "下葵涌隧道",
+      "lat": 22.3427,
+      "lon": 114.1353,
+      "layer": "access",
+      "x": -2517.2,
+      "z": -2040.1
+    },
+    {
+      "id": "kt_stonecutters_bridge",
+      "role": "bridge",
+      "name_zh": "昂船洲大橋",
+      "lat": 22.32575,
+      "lon": 114.11894,
+      "layer": "far",
+      "x": 9.3,
+      "z": -4851.4
+    },
+    {
+      "id": "kt_mtr_lai_king",
+      "role": "mtr",
+      "name_zh": "荔景站（對面／閘外）",
+      "lat": 22.3484,
+      "lon": 114.1261,
+      "layer": "outside",
+      "x": -1096.5,
+      "z": -1094.7
+    },
+    {
+      "id": "kt_mtr_kwai_fong",
+      "role": "mtr",
+      "name_zh": "葵芳站（北擴）",
+      "lat": 22.3569,
+      "lon": 114.1279,
+      "layer": "north_expand",
+      "x": -1374.4,
+      "z": 315.1
+    },
+    {
+      "id": "kt_mtr_kwai_hing",
+      "role": "mtr",
+      "name_zh": "葵興站",
+      "lat": 22.3632,
+      "lon": 114.1312,
+      "layer": "north_expand",
+      "x": -1884.1,
+      "z": 1360.1
+    },
+    {
+      "id": "kt_mtr_tsing_yi",
+      "role": "mtr",
+      "name_zh": "青衣站",
+      "lat": 22.3584,
+      "lon": 114.107,
+      "layer": "far",
+      "x": 1853.2,
+      "z": 563.9
+    }
+  ],
+  "gate_align_L2_L1_L0": {
+    "L2": {
+      "anchors": [
+        "kt_l2_tsing_kwai",
+        "kt_l2_ramp_hint"
+      ],
+      "rule_zh": "高架／匝道剪影；唔直入堆場"
+    },
+    "L1": {
+      "anchors": [
+        "kt_l1_cpr_south",
+        "kt_l1_cpr",
+        "kt_l1_roundabout",
+        "kt_gate_a_weigh",
+        "kt_gate_b_weigh"
+      ],
+      "rule_zh": "貨櫃碼頭路／南路＋迴旋；閘≥2地磅"
+    },
+    "L0": {
+      "anchors": [
+        "kt_shore_yard_anchor",
+        "kt_gate_a_weigh",
+        "kt_gate_b_weigh"
+      ],
+      "rule_zh": "堆場廊；序章錨40m內要有泊位線＋巷深＋一彎"
+    }
+  },
+  "road_nodes_room7": [
+    {
+      "id": "rn_cpr",
+      "from": "kt_l1_cpr",
+      "to": "kt_l1_cpr_south",
+      "layer": "L1"
+    },
+    {
+      "id": "rn_south_to_gate_a",
+      "from": "kt_l1_roundabout",
+      "to": "kt_gate_a_weigh",
+      "layer": "L1_L0"
+    },
+    {
+      "id": "rn_south_to_gate_b",
+      "from": "kt_l1_roundabout",
+      "to": "kt_gate_b_weigh",
+      "layer": "L1_L0"
+    },
+    {
+      "id": "rn_gate_a_to_shore",
+      "from": "kt_gate_a_weigh",
+      "to": "kt_shore_yard_anchor",
+      "layer": "L0"
+    },
+    {
+      "id": "rn_elevated_over_l1",
+      "from": "kt_l2_tsing_kwai",
+      "to": "kt_l2_ramp_hint",
+      "layer": "L2",
+      "note_zh": "只剪影／橋底，唔入堆場"
+    },
+    {
+      "id": "rn_access_ha_tunnel",
+      "from": "kt_ha_kwai_chung_tunnel",
+      "to": "kt_l1_cpr_south",
+      "layer": "access",
+      "note_zh": "下葵涌隧↔南路"
+    },
+    {
+      "id": "rn_far_cheung_tsing",
+      "from": "kt_cheung_tsing_tunnel",
+      "to": "kt_cheung_tsing_bridge",
+      "layer": "far"
+    }
+  ],
+  "north_expand": {
+    "include": [
+      "kt_mtr_kwai_fong",
+      "kt_mtr_kwai_hing",
+      "kt_mtr_lai_king"
+    ],
+    "bbox": {
+      "lat_lon": [
+        22.352,
+        114.12,
+        22.365,
+        114.135
+      ],
+      "x": [
+        -2470.9,
+        -154.4
+      ],
+      "z": [
+        -497.6,
+        1658.6
+      ],
+      "w_gu": 2316.5,
+      "d_gu": 2156.2,
+      "note_zh": "北擴至葵芳／葵興剪影"
+    },
+    "rule_zh": "北擴剪影至葵芳；堆場內零唐樓／零 podium；工廈只喺閘外"
+  },
+  "wire_for_coder_zh": "按 layers bake BOUND；anchors 落閘／序章／遠景；gate_align 對 L2/L1/L0；road_nodes 做廊骨架。唔郁 Pages 程式除非關卡批。",
+  "align_docs": [
+    "docs/core28a-kwai-yard-asphalt-locks.md",
+    "docs/core28a-kwai-access-elevated-locks.md",
+    "docs/core28a-kwai-terminal-massing-locks.md"
+  ]
+}
