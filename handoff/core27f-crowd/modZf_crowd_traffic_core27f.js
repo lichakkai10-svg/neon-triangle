@@ -274,13 +274,33 @@ const CROWD = {
   // 數值 §6：的士紅／綠比例
   const GREEN_TAXI = { kt: 0.3, tw: 0.3, st: 0.8 };
   const PRIV_C = [0xf2f2f2, 0x1a1a1a, 0x8a8e94, 0x2a3a5a, 0x6a1a1a, 0xc8c0b0, 0x3a4a3a];
-  function buildCars() {
+  /* P0 真機 FAIL：雙巴改載 hk-vehicles glTF（頂點色）；失敗先 fallback busGeo 盒 */
+  async function loadHkBusGeo() {
+    try {
+      const loader = (typeof gltfLoader !== 'undefined') ? gltfLoader : null;
+      if (!loader) return busGeo();
+      const gltf = await loader.loadAsync('assets/gltf/hk-vehicles/hk-double-decker-bus.glb');
+      gltf.scene.updateMatrixWorld(true);
+      let geo = null;
+      gltf.scene.traverse((o) => {
+        if (!o.isMesh || !o.geometry) return;
+        const g = o.geometry.clone();
+        g.applyMatrix4(o.matrixWorld);
+        geo = g;
+      });
+      if (geo && geo.attributes.position) { geo.computeBoundingSphere(); return geo; }
+    } catch (e) { console.warn('[crowd] hk-double-decker-bus.glb load fail → busGeo', e); }
+    return busGeo();
+  }
+  async function buildCars() {
     const cap = CAP(), mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.2 });
+    const busG = await loadHkBusGeo();
     for (const t of VTYPES) {
       let n = cap[t.cap] || 0; if (t.cap === 'minibus') n = t.half ? Math.ceil(n / 2) : Math.floor(n / 2);
-      const g = Math.max(1, Math.round((cap.taxi || 0) * 0.25)); if (t.k === 'taxiGreen') n = g; if (t.k === 'taxiRed') n = Math.max(0, n - g); // 總數＝CROWD_CAP.taxi
+      const gN = Math.max(1, Math.round((cap.taxi || 0) * 0.25)); if (t.k === 'taxiGreen') n = gN; if (t.k === 'taxiRed') n = Math.max(0, n - gN); // 總數＝CROWD_CAP.taxi
       if (!n) continue;
-      const im = new THREE.InstancedMesh(t.geo(), mat, n); im.name = 'traffic-' + t.k; im.frustumCulled = false; im.castShadow = !lite;
+      const geo = (t.k === 'bus') ? busG : t.geo();
+      const im = new THREE.InstancedMesh(geo, mat, n); im.name = 'traffic-' + t.k; im.frustumCulled = false; im.castShadow = !lite;
       im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); im.userData.noMerge = true;
       for (let i = 0; i < n; i++) { im.setMatrixAt(i, _hide); if (t.tint) im.setColorAt(i, C.setHex(pick(PRIV_C))); }
       scene.add(im); CROWD.vmesh[t.k] = im;
@@ -331,7 +351,7 @@ const CROWD = {
     const cap = CAP();
     const rn = addRoadnet();
     buildPedMeshes(cap.peds); for (let i = 0; i < cap.peds; i++) CROWD.peds.push({ on: false });
-    buildCars();
+    await buildCars();
     // 數值：FPS 跌穿 30 → 人數減 25%；回升 50 先慢慢加返
     let lowT = 0, hiT = 0; HOOKS.frame.push((dt) => { const f = dt > 0 ? 1 / dt : 60; if (f < 30) { lowT += dt; hiT = 0; if (lowT > 2) { CROWD.fpsScale = Math.max(0.4, CROWD.fpsScale * 0.75); lowT = 0; } } else if (f > 50) { hiT += dt; lowT = 0; if (hiT > 6) { CROWD.fpsScale = Math.min(1, CROWD.fpsScale + 0.1); hiT = 0; } } });
     HOOKS.frame.push((dt) => {
