@@ -42,3 +42,16 @@
 
 過關句（尺度）：**「堆場有廊有巷有迴轉——唔係 ±28 直巷撞灰牆。」**  
 過關句（劇本）：**「hkzone=kwai 只逛碼頭；冷錢包要接咗先出。」**
+
+
+## 美術掛位（續 · hkGeo）
+
+| 錨 | 世界 xz | 來源 |
+|---|---|---|
+| `KWAI_GEO.hub` | **−1237, −145** | 肘廊／堆場中心 |
+| `KWAI_GEO.gate` | **−870.2, −1551.1** | `elbow_trunk.start`（骨架 JSON） |
+
+- `KWAI.group`／boot 圍欄／岸吊／水／閘亭／辦事處／控制塔 → **hub 偏移**，唔擺 origin。  
+- `hkzone=kwai` spawn／`GATE_POS`／`c27fInYardPos`／`zoneOf(yard)`／portAmb → 跟 hub。  
+- `KWAI._colHub`：kw 建組期間 `addCollider` 自動 +hub（本地座標子物件）。  
+- 舊 origin↔YTM `hkWall` 走廊仍在（未拆）；可玩碼頭以 hub 為準。
