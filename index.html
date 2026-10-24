@@ -24603,7 +24603,7 @@ Promise.race([
         };
         if (!go()) setTimeout(go, 1200);
         try { if (typeof titleCard === 'function') titleCard('油尖旺', '自由行動'); } catch (e0) { /* */ }
-        try { if (typeof setObjective === 'function') setObjective(''); } catch (e1) { /* */ }
+        try { if (typeof setObjective === 'function') setObjective('喺附近行開，睇下有咩事發生。'); } catch (e1) { /* */ }
       }, 200);
     }
   } catch (e) { console.warn('startMission', e); }
@@ -24907,8 +24907,9 @@ body.cine #h2Left{visibility:hidden}`;
   c27dMastFix(); todOnChange(c27dMastFix);
 
   // 街道傢俬（美術模組，用爬蟲 OSM 真點；電線桿只限葵涌）
-  try { import('./assets/js/street-furniture-core27d.js').then((m) => m.attachAll(THREE, ['./assets/data/osm-street-furniture-core27d.json', './assets/data/osm-street-furniture-core28.json'])) /* core29 合併時加 core29.json */.catch((e) => console.warn('[core27d-furniture]', e)); } catch (e) { /* */ }
+  try { import('./assets/js/street-furniture-core27d.js').then((m) => m.attachAll(THREE, ['./assets/data/osm-street-furniture-core27d.json', './assets/data/osm-street-furniture-core28.json', './assets/data/osm-street-furniture-core29.json'])).catch((e) => console.warn('[core27d-furniture]', e)); } catch (e) { /* */ }
   try { import('./assets/js/building-extras-core27f.js').then((m) => m.attachAll(THREE)).catch((e) => console.warn('[core27f-extras]', e)); } catch (e) { /* */ }
+  try { import('./assets/js/domestic-sunday-props-core27f.js').then((m) => m.attachAll(THREE)).catch((e) => console.warn('[core27f-domestic-sunday]', e)); } catch (e) { /* */ }
   /* core28：灣仔／中西電車軌（街景 layers → 嵌瀝青雙軌） */
   (function c27fTramTracks() {
     const boot = () => {

@@ -60,6 +60,7 @@ export function buildStreetFurniture(THREE, parent, trunks, opts = {}) {
     bollard(x, z) { put(G.cyl, mat.bollard, x, 0.45, z, 0.22, 0.9, 0.22); },
     bin(x, z, yaw) { put(G.box, mat.bin, x, 0.45, z, 0.42, 0.9, 0.36, yaw); put(G.box, mat.binTop, x, 0.92, z, 0.44, 0.05, 0.38, yaw); }, // 食環署 70L 橙桶（尺寸係遊戲估算）
     binLarge(x, z, yaw) { put(G.box, mat.bin, x, 0.53, z, 0.55, 1.06, 0.46, yaw); put(G.box, mat.binTop, x, 1.09, z, 0.57, 0.06, 0.48, yaw); }, // 食環署 130L 橙桶（取代 660L：660L 唔擺路邊；尺寸係遊戲估算）
+    cone(x, z) { put(G.cone, mat.bin, x, 0.45, z, 0.32, 0.9, 0.32); put(G.box, mat.zebra, x, 0.72, z, 0.34, 0.08, 0.34); }, // 橙錐（遊戲估算；白條用 zebra 白）
     busStop(x, z, yaw, toRoad) { const L = local({ x, z }, yaw);
       for (const t of [-3.5, 3.5]) { const [px, pz] = L(-toRoad * 0.6, t); put(G.box, mat.pole, px, 1.3, pz, 0.1, 2.6, 0.1, yaw); }
       put(G.box, mat.roof, x, 2.65, z, 2.0, 0.12, 8, yaw); const [gx, gz] = L(-toRoad * 0.9, 0); put(G.box, mat.glass, gx, 1.3, gz, 0.04, 2.0, 7.4, yaw);
@@ -90,6 +91,7 @@ export function buildStreetFurniture(THREE, parent, trunks, opts = {}) {
     each(pts0.hydrants, (q) => P.hydrant(q.x, q.z));
     each(pts0.benches, (q) => P.bench(q.x, q.z, q.yaw || 0));
     each(pts0.bins, (q) => P.bin(q.x, q.z, q.yaw || 0));
+    each(pts0.cones, (q) => P.cone(q.x, q.z), lite ? 0.7 : 1);
     each(pts0.sign_anchors, (q) => P.shopSign(q.x, q.z, q.yaw || 0, 1), lite ? 0.45 : 1);
     // 主幹道 kerb 連續欄杆（約 55% 長度，段長 18–40m）＋70L／130L 橙桶每 ~50m 交錯兩邊（40–60m 係遊戲建議，唔係官方數）
     const GAP = new Map(), gk = (x, z) => Math.floor(x / 16) + ',' + Math.floor(z / 16); // 過路處 ±6m、巴士站 ±12m 唔擺欄杆

@@ -32,6 +32,11 @@ export function buildDomesticSundayProps(THREE, parent, gather, opts = {}) {
       const ox = (rnd() - 0.5) * 1.2, oz = (rnd() - 0.5) * 1.2;
       put(G.box, rnd() < 0.5 ? mat.card : mat.cardDark, p.x + ox, 0.2, p.z + oz, 0.45 + rnd() * 0.2, 0.35 + rnd() * 0.15, 0.35 + rnd() * 0.2, yaw + rnd());
     }
+    /* 臨時牌柱（戲仿；字喺 canvas 掛一次） */
+    if (i === 0 || (i === 2 && !lite)) {
+      put(G.box, mat.cardDark, p.x + 0.9, 0.55, p.z - 0.6, 0.06, 1.1, 0.06, yaw);
+      put(G.box, mat.matGrey, p.x + 0.9, 1.25, p.z - 0.6, 0.7, 0.45, 0.04, yaw);
+    }
     n++;
   }
   const grp = new THREE.Group(); grp.name = 'cw_domestic_sunday_props_core27f'; grp.userData.noMerge = true;
@@ -47,6 +52,7 @@ export function buildDomesticSundayProps(THREE, parent, gather, opts = {}) {
 }
 
 export function attachAll(THREE) {
+  /* ?fdwsun：等 CW group 起再掛；蓆／紙皮／臨時牌 */
   let tried = false, gather = null;
   const tryFetch = () => {
     const L = (window.NT && window.NT.C27F_LAYERS) || null;
