@@ -1,0 +1,60 @@
+{
+  "version": "kwai-port-p0-2026-10-24",
+  "ban": "禁相板／真船公司 logo／真碼頭名",
+  "scale": "meters 1:1 (height and props); do not apply ×0.9 toy scale",
+  "replace": {
+    "kwProcCrane": "hk-sts-quay-crane.glb — portal 55m, boom outreach 58m, gauge 30m; origin between landside legs, +X seaward",
+    "quay": "tile hk-quay-wall-module.glb along berth (24m modules); +Z=sea",
+    "containers": "prefer hk-container-yard-stack.glb for mass; ISO 20/40 singles for fill",
+    "ship": "hk-port-ship-hull.glb ~120×18×8 — replace kwHull toy boxes"
+  },
+  "old_problem_zh": "舊 kwProcCrane×0.9＋短櫃列＋細 hull 睇落細盒碼頭；本套用真 STS／ISO／中型船尺度",
+  "colliders": {
+    "crane_legs": [
+      {
+        "x": -15,
+        "z": -10,
+        "hw": 1.4,
+        "hd": 1.4,
+        "hh": 55
+      },
+      {
+        "x": 15,
+        "z": -10,
+        "hw": 1.4,
+        "hd": 1.4,
+        "hh": 55
+      },
+      {
+        "x": -15,
+        "z": 10,
+        "hw": 1.4,
+        "hd": 1.4,
+        "hh": 55
+      },
+      {
+        "x": 15,
+        "z": 10,
+        "hw": 1.4,
+        "hd": 1.4,
+        "hh": 55
+      }
+    ],
+    "quay_module": {
+      "hw": 12,
+      "hd": 1.75,
+      "hh": 4.5,
+      "note": "above-water; extend below for water if needed"
+    },
+    "cont40": {
+      "hw": 1.22,
+      "hd": 6.095,
+      "hh": 2.59
+    },
+    "cont20": {
+      "hw": 1.22,
+      "hd": 3.03,
+      "hh": 2.59
+    }
+  }
+}

@@ -342,7 +342,28 @@ function resolveAsset(name) {
 /* ---------- 常數 ---------- */
 const CAR_LEN = 4.4, CAR_H = 1.4, CAR_W = 1.9;       // 車：長 4.4 米、高 1.4 米、闊約 1.9 米
 const PERSON_H = 1.8;                                 // 人：1.8 米
-const CONT = { W: 2.44, H: 2.59, L20: 6.06, L40: 12.19 }; // ISO 貨櫃尺寸（20 呎／40 呎）
+const CONT = { W: 2.44, H: 2.59, L20: 6.06, L40: 12.19 }; // ISO 貨櫃尺寸（20 呎／40 呎）· 1:1 米＝u
+/* 葵涌碼頭尺度鎖（老闆 FAIL「細又假」· core27f）
+ * 高度／貨櫃／車：1:1 米＝u。街景騎樓橫向常 ×1.5——碼頭岸吊／船／岸壁唔跟街景 ×1.5。
+ * 真機要讀到「盆地＋巨型 STS」，唔係玩具吊臂。詳 docs/boss-fail-kwai-terminal-scale-core27f.md
+ */
+const KWAI_SCALE = {
+  cont: CONT, // ISO 20/40 已對
+  sts: {
+    gauge: 30.5,     // 軌距 m（舊 procedural ~16）
+    along: 18.0,     // 沿岸門架進深（腳距）
+    portalH: 52,     // 門架腳高（舊 42）
+    boomLen: 78,     // 海側吊臂全長（舊 Box 80 @scale0.9 ≈ 感細）
+    boomY: 58,       // 吊臂高度
+    cabinH: 6.5,
+    tipY: 82,        // 航空紅燈
+    legW: 2.2
+  },
+  ship: { beam: 34, freeboard: 14, bridgeH: 10, lenMin: 120, lenMul: 1.0 },
+  stack: { maxH_lane0: 5, maxH_laneN: 6 }, // 舊 3／4 → 堆場牆感
+  craneScale: { partA: 1.05, partB: 0.95, partC: 0.92 }, // 舊 0.7–0.95 再壓細
+  quay: { faceH: 4.6, faceThick: 0.7, apron: 3.0 } // 岸壁加高加厚
+};
 const ROAD_HALF = 7.0;                                // 行車道半闊（兩線雙程，每線 3.5 米）
 const ROW_X0 = 10.2;                                  // 貨櫃列由道路中心起計的內緣距離
 const YARD_Z = 172;                                   // 貨櫃列長度一半
@@ -920,16 +941,19 @@ const blinkers = [];
   const redMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 0.25, 0.15), fog: false });
   const box = (g, w, h, d, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), steel); m.position.set(x, y, z); g.add(m); return m; };
   for (const cz of [-70, -5, 60, 125]) {
-    const g = new THREE.Group(); g.position.set(BOUND.x + 18, 0, cz);
-    for (const lx of [-8, 8]) for (const lz of [-7, 7]) box(g, 1.4, 42, 1.4, lx, 21, lz);         // 四支腳
-    for (const lz of [-7, 7]) box(g, 18, 1.6, 1.4, 0, 42, lz);                                  // 門架橫樑
-    for (const lx of [-8, 8]) box(g, 1.4, 1.4, 15.4, lx, 30, 0);
-    box(g, 80, 2.4, 3.2, 22, 46, 0);                                                            // 吊臂（伸出海面）
-    box(g, 6, 4.5, 8, -4, 49, 0);                                                               // 機房
-    box(g, 1.0, 16, 1.0, -2, 55, 0);                                                            // 頂架
-    for (let i = 0; i < 8; i++) { const t = box(g, 0.25, 10, 0.25, -8 + i * 10, 52, 0); t.rotation.z = (i % 2 ? 1 : -1) * 0.6; }
-    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 6), redMat); lamp.position.set(-2, 63.2, 0); g.add(lamp); blinkers.push(lamp);
-    const lamp2 = lamp.clone(); lamp2.position.set(61, 47.5, 0); g.add(lamp2); blinkers.push(lamp2);
+    // STS 尺度跟 KWAI_SCALE（軌距 30.5／門架 52／臂 ~78）——禁再縮成玩具
+    const ST = KWAI_SCALE.sts;
+    const hx = ST.gauge / 2, hz = ST.along / 2, lw = ST.legW;
+    const g = new THREE.Group(); g.position.set(BOUND.x + 22, 0, cz); g.name = 'kt-quay-crane-boot';
+    for (const lx of [-hx, hx]) for (const lz of [-hz, hz]) box(g, lw, ST.portalH, lw, lx, ST.portalH / 2, lz);
+    for (const lz of [-hz, hz]) box(g, ST.gauge + 3, 2.4, lw, 0, ST.portalH, lz);
+    for (const lx of [-hx, hx]) box(g, lw, lw, ST.along + 3, lx, ST.portalH * 0.7, 0);
+    box(g, ST.boomLen, 3.2, 4.2, ST.boomLen * 0.28, ST.boomY, 0);                               // 吊臂出海
+    box(g, 8, ST.cabinH, 10, -6, ST.boomY + 4, 0);                                              // 機房
+    box(g, 1.4, 20, 1.4, -4, ST.boomY + 12, 0);                                                 // 頂架
+    for (let i = 0; i < 10; i++) { const t = box(g, 0.3, 12, 0.3, -hx + i * (ST.boomLen * 0.85 / 9), ST.boomY + 6, 0); t.rotation.z = (i % 2 ? 1 : -1) * 0.55; }
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.55, 8, 6), redMat); lamp.position.set(-4, ST.tipY, 0); g.add(lamp); blinkers.push(lamp);
+    const lamp2 = lamp.clone(); lamp2.position.set(ST.boomLen * 0.72, ST.boomY + 2.2, 0); g.add(lamp2); blinkers.push(lamp2);
     scene.add(g);
   }
 }
@@ -1053,7 +1077,7 @@ function planContainerLayout() {
       while (true) {
         const is40 = rng() < 0.45, len = is40 ? CONT.L40 : CONT.L20;
         if (z + len > b.z1) break;
-        const maxH = lane === 0 ? 3 : 4;
+        const maxH = lane === 0 ? KWAI_SCALE.stack.maxH_lane0 : KWAI_SCALE.stack.maxH_laneN;
         const h = 1 + Math.floor(rng() * maxH);
         if (YARD_EXCLUDE.some((e) => x > e.x0 && x < e.x1 && z + len > e.z0 && z < e.z1)) { z += len + 0.45; continue; }
         const levels = []; for (let i = 0; i < h; i++) levels.push({ variant: Math.floor(rng() * 3), tint: Math.floor(rng() * CONTAINER_TINTS.length), flip: rng() < 0.5 });
@@ -9727,7 +9751,7 @@ function hkHospPose(o) { // 同 hkHospital 一樣嘅變換，只計門口／泊�
 }
 {
   const Z = HKM.zones.kcity, P = HKMAP_DATA.landmarks.kh; let mx = 0, mz = 0; for (const p of P) { mx += p[0]; mz += p[1]; } mx /= P.length; mz /= P.length;
-  HKM.khDef = { id: 'kh', name: '九龍公立醫院', en: 'KOWLOON PUBLIC HOSPITAL', x: Z.c[0] + mx, z: Z.c[1] + mz - 4, yaw: Math.PI, w: 54, d: 24, h: 30, tw: 26, td: 18, th: 41, tx: 10, doorX: -12, bayX: 0 };
+  HKM.khDef = { id: 'kh', name: '九龍公立醫院', en: 'KOWLOON PUBLIC HOSPITAL', x: Z.c[0] + mx, z: Z.c[1] + mz - 4, yaw: Math.PI, w: 100, d: 45, h: 36, tw: 40, td: 30, th: 72, tx: 15, doorX: -20, bayX: 0 }; // boss FAIL 2026-10-24：急症 campus 實尺（舊 54×24×30／塔41）
   const pose = hkHospPose(HKM.khDef), d = DOORS.find((q) => q.id === 'hospital');
   hkSetDoor(d, pose.door, '九龍公立醫院 · 急症室'); HKM.hospSpot = pose.car;
 }
@@ -9761,7 +9785,7 @@ const HWg = HKM.HW + 0.6;
   for (const [x, z, y] of [[38, -128, Math.PI / 2], [-38, -170, -Math.PI / 2], [38, -176, Math.PI / 2]]) { const p = YL(x, z); hkLamp(p.x, p.z, y); }
   // 廣華醫院（地政總署 3D：新大樓約 95 米、基座約 32 米）
   const p = YL(-15, -110);
-  const kwh = hkHospital({ id: 'kwh', name: '廣華坊醫院', en: 'KWONG WAH COURT HOSPITAL (PARODY)', x: p.x, z: p.z, yaw: Math.PI, w: 60, d: 26, h: 32, tw: 30, td: 20, th: 95, tx: -8, doorX: -10, bayX: 0 });
+  const kwh = hkHospital({ id: 'kwh', name: '廣華坊醫院', en: 'KWONG WAH COURT HOSPITAL (PARODY)', x: p.x, z: p.z, yaw: Math.PI, w: 110, d: 48, h: 40, tw: 45, td: 32, th: 95, tx: -12, doorX: -18, bayX: 0 }); // boss FAIL：基座放大；塔高跟地政 ~95m
   HKM.kwh = kwh;
   const d = { id: 'hospital', kwh: true, pos: new THREE.Vector3(), outYaw: 0, label: '廣華坊醫院 · 急症室' };
   const mk = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 1, 24, 1, true), markerMat); mk.renderOrder = 6; scene.add(mk); d.marker = mk;
@@ -13099,13 +13123,28 @@ const ART_P0 = {
 function artStripPhotoBoards() {
   if (typeof scene === 'undefined') return;
   const kill = [];
+  const banTex = /facade_d_|district\/facade|overview|photo.?board|facade.?plane|streetscape.*photo|public-housing-day|harbour-ferry|star-ferry|ifc-lobby|sino-centre|mongkok-neon/i;
   scene.traverse((o) => {
     if (!o.isMesh) return;
     const n = o.name || '';
     const ud = o.userData || {};
-    // 擴大：art-b2-* 名／userData.artB2／舊 P0／P1 相板一律清
-    if (ud.artP0 || ud.artP1 || ud.artB2) kill.push(o);
-    else if (/^art-p0-|^p1-mongkok-neon$|^p1-sino-wall$|^art-b2-/i.test(n)) kill.push(o);
+    // 擴大：art-b2-* 名／userData.artB2／舊 P0／P1 相板／district 整面相一律清
+    if (ud.artP0 || ud.artP1 || ud.artB2 || ud.photoBoard || ud.documentary) kill.push(o);
+    else if (/^art-p0-|^p1-mongkok-neon$|^p1-sino-wall$|^art-b2-|facade.?plane|photo.?board/i.test(n)) kill.push(o);
+    else {
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      for (const m of mats) {
+        if (!m) continue;
+        const map = m.map || m.emissiveMap;
+        const src = (map && (map.name || map.userData?.url || '')) + '';
+        const img = map && map.image && (map.image.currentSrc || map.image.src || '');
+        if (banTex.test(src) || banTex.test(img || '')) { kill.push(o); break; }
+        if (o.geometry && o.geometry.type === 'PlaneGeometry') {
+          const p = o.geometry.parameters || {};
+          if ((p.width || 0) >= 20 && (p.height || 0) >= 12 && Math.abs(o.rotation.x) < 0.2) { kill.push(o); break; }
+        }
+      }
+    }
   });
   for (const o of kill) {
     if (o.parent) o.parent.remove(o);
@@ -17022,19 +17061,71 @@ function kwBollard(parent, x, z) {
 }
 
 /** 船舷剪影（遠泊，唔印真船名） */
-function kwHull(parent, x, z, len) {
-  const mat = KWAI.mats.hull || new THREE.MeshStandardMaterial({ color: 0x1a3040, roughness: 0.65 });
+
+/** 葵涌碼頭 P0 真尺 glTF（hk-port）；失敗先留程序後備。唔用 ×0.9 玩具 scale。 */
+KWAI.portGltf = KWAI.portGltf || { crane: null, ship: null, wall: null, stack: null, loading: {} };
+function kwPortLoad(key, url) {
+  if (KWAI.portGltf[key]) return Promise.resolve(KWAI.portGltf[key]);
+  if (KWAI.portGltf.loading[key]) return KWAI.portGltf.loading[key];
+  const p = (async () => {
+    try {
+      let root = null;
+      if (typeof loadGLTF === 'function') {
+        root = await loadGLTF(url, 20000);
+      } else if (typeof gltfLoader !== 'undefined' && gltfLoader) {
+        const gltf = await gltfLoader.loadAsync(url.startsWith('assets/') ? url : ('assets/' + url));
+        root = gltf && (gltf.scene || gltf);
+      }
+      if (!root) throw new Error('empty');
+      root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.userData.noMerge = true; } });
+      KWAI.portGltf[key] = root;
+      return root;
+    } catch (e) {
+      console.warn('[kw-port]', key, e && e.message);
+      return null;
+    } finally { delete KWAI.portGltf.loading[key]; }
+  })();
+  KWAI.portGltf.loading[key] = p;
+  return p;
+}
+function kwPortMount(parent, proto, x, z, yaw, name) {
   const g = new THREE.Group();
-  g.position.set(x, 0, z);
-  g.userData.kwaichung = true;
-  kwBox(g, mat, 8, 6, len || 42, 0, 2.2, 0);
-  kwBox(g, mat, 6, 4, 10, 0, 7.5, -len * 0.15);
-  // 禁船舷 documentary 相板
+  g.position.set(x, 0, z); g.rotation.y = yaw || 0;
+  g.userData.kwaichung = true; g.userData.noMerge = true; g.name = name || 'kt-port-gltf';
+  if (proto) {
+    const cl = proto.clone(true);
+    cl.userData.kwaichung = true; cl.userData.noMerge = true;
+    g.add(cl);
+  }
   parent.add(g);
   return g;
 }
 
-/** 吊機門架貼圖補強（加喺現有剪影旁） */
+function kwHull(parent, x, z, len) {
+  /* P0：~120×18×8 船；len 參數保留兼容，GLB 自帶尺度 */
+  const g = new THREE.Group();
+  g.position.set(x, 0, z);
+  g.userData.kwaichung = true; g.userData.noMerge = true; g.name = 'kt-port-ship';
+  parent.add(g);
+  const fillProc = () => {
+    if (g.children.length) return;
+    const mat = KWAI.mats.hull || new THREE.MeshStandardMaterial({ color: 0x1a3040, roughness: 0.65 });
+    const L = Math.max(len || 120, 100);
+    kwBox(g, mat, 18, 8, L, 0, 3.5, 0);
+    kwBox(g, mat, 12, 6, 22, 0, 10, -L * 0.12);
+  };
+  kwPortLoad('ship', 'gltf/hk-port/hk-port-ship-hull.glb').then((proto) => {
+    if (!proto || !g.parent) { fillProc(); return; }
+    while (g.children.length) g.remove(g.children[0]);
+    const cl = proto.clone(true);
+    cl.userData.kwaichung = true; cl.userData.noMerge = true;
+    g.add(cl);
+  }).catch(fillProc);
+  setTimeout(() => { if (!g.children.length) fillProc(); }, 80);
+  return g;
+}
+
+
 function kwCraneDecal(/* parent, x, z */) { /* 禁吊機大相板 */ }
 
 /** 油漬石屎地貼（程序色塊，唔用 documentary atlas） */
@@ -17154,11 +17245,11 @@ function kwBuildDock() {
   for (const [x, z, s] of [[4, 20, 5], [-6, -30, 4], [8, 60, 6], [-3, 100, 4.5], [2, -60, 5]]) {
     kwOilPatch(g, x, z, s);
   }
-  // 遠泊船舷（海側 3D）
-  kwHull(g, bx + 48, -40, 48);
-  kwHull(g, bx + 52, 70, 36);
-  // 程序岸吊（唔貼 crane 相板）
-  for (const cz of [-70, -5, 60, 125]) kwProcCrane(g, bx + 22, cz, 0.9, -Math.PI / 2);
+  // 遠泊船舷（海側 3D · 百米級剪影）
+  kwHull(g, bx + 72, -40, 150);
+  kwHull(g, bx + 78, 70, 125);
+  // 程序岸吊（唔貼 crane 相板；KWAI_SCALE partA）
+  for (const cz of [-70, -5, 60, 125]) kwProcCrane(g, bx + 28, cz, KWAI_SCALE.craneScale.partA, -Math.PI / 2);
   // 戲仿跨海橋遠景（青馬／汀九帶）
   kwBridgeSkyline(g);
 
@@ -17204,37 +17295,65 @@ function kwOnTod(mode) {
  *  唔拆現有直路碰撞——聽日可玩；完整拆直路 P1
  */
 function kwProcCrane(parent, x, z, scale, yaw) {
-  const steel = new THREE.MeshStandardMaterial({ color: 0x2c3136, roughness: 0.6, metalness: 0.6 });
-  const redMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 0.25, 0.15), fog: false });
-  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0; g.scale.setScalar(scale || 1);
+  /* P0：真 STS 55／58／30 m；忽略舊玩具 scale（0.7–0.95） */
+  const g = new THREE.Group();
+  g.position.set(x, 0, z); g.rotation.y = yaw || 0;
   g.userData.kwaichung = true; g.userData.noMerge = true; g.name = 'kt-quay-crane';
-  const box = (w, h, d, px, py, pz) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), steel);
-    m.position.set(px, py, pz); g.add(m); return m;
-  };
-  for (const lx of [-8, 8]) for (const lz of [-7, 7]) box(1.4, 42, 1.4, lx, 21, lz);
-  for (const lz of [-7, 7]) box(18, 1.6, 1.4, 0, 42, lz);
-  for (const lx of [-8, 8]) box(1.4, 1.4, 15.4, lx, 30, 0);
-  box(80, 2.4, 3.2, 22, 46, 0);
-  box(6, 4.5, 8, -4, 49, 0);
-  box(1.0, 16, 1.0, -2, 55, 0);
-  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 6), redMat);
-  lamp.position.set(-2, 63.2, 0); g.add(lamp);
-  if (typeof blinkers !== 'undefined') blinkers.push(lamp);
-  // core21：夜岸吊工作燈（boom／腿；程序 emissive，禁相板）
-  const work = new THREE.MeshBasicMaterial({ color: new THREE.Color(3.2, 2.8, 1.6), fog: false });
-  for (const px of [8, 22, 36, 50]) {
-    const wl = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.35, 0.8), work);
-    wl.position.set(px, 44.2, 0); g.add(wl);
-    if (typeof blinkers !== 'undefined') blinkers.push(wl);
-  }
-  for (const lx of [-8, 8]) {
-    const fl = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.5), work);
-    fl.position.set(lx, 28, 0); g.add(fl);
-  }
   parent.add(g);
+  const fillProc = () => {
+    if (g.children.length) return;
+    const steel = new THREE.MeshStandardMaterial({ color: 0x2c3136, roughness: 0.6, metalness: 0.6 });
+    const box = (w, h, d, px, py, pz) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), steel);
+      m.position.set(px, py, pz); g.add(m);
+    };
+    // 1:1 門架高 55、軌距 30（唔 ×0.9）
+    for (const lx of [-15, 15]) for (const lz of [-10, 10]) box(2.2, 55, 2.2, lx, 27.5, lz);
+    for (const lz of [-10, 10]) box(32, 2.2, 2.2, 0, 55, lz);
+    box(58, 2.8, 3.5, 20, 58, 0);
+    box(8, 5, 10, -6, 62, 0);
+  };
+  kwPortLoad('crane', 'gltf/hk-port/hk-sts-quay-crane.glb').then((proto) => {
+    if (!proto || !g.parent) { fillProc(); return; }
+    while (g.children.length) g.remove(g.children[0]);
+    const cl = proto.clone(true);
+    cl.userData.kwaichung = true; cl.userData.noMerge = true;
+    g.add(cl);
+  }).catch(fillProc);
+  // 短暫後備（GLB 未到先唔好空白）
+  setTimeout(() => { if (!g.children.length) fillProc(); }, 80);
   return g;
 }
+
+function kwQuayWallRow(parent, x0, z0, n, yaw) {
+  const g = new THREE.Group(); g.position.set(x0, 0, z0); g.rotation.y = yaw || 0;
+  g.userData.kwaichung = true; g.name = 'kt-quay-wall-row';
+  parent.add(g);
+  kwPortLoad('wall', 'gltf/hk-port/hk-quay-wall-module.glb').then((proto) => {
+    if (!proto) return;
+    const count = Math.max(1, n | 0);
+    for (let i = 0; i < count; i++) {
+      const cl = proto.clone(true);
+      cl.position.set(0, 0, i * 24); // module 24 m along +Z sea-facing edge in local
+      cl.userData.kwaichung = true; cl.userData.noMerge = true;
+      g.add(cl);
+    }
+  }).catch(() => {});
+  return g;
+}
+function kwYardStack(parent, x, z, yaw) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0;
+  g.userData.kwaichung = true; g.name = 'kt-yard-stack';
+  parent.add(g);
+  kwPortLoad('stack', 'gltf/hk-port/hk-container-yard-stack.glb').then((proto) => {
+    if (!proto || !g.parent) return;
+    const cl = proto.clone(true);
+    cl.userData.kwaichung = true; cl.userData.noMerge = true;
+    g.add(cl);
+  }).catch(() => {});
+  return g;
+}
+
 
 function kwElbowRoadMark(parent, x, z, yaw) {
   const white = new THREE.MeshStandardMaterial({ color: 0xd8d8d0, roughness: 0.8 });
@@ -17529,25 +17648,30 @@ function kwBuildThreePartStub() {
   kwBarrierYB(root, bx - 6, 40, Math.PI / 2, 12);
   kwBarrierYB(root, -16, -148, 0, 8);
   kwBerthSign(root, bx - 8, 8);
-  // 追加岸吊（現 game2 已有 4；再加 2 沿彎岸）→ 總視覺 ≥6
-  kwProcCrane(root, bx + 18, -130, 0.92, 0.08);
-  kwProcCrane(root, bx + 20, 160, 0.95, -0.06);
+  // 追加岸吊（真尺 STS glTF）＋岸牆 tile＋堆場 block
+  kwProcCrane(root, bx + 26, -130, 1, 0.08);
+  kwProcCrane(root, bx + 28, 160, 1, -0.06);
+  kwQuayWallRow(root, bx + 2, -140, 6, 0);
+  kwQuayWallRow(root, bx + 2, 40, 5, 0);
+  kwYardStack(root, -8, 60, 0.1);
+  kwYardStack(root, 6, -40, -0.05);
+  kwYardStack(root, -14, -90, 0.2);
 
   // —— Part B CT8 hint（南／東南）——
-  const partB = new THREE.Group(); partB.name = 'kt_part_b_ct8_hint'; partB.position.set(bx + 30, 0, -210);
+  const partB = new THREE.Group(); partB.name = 'kt_part_b_ct8_hint'; partB.position.set(bx + 40, 0, -230);
   partB.userData.kwaichung = true;
-  kwProcCrane(partB, 0, 0, 0.75, 0.35);
-  kwProcCrane(partB, 25, 40, 0.7, 0.4);
-  kwHull(partB, 55, 10, 32);
+  kwProcCrane(partB, 0, 0, KWAI_SCALE.craneScale.partB, 0.35);
+  kwProcCrane(partB, 36, 48, KWAI_SCALE.craneScale.partB, 0.4);
+  kwHull(partB, 70, 10, 130);
   kwBarrierYB(partB, -10, 20, 0.5, 8);
   root.add(partB);
 
   // —— Part C 青衣對岸吊機牆 + 海峽 ——
   kwOppositeWater(root, bx);
   const partC = new THREE.Group(); partC.name = 'kt_part_c_tsingyi_skyline';
-  partC.position.set(bx + 210, 0, 30); partC.userData.kwaichung = true;
-  for (const cz of [-90, -30, 40, 100]) kwProcCrane(partC, 0, cz, 0.85, Math.PI); // 面向葵涌岸
-  kwHull(partC, -40, -50, 40);
+  partC.position.set(bx + 240, 0, 30); partC.userData.kwaichung = true;
+  for (const cz of [-90, -30, 40, 100]) kwProcCrane(partC, 0, cz, KWAI_SCALE.craneScale.partC, Math.PI); // 面向葵涌岸
+  kwHull(partC, -50, -50, 140);
   root.add(partC);
 
   // —— 青馬／汀九遠景剪影（純程序；禁 overview 相板）——
@@ -18734,10 +18858,10 @@ function kwBuildDockPlus() {
   });
   const contMat = new THREE.MeshStandardMaterial({ color: 0x2a4a62, roughness: 0.7, metalness: 0.15 });
 
-  // —— 1. 垂直岸壁＋水位污線（禁沙灘坡）——
+  // —— 1. 垂直岸壁＋水位污線（禁沙灘坡；KWAI_SCALE.quay 加高加厚）——
   const faceX = bx + 0.55;
-  const faceH = 3.2;
-  const face = new THREE.Mesh(new THREE.BoxGeometry(0.45, faceH, bz * 2 - 8), conc);
+  const faceH = KWAI_SCALE.quay.faceH;
+  const face = new THREE.Mesh(new THREE.BoxGeometry(KWAI_SCALE.quay.faceThick, faceH, bz * 2 - 8), conc);
   face.position.set(faceX, -0.4, 0);
   face.name = 'kt_dock_quay_face'; face.userData.kwaichung = true;
   g.add(face);
@@ -18857,19 +18981,21 @@ function kwBuildDockPlus() {
   let railN = 0;
   for (const cz of craneZs) {
     const railG = new THREE.Group();
-    railG.position.set(bx + 18, 0, cz);
+    // 軌距對齊 STS gauge 30.5（舊 ±6.5＝13m 玩具軌）
+    const halfG = KWAI_SCALE.sts.gauge / 2;
+    railG.position.set(bx + 28, 0, cz);
     railG.name = 'kt_dock_crane_rail';
     railG.userData.kwaichung = true;
     // 雙軌沿 Z（岸線方向）短段
-    for (const ox of [-6.5, 6.5]) {
-      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.14, 28), railMat);
+    for (const ox of [-halfG, halfG]) {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.16, 36), railMat);
       rail.position.set(ox, 0.08, 0); railG.add(rail);
     }
     // 枕木
     const sleepN = lite ? 6 : 9;
     for (let i = 0; i < sleepN; i++) {
-      const sl = new THREE.Mesh(new THREE.BoxGeometry(15, 0.12, 0.45), sleeperMat);
-      sl.position.set(0, 0.04, -12 + i * (24 / Math.max(1, sleepN - 1)));
+      const sl = new THREE.Mesh(new THREE.BoxGeometry(KWAI_SCALE.sts.gauge + 2, 0.12, 0.5), sleeperMat);
+      sl.position.set(0, 0.04, -14 + i * (28 / Math.max(1, sleepN - 1)));
       railG.add(sl);
     }
     g.add(railG);
@@ -18877,15 +19003,15 @@ function kwBuildDockPlus() {
   }
 
   // —— 8. 船：保留 1–2；甲板疏櫃 ——
-  const hullSpots = [[bx + 48, -40, 48], [bx + 52, 70, 36]];
+  const hullSpots = [[bx + 72, -40, 150], [bx + 78, 70, 125]];
   for (const [hx, hz, hlen] of hullSpots.slice(0, 2)) {
-    // 甲板疏櫃（2–4 個）
-    const nCont = lite ? 2 : 3;
+    // 甲板疏櫃（ISO 1:1；2–4 個）
+    const nCont = lite ? 2 : 4;
     for (let i = 0; i < nCont; i++) {
-      const cw = 2.4, ch = 2.6, cd = 6.0;
+      const cw = CONT.W, ch = CONT.H, cd = CONT.L20;
       const c = new THREE.Mesh(new THREE.BoxGeometry(cw, ch, cd), contMat.clone());
-      c.material.color = new THREE.Color([0x2a4a62, 0x5a3a28, 0x3a5a48][i % 3]);
-      c.position.set(hx + 1.5, 5.5 + (i % 2) * 2.6, hz - hlen * 0.2 + i * 7);
+      c.material.color = new THREE.Color([0x2a4a62, 0x5a3a28, 0x3a5a48, 0x7a7f84][i % 4]);
+      c.position.set(hx + 2.0, KWAI_SCALE.ship.freeboard * 0.9 + (i % 2) * CONT.H, hz - hlen * 0.15 + i * (CONT.L20 + 0.8));
       c.name = 'kt_dock_deck_cont'; c.userData.kwaichung = true;
       g.add(c);
     }
@@ -24044,7 +24170,8 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
     day_murmur: (v = 1) => { const n = []; for (let i = 0; i < 10; i++) { const f = 180 + ((i * 97) % 220); n.push([f, i * 0.12 + Math.random() * 0.08, 0.18 + Math.random() * 0.1, i % 3 ? 'sine' : 'triangle', 0.2 + Math.random() * 0.15]); } tone(n, 0.04 * v); }
   });
 
-  const D = { tick: 0, cool: {}, buses: new WeakMap(), rec: null };
+  // core28a：街景未落地前預設關人聲床（免有聲無人）；?voicebed=1 或 NT.VOICE_BED=true 再開
+  const D = { tick: 0, cool: {}, buses: new WeakMap(), rec: null, voiceOff: !/[?&]voicebed=1\b/.test(location.search) };
   const ZONES = [ // 日頭人聲：真 lat/lon，半徑 m，權重
     { id: 'nathan_rd',  lat: 22.3050, lon: 114.1716, r: 260, w: 1.0 },
     { id: 'csw_rd',     lat: 22.3303, lon: 114.1620, r: 200, w: 0.9 },
@@ -24086,8 +24213,9 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
         if (!cd('bus_idle') && Math.random() < dt * 0.5) { D.cool.bus_idle = 1.6; sfx('bus_idle', f * (p.drive ? 0.5 : 1)); }
       }
     }
-    // 日頭人聲（夜晚交返 kowloonamb）
-    if (day && typeof hkGeo === 'function') {
+    // 日頭人聲（夜晚交返 kowloonamb）；街景未落地暫時關（D.voiceOff；?voicebed=1 或 NT.VOICE_BED=true 開）
+    const voiceOn = (typeof NT !== 'undefined' && NT.VOICE_BED === true) || (!D.voiceOff && !(typeof NT !== 'undefined' && NT.VOICE_BED === false));
+    if (day && voiceOn && typeof hkGeo === 'function') {
       for (const z of ZONES) {
         if (z._x == null) { const g = hkGeo(z.lat, z.lon); z._x = g.x; z._z = g.z; }
         const d = Math.hypot(p.x - z._x, p.z - z._z); if (d > z.r * K) continue;
@@ -24111,7 +24239,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       r.start(); D.rec = r;
     });
   }
-  Object.assign(window.NT = window.NT || {}, { DAYAMB: D, DAYAMB_ZONES: ZONES });
+  Object.assign(window.NT = window.NT || {}, { DAYAMB: D, DAYAMB_ZONES: ZONES, VOICE_BED: (typeof NT !== 'undefined' && NT.VOICE_BED != null) ? NT.VOICE_BED : !D.voiceOff });
 })();
 
 /* core28 · modZe_wceast_calm_core28（關卡與地圖設計師）*/
@@ -24376,6 +24504,8 @@ function klnAmbSim(dt) {
       const key = s.id + ':' + cue;
       KLNAMB.cool[key] = Math.max(0, (KLNAMB.cool[key] || 0) - dt);
       if (KLNAMB.cool[key] > 0) continue;
+      // core28a：人聲床預設關（街景落地後 NT.VOICE_BED=true 或 ?voicebed=1）
+      if (cue === 'market_chatter' && !(typeof NT !== 'undefined' && NT.VOICE_BED === true)) continue;
       if (Math.random() < dt * rate * w) {
         KLNAMB.cool[key] = 4 + Math.random() * 9;
         KLNAMB.lastSpot = s.id;
@@ -25996,13 +26126,33 @@ const CROWD = {
   // 數值 §6：的士紅／綠比例
   const GREEN_TAXI = { kt: 0.3, tw: 0.3, st: 0.8 };
   const PRIV_C = [0xf2f2f2, 0x1a1a1a, 0x8a8e94, 0x2a3a5a, 0x6a1a1a, 0xc8c0b0, 0x3a4a3a];
-  function buildCars() {
+  /* P0 真機 FAIL：雙巴改載 hk-vehicles glTF（頂點色）；失敗先 fallback busGeo 盒 */
+  async function loadHkBusGeo() {
+    try {
+      const loader = (typeof gltfLoader !== 'undefined') ? gltfLoader : null;
+      if (!loader) return busGeo();
+      const gltf = await loader.loadAsync('assets/gltf/hk-vehicles/hk-double-decker-bus.glb');
+      gltf.scene.updateMatrixWorld(true);
+      let geo = null;
+      gltf.scene.traverse((o) => {
+        if (!o.isMesh || !o.geometry) return;
+        const g = o.geometry.clone();
+        g.applyMatrix4(o.matrixWorld);
+        geo = g;
+      });
+      if (geo && geo.attributes.position) { geo.computeBoundingSphere(); return geo; }
+    } catch (e) { console.warn('[crowd] hk-double-decker-bus.glb load fail → busGeo', e); }
+    return busGeo();
+  }
+  async function buildCars() {
     const cap = CAP(), mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.2 });
+    const busG = await loadHkBusGeo();
     for (const t of VTYPES) {
       let n = cap[t.cap] || 0; if (t.cap === 'minibus') n = t.half ? Math.ceil(n / 2) : Math.floor(n / 2);
-      const g = Math.max(1, Math.round((cap.taxi || 0) * 0.25)); if (t.k === 'taxiGreen') n = g; if (t.k === 'taxiRed') n = Math.max(0, n - g); // 總數＝CROWD_CAP.taxi
+      const gN = Math.max(1, Math.round((cap.taxi || 0) * 0.25)); if (t.k === 'taxiGreen') n = gN; if (t.k === 'taxiRed') n = Math.max(0, n - gN); // 總數＝CROWD_CAP.taxi
       if (!n) continue;
-      const im = new THREE.InstancedMesh(t.geo(), mat, n); im.name = 'traffic-' + t.k; im.frustumCulled = false; im.castShadow = !lite;
+      const geo = (t.k === 'bus') ? busG : t.geo();
+      const im = new THREE.InstancedMesh(geo, mat, n); im.name = 'traffic-' + t.k; im.frustumCulled = false; im.castShadow = !lite;
       im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); im.userData.noMerge = true;
       for (let i = 0; i < n; i++) { im.setMatrixAt(i, _hide); if (t.tint) im.setColorAt(i, C.setHex(pick(PRIV_C))); }
       scene.add(im); CROWD.vmesh[t.k] = im;
@@ -26053,7 +26203,7 @@ const CROWD = {
     const cap = CAP();
     const rn = addRoadnet();
     buildPedMeshes(cap.peds); for (let i = 0; i < cap.peds; i++) CROWD.peds.push({ on: false });
-    buildCars();
+    await buildCars();
     // 數值：FPS 跌穿 30 → 人數減 25%；回升 50 先慢慢加返
     let lowT = 0, hiT = 0; HOOKS.frame.push((dt) => { const f = dt > 0 ? 1 / dt : 60; if (f < 30) { lowT += dt; hiT = 0; if (lowT > 2) { CROWD.fpsScale = Math.max(0.4, CROWD.fpsScale * 0.75); lowT = 0; } } else if (f > 50) { hiT += dt; lowT = 0; if (hiT > 6) { CROWD.fpsScale = Math.min(1, CROWD.fpsScale + 0.1); hiT = 0; } } });
     HOOKS.frame.push((dt) => {
