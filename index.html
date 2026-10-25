@@ -25318,7 +25318,8 @@ Promise.race([
       }, 200);
     } else {
       SAVE.decided = true;
-      try { if (typeof NT !== 'undefined') { NT._c27fBootGenericManifest = false; NT._c27fKwaiExploreOnly = false; } } catch (eG) { /* */ }
+      /* 劇本鎖：預設／hkzone 無 ?m= → BootGeneric；冷錢包只 ?m=manifest */
+      try { if (typeof NT !== 'undefined') { NT._c27fBootGenericManifest = true; NT._c27fKwaiExploreOnly = false; } } catch (eG) { /* */ }
       startMission('manifest');
     }
   } catch (e) { console.warn('startMission', e); }
