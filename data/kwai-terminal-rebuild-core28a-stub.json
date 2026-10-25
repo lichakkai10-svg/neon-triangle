@@ -1,0 +1,180 @@
+{
+  "id": "kwai_terminal_rebuild_core28a",
+  "updated": "2026-10-25T10:30:00+08:00",
+  "owner": "關卡與地圖設計師",
+  "status": "stub_ready_for_code",
+  "align": [
+    "core28a-kwai-terminal-context-layout.md",
+    "streetscape-kwai-terminal-hinterland.md",
+    "core28a-kwai-dock-p0-scales.md",
+    "core28a-kwai-terminal-massing-locks.md",
+    "core28a-kwai-yard-asphalt-locks.md",
+    "core28a-kwai-access-elevated-locks.md",
+    "kwai-terminal-gis-overlay-p0.json",
+    "gov-kwai-d2b-signage.md",
+    "sfx-core28a-kwai-dock-zones.md"
+  ],
+  "section_zh": "葵芳遠景 → 工廈 → 高架／隧口 → 肘閘 → 堆場 → 海峽 → 青衣吊機牆",
+  "ban": [
+    "photo_board",
+    "HIT",
+    "MTL",
+    "name_葵涌站",
+    "flyover_through_yard",
+    "google_3d_mesh",
+    "straight_yard_corridor",
+    "crowd_voice_bed"
+  ],
+  "spawn": "urban_default; dock_via_hkzone_or_manifest",
+  "bound_playable": {
+    "x_half_m": 90,
+    "z_half_m": 280,
+    "footprint_m": [
+      180,
+      560
+    ]
+  },
+  "anchors_hkgeo": {
+    "hub": [
+      -1237.3,
+      -144.6
+    ],
+    "gate": [
+      -870.2,
+      -1551.1
+    ],
+    "kwai_fong": [
+      -1389.9,
+      331.7
+    ],
+    "lai_king_bg": [
+      -1095,
+      -1101
+    ]
+  },
+  "layers": [
+    {
+      "id": "skyline_kwai_fong",
+      "props": [
+        "kt_station_kwai_fong",
+        "public_housing_distant"
+      ],
+      "note": "葵芳戲仿；禁葵涌站"
+    },
+    {
+      "id": "industrial_wall",
+      "props": [
+        "kt_ind_block_n"
+      ],
+      "count": [
+        4,
+        8
+      ],
+      "xz_ring": {
+        "x": [
+          -3240,
+          -150
+        ],
+        "z": [
+          -1170,
+          1170
+        ]
+      }
+    },
+    {
+      "id": "flyover_tunnel",
+      "props": [
+        "kt_flyover_north",
+        "kt_tunnel_portal"
+      ],
+      "flyover_span_m": [
+        120,
+        200
+      ],
+      "tunnel_min": 1,
+      "ban_through_yard": true
+    },
+    {
+      "id": "elbow_gate",
+      "props": [
+        "kt_elbow_trunk",
+        "gatehouse_weighbridge",
+        "barrier_yb",
+        "d2b_signs"
+      ],
+      "ban_straight_axis": true
+    },
+    {
+      "id": "yard_part_a",
+      "props": [
+        "quay_crane_sts",
+        "container_aisles",
+        "berth_sign_8",
+        "bollard_fender",
+        "high_mast"
+      ],
+      "quay_m_min": 500,
+      "depth_m": [
+        100,
+        140
+      ],
+      "sts_min": 8,
+      "sts_spacing_m": [
+        45,
+        60
+      ],
+      "containers_stack": [
+        3,
+        5
+      ]
+    },
+    {
+      "id": "rambler_water",
+      "water_gap_m": [
+        150,
+        250
+      ]
+    },
+    {
+      "id": "part_b_ct8",
+      "quay_m_min": 200,
+      "off_axis": true
+    },
+    {
+      "id": "part_c_tsingyi",
+      "props": [
+        "crane_wall",
+        "tsing_ma_sil",
+        "ting_kau_sil"
+      ]
+    }
+  ],
+  "audio_aabb_hint": {
+    "kt_quay_edge": {
+      "z": [
+        -280,
+        280
+      ],
+      "note": "follow BOUND.z; recheck if hub moves"
+    },
+    "kt_ind_street": {
+      "x": [
+        -140,
+        -8
+      ],
+      "z": [
+        -80,
+        160
+      ]
+    }
+  },
+  "quest_note": "See docs/core28a-quest-gate-boot.md — Pages boot skips manifest unless ?m=",
+  "acceptance": [
+    "剖面一眼可辨",
+    "高架唔穿堆場",
+    "站名葵芳戲仿",
+    "禁相板櫃",
+    "岸線≥500m 彎＋櫃巷＋STS≥8",
+    "入場只經肘"
+  ]
+}

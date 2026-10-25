@@ -454,23 +454,35 @@ function hkEnsureFacadeSide(mat) {
 }
 async function hkLoadFacadeKit() {
   if (HK_FACADE_KIT.ready || typeof loadGLTF !== 'function') return HK_FACADE_KIT;
-  for (const [k, f] of Object.entries(HK_FACADE_KIT_FILES)) {
-    try {
-      const g = await loadGLTF(f, 12000);
-      const root = g && (g.scene || g);
-      if (!root) continue;
-      root.traverse((o) => {
-        if (!o.isMesh) return;
-        o.castShadow = o.receiveShadow = true;
-        o.userData.noMerge = true; o.userData.hkFacadeThick = true;
-        if (o.material) hkEnsureFacadeSide(o.material);
-      });
-      HK_FACADE_KIT.proto[k] = root;
-    } catch (e) { console.warn('[hk-facade-kit]', k, e && e.message); }
-  }
-  HK_FACADE_KIT.ready = Object.keys(HK_FACADE_KIT.proto).length > 0;
-  console.info('[hk-facade-kit]', Object.keys(HK_FACADE_KIT.proto).join(','));
-  return HK_FACADE_KIT;
+  if (HK_FACADE_KIT._loading) return HK_FACADE_KIT._loading;
+  const work = (async () => {
+    for (const [k, f] of Object.entries(HK_FACADE_KIT_FILES)) {
+      try {
+        const g = await loadGLTF(f, 6000);
+        const root = g && (g.scene || g);
+        if (!root) continue;
+        root.traverse((o) => {
+          if (!o.isMesh) return;
+          o.castShadow = o.receiveShadow = true;
+          o.userData.noMerge = true; o.userData.hkFacadeThick = true;
+          if (o.material) hkEnsureFacadeSide(o.material);
+        });
+        HK_FACADE_KIT.proto[k] = root;
+      } catch (e) { console.warn('[hk-facade-kit]', k, e && e.message); }
+    }
+    HK_FACADE_KIT.ready = Object.keys(HK_FACADE_KIT.proto).length > 0;
+    console.info('[hk-facade-kit]', Object.keys(HK_FACADE_KIT.proto).join(',') || 'none→thick-wall extrude');
+    return HK_FACADE_KIT;
+  })();
+  /* 唔俾 shell kit 拖死成區：4s 後交返（extrude 厚牆已有；shell 係加分） */
+  HK_FACADE_KIT._loading = Promise.race([
+    work,
+    new Promise((res) => setTimeout(() => {
+      if (!HK_FACADE_KIT.ready) console.warn('[hk-facade-kit] timeout → keep thick-wall extrude');
+      res(HK_FACADE_KIT);
+    }, 4000))
+  ]).finally(() => { HK_FACADE_KIT._loading = null; });
+  return HK_FACADE_KIT._loading;
 }
 function hkDressFootprintShell(parent, ring, h, typeHint) {
   if (!parent || !ring || ring.length < 3 || !HK_FACADE_KIT.ready) return 0;
@@ -3671,8 +3683,9 @@ const INTERIORS = {
 /* ---------- 外景門口（黃色光圈標記） ---------- */
 const tongLauBlock = cityBlocks.find((b) => b.tongLau);
 const DOORS = [
-  { id: 'office', pos: new THREE.Vector3(BLD.office.x0 - 0.9, 0, 29), outYaw: -Math.PI / 2 },
-  { id: 'control', pos: new THREE.Vector3(BLD.control.x1 + 0.9, 0, -55), outYaw: Math.PI / 2 },
+  /* office／control 掛 KWAI_GEO.hub（mesh 已在 hub Group；門／目標唔可留 origin） */
+  { id: 'office', pos: new THREE.Vector3((typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : 0) + BLD.office.x0 - 0.9, 0, (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : 0) + 29), outYaw: -Math.PI / 2 },
+  { id: 'control', pos: new THREE.Vector3((typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : 0) + BLD.control.x1 + 0.9, 0, (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : 0) - 55), outYaw: Math.PI / 2 },
   { id: 'tonglau', pos: new THREE.Vector3(-CITY.sideX0 + 0.9, 0, tongLauBlock ? tongLauBlock.z : -236), outYaw: Math.PI / 2 }
 ];
 const markerMat = shared(new THREE.ShaderMaterial({
@@ -4369,7 +4382,9 @@ const MISSIONS = {
       if (INT.active) exitInterior(true);
       cleanupWorld(); resetPlayerState();
       FLAGS.bol = false; FLAGS.safeOpen = false;
-      placeCar(3.5, -12, 0); putPlayerInCar();
+      /* spawn 掛 KWAI hub（櫃／STS／辦事處喺 hub；origin＝空城）*/
+      { const _sp = (typeof kwWorld === 'function') ? kwWorld(3.5, -12) : { x: (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : 0) + 3.5, z: (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : 0) - 12 };
+        placeCar(_sp.x, _sp.z, 0); putPlayerInCar(); }
       spawnNPC('fai', GATE_POS.x + 4.6, GATE_POS.z - 3.5, 0, { outfit: OUTFITS.fai, hostile: false, unarmed: true, pose: 'talk', cash: 0, tag: 'fai', onDeath: () => failMission('喪彪俾你打死咗') });
       titleCard('提單', '葵涌貨櫃碼頭 · 八號泊位');
       MS.phase = 'getBol'; setTimer(180);
@@ -4385,12 +4400,13 @@ const MISSIONS = {
         if (FLAGS.bol && !INT.active) {
           newPhase('deliver');
           // 伏擊：黑箱保姆車攔路 + 四名槍手
-          spawnVehicle('van', -1.5, 14, Math.PI / 2 + 0.25, { tag: 'van' });
-          const tough = { accuracy: 0.9, range: 36 };
-          spawnNPC('thug', 1.5, 11.5, 0, { ...tough, state: 'combat', outfit: OUTFITS.thug });
-          spawnNPC('thug', -4.5, 11, 0.3, { ...tough, state: 'combat', outfit: OUTFITS.thug2 });
-          spawnNPC('thug', 6.5, 50, Math.PI, { ...tough, outfit: OUTFITS.thug });
-          spawnNPC('thug', -6, 47, Math.PI, { ...tough, outfit: OUTFITS.thug2 });
+          { const _hx = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : 0), _hz = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : 0);
+            spawnVehicle('van', _hx - 1.5, _hz + 14, Math.PI / 2 + 0.25, { tag: 'van' });
+            const tough = { accuracy: 0.9, range: 36 };
+            spawnNPC('thug', _hx + 1.5, _hz + 11.5, 0, { ...tough, state: 'combat', outfit: OUTFITS.thug });
+            spawnNPC('thug', _hx - 4.5, _hz + 11, 0.3, { ...tough, state: 'combat', outfit: OUTFITS.thug2 });
+            spawnNPC('thug', _hx + 6.5, _hz + 50, Math.PI, { ...tough, outfit: OUTFITS.thug });
+            spawnNPC('thug', _hx - 6, _hz + 47, Math.PI, { ...tough, outfit: OUTFITS.thug2 }); }
           say('槍手', '喺嗰度！佢攞咗張單，唔好俾佢走！', 3);
           after(0.4, () => objective('殺出重圍，帶提單去<em>閘口</em>交俾喪彪。'));
           setTarget(GATE_POS, 6);
@@ -10517,17 +10533,41 @@ Object.assign(MISSION_DB.speedboat, {
   fail: '大飛被截停／阿傑死亡', reward: '$4,000 黑錢', unlock: '下環街重遇喪彪', planned: false
 });
 
-// manifest 對白
+// manifest 對白（劇本鎖：開場預設通用 objective；冷錢包只喺 ?m=manifest）
 { const m = MISSIONS.manifest;
   const _st = m.start;
   m.start = function () {
-    try { if (typeof NT !== 'undefined') NT._c27fKwaiExploreOnly = false; } catch (e0) { /* */ }
+    const mq = (typeof URLQ !== 'undefined' && URLQ.get) ? URLQ.get('m') : null;
+    const explicitCold = mq === 'manifest';
+    const openGeneric = !explicitCold && !!(typeof NT !== 'undefined' && NT._c27fBootGenericManifest);
+    try {
+      if (typeof NT !== 'undefined') {
+        /* 開場通用／explore：當 explore-only，禁冷錢包字卡；顯式 ?m=manifest 先開 */
+        if (explicitCold) NT._c27fKwaiExploreOnly = false;
+        else if (openGeneric) NT._c27fKwaiExploreOnly = true;
+      }
+    } catch (e0) { /* */ }
     _st.call(this);
-    titleCard('冷錢包', '葵涌八號泊位 · 暴雨深夜');
     MS.phase = 'getBol';
-    after(0.8, () => say('喪彪', '阿傑，今夜交收<em>冷錢包</em>——五億美金。密鑰喺辦事處夾萬。', 4));
-    after(1.0, () => say('喪彪', '東星太子派咗人嚟……攞到即刻帶嚟閘口。妹妹嘅病……我哋要呢筆錢。', 4.2));
-    after(1.2, () => objective('暴雨深夜：去<em>八號泊位辦事處</em>打開夾萬，攞<em>冷錢包密鑰</em>。'));
+    if (explicitCold) {
+      titleCard('冷錢包', '葵涌八號泊位 · 暴雨深夜');
+      after(0.8, () => say('喪彪', '阿傑，今夜交收<em>冷錢包</em>——五億美金。密鑰喺辦事處夾萬。', 4));
+      after(1.0, () => say('喪彪', '東星太子派咗人嚟……攞到即刻帶嚟閘口。妹妹嘅病……我哋要呢筆錢。', 4.2));
+      after(1.2, () => objective('暴雨深夜：去<em>八號泊位辦事處</em>打開夾萬，攞<em>冷錢包密鑰</em>。'));
+    } else if (openGeneric) {
+      /* 預設 boot：任務閘開住；清 _st 延遲對白，改 pier 通用池（禁冷錢包／八號） */
+      try { seqs.length = 0; } catch (eQ) { /* */ }
+      try { subsQ.length = 0; if (typeof showSub === 'function') showSub(); } catch (eS) { /* */ }
+      try { titleCard('葵涌碼頭', '摸熟埠頭'); } catch (eT) { /* */ }
+      try {
+        const line = (typeof NT !== 'undefined' && typeof NT.c27fPickObj === 'function')
+          ? NT.c27fPickObj('kwai_tsing') : '喺附近行開，睇下有咩事發生。';
+        objective(line, 4);
+      } catch (eO) { /* */ }
+    } else {
+      /* 存檔「新遊戲」等：保留玩法對白，唔強制冷錢包大字 */
+      titleCard('提單', '葵涌貨櫃碼頭');
+    }
   };
   const _tk = m.tick;
   m.tick = function (dt) {
@@ -25247,16 +25287,19 @@ Promise.race([
   const loc = $('loc'); if (loc) { loc.classList.add('show'); setTimeout(() => loc.classList.remove('show'), 5000); }
   updateCashHUD(0);
   const mq = URLQ.get('m');
+  const freeQ = URLQ.has('free'); /* ?free / ?free=1 → 市區自由行 */
+  const zoneQ = URLQ.get('hkzone');
   try {
-    /* 預設入市區自由行（地道人 core28）；故事要顯式 ?m=manifest */
-    if (mq && MISSIONS[mq]) startMission(mq);
-    else {
+    /* docs/core28a-quest-gate-boot.md · 劇本鎖：預設開任務閘（通用 objective）；冷錢包要 ?m=manifest */
+    if (mq && MISSIONS[mq]) {
+      try { if (typeof NT !== 'undefined') NT._c27fBootGenericManifest = false; } catch (eF) { /* */ }
+      startMission(mq);
+    } else if (freeQ) {
       SAVE.decided = true;
       const tHub = setInterval(() => {
         if (!NT.ready) return;
         clearInterval(tHub);
-        const z = URLQ.get('hkzone');
-        if (z) return; /* 交俾 hkzone hook */
+        if (zoneQ) return; /* 交俾 hkzone hook */
         const go = () => {
           if (typeof NT.hk18Go === 'function' && NT.hk18Go('yau_tsim_mong')) return true;
           if (typeof HKM !== 'undefined' && HKM.go && HKM.go('ytm')) return true;
@@ -25266,6 +25309,13 @@ Promise.race([
         try { if (typeof titleCard === 'function') titleCard('油尖旺', '自由行動'); } catch (e0) { /* */ }
         try { if (typeof setObjective === 'function') setObjective('喺附近行開，睇下有咩事發生。'); } catch (e1) { /* */ }
       }, 200);
+    } else if (zoneQ) {
+      /* hkzone=…：唔同 hkzone hook 搶；探索旗／傳送交俾原 hook */
+      SAVE.decided = true;
+    } else {
+      SAVE.decided = true;
+      try { if (typeof NT !== 'undefined') NT._c27fBootGenericManifest = true; } catch (eG) { /* */ }
+      startMission('manifest');
     }
   } catch (e) { console.warn('startMission', e); }
 }).catch((e) => {
@@ -26400,10 +26450,11 @@ body.cine #c27Dist,body.cine #c27Wanted,body.cine #c27Horn{visibility:hidden}`;
   NT.c27fSanitizeObj = function (text) {
     const raw = String(text || '');
     if (!/冷錢包|八號泊位|葵涌貨櫃|衝出葵涌/.test(raw)) return text;
-    // hkzone=kwai 探索：未接碼頭任務前，一律換通用句（即使人喺可玩碼頭）
+    // hkzone=kwai 探索／開場通用 boot：未顯式 ?m=manifest 前，一律換通用句
     try {
-      const accepted = (typeof MS !== 'undefined' && MS.id === 'manifest');
-      if (NT._c27fKwaiExploreOnly && !accepted) return NT.c27fPickObj(NT._c27fLastGoId || 'kwai_tsing');
+      const mq = (typeof URLQ !== 'undefined' && URLQ.get) ? URLQ.get('m') : null;
+      const accepted = (typeof MS !== 'undefined' && MS.id === 'manifest' && mq === 'manifest' && !NT._c27fBootGenericManifest);
+      if ((NT._c27fKwaiExploreOnly || NT._c27fBootGenericManifest) && !accepted) return NT.c27fPickObj(NT._c27fLastGoId || 'kwai_tsing');
     } catch (e0) { /* */ }
     try {
       const pp = (typeof state !== 'undefined' && state.mode === 'drive' && typeof car !== 'undefined') ? car.pos : (typeof player !== 'undefined' ? player.pos : null);
@@ -26463,8 +26514,9 @@ body.cine #c27Dist,body.cine #c27Wanted,body.cine #c27Horn{visibility:hidden}`;
         if (NT._c27fTpT && performance.now() - NT._c27fTpT < 60000) return;
         if (/冷錢包|八號泊位|葵涌貨櫃|衝出葵涌/.test(blob)) {
           try {
-            const accepted = (typeof MS !== 'undefined' && MS.id === 'manifest');
-            if (NT._c27fKwaiExploreOnly && !accepted) return; /* hkzone=kwai 探索：唔彈冷錢包字卡 */
+            const mq = (typeof URLQ !== 'undefined' && URLQ.get) ? URLQ.get('m') : null;
+            const accepted = (typeof MS !== 'undefined' && MS.id === 'manifest' && mq === 'manifest' && !NT._c27fBootGenericManifest);
+            if ((NT._c27fKwaiExploreOnly || NT._c27fBootGenericManifest) && !accepted) return; /* 開場通用／hkzone 探索：唔彈冷錢包字卡 */
             const pp = (typeof state !== 'undefined' && state.mode === 'drive' && car) ? car.pos : player.pos;
             if (!_inYard(pp)) return; /* 世界座標唔喺碼頭原點 → 唔彈 */
           } catch (e) { return; }
