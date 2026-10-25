@@ -1,21 +1,28 @@
 # core28a · 任務閘／開場 quest（老闆：真機連任務都冇）
 
-## 根因（已修 tip）
+## 根因（已修）
 
-| 路徑 | 舊行為 | 現行為 |
-|---|---|---|
-| Pages `index.html` boot | 無 `?m=` → YTM 自由行，**零任務** | 無 `?m=`／無 `?free`／無 `hkzone` → **`startMission('manifest')`**（通用 objective） |
-| 顯式 `?m=manifest` | 冷錢包字卡 | 不變：冷錢包／八號對白 |
-| `?free=1` | （無） | 市區自由行（YTM） |
-| `hkzone=kwai` | explore-only | 不變：唔搶 hook；通用句；冷錢包要 `?m=manifest` |
+Pages boot 曾：
+1. 無 `?m=` → 油尖旺自由行（唔開 `manifest`）
+2. 有 `hkzone=` → **完全唔 `startMission`**（老闆 URL `?hkzone=kwai` 零任務）
+3. `hkzone=kwai` explore-only 清冷錢包 objective／字卡
 
-另：**空城**——`manifest` `placeCar(3.5,-12)` 留喺 world origin，櫃／STS／辦事處已掛 `KWAI_GEO.hub`。已改 hub spawn＋office／control 門＋伏擊座標。
+## 新鎖（tip）
 
-## URL
+| URL | 行為 |
+|---|---|
+| （預設） | `startMission('manifest')` 冷錢包；`BootGeneric=false` |
+| `?free` | 市區自由行（YTM）；可加 `hkzone` 探索 |
+| `?m=…` | 顯式任務 |
+| `?hkzone=kwai`（無 free） | 傳 hub **＋** 保留／開 `manifest` |
 
-1. **預設**（Pages `?v=core28`）：碼頭任務閘＋通用 objective（禁開場冷錢包字卡）  
-2. **冷錢包全文**：`?m=manifest`  
-3. **市區自由行**：`?free=1`  
-4. **碼頭探索**：`?hkzone=kwai`（通用句；接任務另加 `?m=manifest`）
+explore-only／`c27fClearKwaiObjective`：只喺 `?free` 且無 `MS.id`。
 
-`?v=` **唔升**（仍 core28）。
+## 空城／櫃／基建（煙）
+
+- 貨櫃 hub near >0；`kwaichung-dock`／flyover／tunnel／ind **有**
+- 市區厚殼 facade **有**
+- hinterland 放大見 stub `kwai-terminal-rebuild-core28a-stub`（並行）
+- **唔升 `?v=`**
+
+更新：2026-10-25

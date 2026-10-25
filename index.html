@@ -10103,7 +10103,13 @@ HKM.go = function (id) {
     const hx = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237;
     const hz = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145;
     x = hx; z = hz - bz + 36; h = 0;
-    try { if (typeof NT !== 'undefined') { NT._c27fKwaiExploreOnly = true; NT._c27fLastGoId = 'kwai_tsing'; } } catch (e) { /* */ }
+    try {
+      if (typeof NT !== 'undefined') {
+        NT._c27fLastGoId = 'kwai_tsing';
+        const free = (typeof URLQ !== 'undefined' && URLQ.has) ? URLQ.has('free') : false;
+        NT._c27fKwaiExploreOnly = !!(free && !(typeof MS !== 'undefined' && MS.id));
+      }
+    } catch (e) { /* */ }
   }
   else return false;
   if (INT.active) exitInterior(true);
@@ -10538,12 +10544,12 @@ Object.assign(MISSION_DB.speedboat, {
   const _st = m.start;
   m.start = function () {
     const mq = (typeof URLQ !== 'undefined' && URLQ.get) ? URLQ.get('m') : null;
-    const explicitCold = mq === 'manifest';
+    const freeQ = (typeof URLQ !== 'undefined' && URLQ.has) ? URLQ.has('free') : false;
+    const explicitCold = mq === 'manifest' || (!freeQ && !(typeof NT !== 'undefined' && NT._c27fBootGenericManifest));
     const openGeneric = !explicitCold && !!(typeof NT !== 'undefined' && NT._c27fBootGenericManifest);
     try {
       if (typeof NT !== 'undefined') {
-        /* 開場通用／explore：當 explore-only，禁冷錢包字卡；顯式 ?m=manifest 先開 */
-        if (explicitCold) NT._c27fKwaiExploreOnly = false;
+        if (explicitCold) { NT._c27fKwaiExploreOnly = false; NT._c27fBootGenericManifest = false; }
         else if (openGeneric) NT._c27fKwaiExploreOnly = true;
       }
     } catch (e0) { /* */ }
@@ -25290,12 +25296,13 @@ Promise.race([
   const freeQ = URLQ.has('free'); /* ?free / ?free=1 → 市區自由行 */
   const zoneQ = URLQ.get('hkzone');
   try {
-    /* docs/core28a-quest-gate-boot.md · 劇本鎖：預設開任務閘（通用 objective）；冷錢包要 ?m=manifest */
+    /* core28a 任務閘：預設 startMission('manifest')；自由行要 ?free；hkzone 只傳送唔砍任務 */
     if (mq && MISSIONS[mq]) {
-      try { if (typeof NT !== 'undefined') NT._c27fBootGenericManifest = false; } catch (eF) { /* */ }
+      try { if (typeof NT !== 'undefined') { NT._c27fBootGenericManifest = false; NT._c27fKwaiExploreOnly = false; } } catch (eF) { /* */ }
       startMission(mq);
     } else if (freeQ) {
       SAVE.decided = true;
+      try { if (typeof NT !== 'undefined') { NT._c27fBootGenericManifest = false; } } catch (e0) { /* */ }
       const tHub = setInterval(() => {
         if (!NT.ready) return;
         clearInterval(tHub);
@@ -25309,12 +25316,9 @@ Promise.race([
         try { if (typeof titleCard === 'function') titleCard('油尖旺', '自由行動'); } catch (e0) { /* */ }
         try { if (typeof setObjective === 'function') setObjective('喺附近行開，睇下有咩事發生。'); } catch (e1) { /* */ }
       }, 200);
-    } else if (zoneQ) {
-      /* hkzone=…：唔同 hkzone hook 搶；探索旗／傳送交俾原 hook */
-      SAVE.decided = true;
     } else {
       SAVE.decided = true;
-      try { if (typeof NT !== 'undefined') NT._c27fBootGenericManifest = true; } catch (eG) { /* */ }
+      try { if (typeof NT !== 'undefined') { NT._c27fBootGenericManifest = false; NT._c27fKwaiExploreOnly = false; } } catch (eG) { /* */ }
       startMission('manifest');
     }
   } catch (e) { console.warn('startMission', e); }
@@ -25788,13 +25792,10 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
             const hz = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145;
             tx = hx + Math.min(12, bx * 0.15); tz = hz - bz + 36; // hub 南閘內側，面向堆場
             try {
-              NT._c27fKwaiExploreOnly = true;
               NT._c27fLastGoId = 'kwai_tsing';
-              // 無 ?m=manifest 先清任務殘字；有顯式任務就交 startMission
-              const mq = (typeof URLQ !== 'undefined' && URLQ.get) ? URLQ.get('m') : (new URLSearchParams(location.search).get('m'));
-              if (mq !== 'manifest' && typeof MS !== 'undefined' && MS.id === 'manifest') {
-                /* 唔中途砍已接任務；只擋字卡／objective 殘 */
-              } else if (mq !== 'manifest') {
+              const free = (typeof URLQ !== 'undefined' && URLQ.has) ? URLQ.has('free') : false;
+              NT._c27fKwaiExploreOnly = !!(free && !(typeof MS !== 'undefined' && MS.id));
+              if (NT._c27fKwaiExploreOnly) {
                 try { if (typeof MS !== 'undefined') { MS.objText = NT.c27fPickObj('kwai_tsing'); } } catch (eM) { /* */ }
               }
             } catch (eK) { /* */ }
@@ -25837,10 +25838,12 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
       snap(); setTimeout(snap, 3500); // 懶載區啱啱 build 完再貼一次
       if (id === 'kwai_tsing' || id === 'kwai' || id === 'kt') {
         try {
-          const mq = (typeof URLQ !== 'undefined' && URLQ.get) ? URLQ.get('m') : (new URLSearchParams(location.search).get('m'));
-          if (mq !== 'manifest' && typeof NT.c27fClearKwaiObjective === 'function') {
+          const free = (typeof URLQ !== 'undefined' && URLQ.has) ? URLQ.has('free') : false;
+          if (free && !(typeof MS !== 'undefined' && MS.id) && typeof NT.c27fClearKwaiObjective === 'function') {
             NT._c27fKwaiExploreOnly = true;
             NT.c27fClearKwaiObjective('kwai_tsing');
+          } else if (typeof MS !== 'undefined' && MS.id) {
+            NT._c27fKwaiExploreOnly = false;
           }
         } catch (eObj) { /* */ }
       }
@@ -26453,7 +26456,7 @@ body.cine #c27Dist,body.cine #c27Wanted,body.cine #c27Horn{visibility:hidden}`;
     // hkzone=kwai 探索／開場通用 boot：未顯式 ?m=manifest 前，一律換通用句
     try {
       const mq = (typeof URLQ !== 'undefined' && URLQ.get) ? URLQ.get('m') : null;
-      const accepted = (typeof MS !== 'undefined' && MS.id === 'manifest' && mq === 'manifest' && !NT._c27fBootGenericManifest);
+      const accepted = (typeof MS !== 'undefined' && !!MS.id && !NT._c27fBootGenericManifest && !NT._c27fKwaiExploreOnly);
       if ((NT._c27fKwaiExploreOnly || NT._c27fBootGenericManifest) && !accepted) return NT.c27fPickObj(NT._c27fLastGoId || 'kwai_tsing');
     } catch (e0) { /* */ }
     try {
@@ -26503,7 +26506,7 @@ body.cine #c27Dist,body.cine #c27Wanted,body.cine #c27Horn{visibility:hidden}`;
       } catch (e) { /* */ }
     };
     if (typeof NT.hk18Go === 'function' && !NT.hk18Go._c27f) {
-      const _go = NT.hk18Go; NT.hk18Go = function (id) { _markTp(id); const r = _go.apply(this, arguments); try { NT.c27fClearKwaiObjective(id); } catch (e) {} return r; }; NT.hk18Go._c27f = true;
+      const _go = NT.hk18Go; NT.hk18Go = function (id) { _markTp(id); const r = _go.apply(this, arguments); try { if (!(typeof MS !== 'undefined' && MS.id) && NT._c27fKwaiExploreOnly) NT.c27fClearKwaiObjective(id); } catch (e) {} return r; }; NT.hk18Go._c27f = true;
     }
     if (typeof window.NT !== 'undefined' && NT.HKM && typeof NT.HKM.go === 'function' && !NT.HKM.go._c27f) {
       const _hg = NT.HKM.go.bind(NT.HKM); NT.HKM.go = function () { _markTp(); return _hg.apply(NT.HKM, arguments); }; NT.HKM.go._c27f = true;
@@ -26515,7 +26518,7 @@ body.cine #c27Dist,body.cine #c27Wanted,body.cine #c27Horn{visibility:hidden}`;
         if (/冷錢包|八號泊位|葵涌貨櫃|衝出葵涌/.test(blob)) {
           try {
             const mq = (typeof URLQ !== 'undefined' && URLQ.get) ? URLQ.get('m') : null;
-            const accepted = (typeof MS !== 'undefined' && MS.id === 'manifest' && mq === 'manifest' && !NT._c27fBootGenericManifest);
+            const accepted = (typeof MS !== 'undefined' && !!MS.id && !NT._c27fBootGenericManifest && !NT._c27fKwaiExploreOnly);
             if ((NT._c27fKwaiExploreOnly || NT._c27fBootGenericManifest) && !accepted) return; /* 開場通用／hkzone 探索：唔彈冷錢包字卡 */
             const pp = (typeof state !== 'undefined' && state.mode === 'drive' && car) ? car.pos : player.pos;
             if (!_inYard(pp)) return; /* 世界座標唔喺碼頭原點 → 唔彈 */
@@ -26539,7 +26542,7 @@ body.cine #c27Dist,body.cine #c27Wanted,body.cine #c27Horn{visibility:hidden}`;
               el.classList.remove('show'); if (typeof MS !== 'undefined') MS.titleT = 0;
             }
           }
-          if (away && typeof MS !== 'undefined' && MS.objText && /冷錢包|八號泊位|葵涌/.test(MS.objText)) {
+          if (away && typeof MS !== 'undefined' && !MS.id && MS.objText && /冷錢包|八號泊位|葵涌/.test(MS.objText)) {
             NT.c27fClearKwaiObjective(NT._c27fLastGoId);
           }
           if (away && typeof subsQ !== 'undefined') {
