@@ -319,7 +319,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 /*__EMBEDDED_ASSETS_BEGIN__*/const EMBEDDED_ASSETS = {};/*__EMBEDDED_ASSETS_END__*/
 /* TIP_MARK geometry-fail knife · after b5e0865 · pier-first / defer-kenney · keep ?v=core28 */
 /* TIP_MARK paint-fail · tractor chase back halfLen+5.5 / CAM 12.5 · rear door detail · keep ?v=core28 */
-/* TIP_MARK spawn-first-frame · rev2 (-8,-228)→南閘 + forward 30m×40° cone cull ind/shell/alley · day · keep ?v=core28 */
+/* TIP_MARK spawn-first-frame · rev3 elbow-hub (-8,-228)→(-1245,-373) lock · ban OSM/arcade Δx · tractor cam≥12.5 · cone cull gold/shed · keep ?v=core28 */
 const ASSET_BASE = 'assets/';
 const ASSET_FILES = {
   car: 'concept-car.glb',          // 開局黑色跑車：Khronos CarConcept（CC-BY 4.0；已去標誌／減面）；後備 kenney-sedan-sports.glb
@@ -423,17 +423,104 @@ const KWAI_GEO = {
   laiKingX: -1095, laiKingZ: -1101
 };
 function kwWorld(lx, lz) { return { x: KWAI_GEO.hubX + lx, z: KWAI_GEO.hubZ + lz }; }
-/** spawn-first-frame：對齊 data/kwai-spawn-first-frame-level.json rev2
- *  hub_local (-8,-228) 望南閘 (0,-271)；clear≈44 m；廢 (-14,-95) 青綠牆角／cam 塞殼
- *  禁 (-18,14) 堆場北；側移離工廈殼≥8 m 入開闊瀝青 */
+/** spawn-first-frame：對齊 data/kwai-spawn-first-frame-level.json rev3
+ *  hub_local (-8,-228) 望南閘 (0,-271)；world = elbow hub + local（1:1 米）
+ *  Origin = KWAI_GEO.hub (−1237,−145) 肘 —— 禁 geographic hub (−1390,332)／禁 ×1.5
+ *  assert world ≈ (−1245,−373) tol≤2；廢 OSM／arcade 東推 Δx≈53 */
 function kwSpawnElbowGatePose() {
   const hx = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237);
   const hz = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145);
   const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280);
-  const lx = -8, lz = -228; /* rev2：貼近南閘北側開闊瀝青（唔係 (-14,-95) 牆角） */
+  const lx = -8, lz = -228; /* rev3 鎖：肘 hub_local；唔乘 K=1.5 */
   const lookX = 0, lookZ = -bz + 9; /* GATE_POS hub-local ≈ (0,-271) */
   const heading = Math.atan2(lookX - lx, lookZ - lz);
   return { x: hx + lx, z: hz + lz, heading, lx, lz, lookX, lookZ };
+}
+/** rev3：OSM／extrude 樓腳若蓋住肘 spawn 或落喺前方錐 → 唔起／唔加碰撞（根因 Δx≈53） */
+function kwBldBlocksElbowSpawn(aabb, cx, cz) {
+  if (typeof kwSpawnElbowGatePose !== 'function') return false;
+  const pose = kwSpawnElbowGatePose();
+  const pad = 10;
+  if (aabb && aabb.min_dx != null) {
+    if (pose.x >= aabb.min_dx - pad && pose.x <= aabb.max_dx + pad
+      && pose.z >= aabb.min_dz - pad && pose.z <= aabb.max_dz + pad) return true;
+  }
+  if (cx != null && cz != null) {
+    if (Math.hypot(cx - pose.x, cz - pose.z) < 14) return true;
+    const hx = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237);
+    const hz = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145);
+    if (typeof kwInSpawnForwardCone === 'function' && kwInSpawnForwardCone(cx - hx, cz - hz)) return true;
+  }
+  return false;
+}
+/** rev3：清蓋住肘 spawn 嘅 colliders（OSM 機構樓 AABB maxX≈-1193 → 東推到 -1192） */
+function kwPurgeCollidersNearElbowSpawn() {
+  if (typeof colliders === 'undefined' || !colliders || typeof kwSpawnElbowGatePose !== 'function') return 0;
+  const pose = kwSpawnElbowGatePose();
+  const pad = 12;
+  let n = 0;
+  for (let i = colliders.length - 1; i >= 0; i--) {
+    const c = colliders[i];
+    if (!c || c.maxY < 0.55) continue;
+    if (pose.x + pad < c.minX || pose.x - pad > c.maxX || pose.z + pad < c.minZ || pose.z - pad > c.maxZ) continue;
+    colliders.splice(i, 1);
+    n++;
+  }
+  if (n) console.info('[kwai] purge spawn colliders', n);
+  return n;
+}
+/** rev3：placeCar 後鎖世界位；arcade／resolve 東推即重置 */
+function kwArmElbowSpawnLock(ms) {
+  if (typeof kwSpawnElbowGatePose !== 'function') return null;
+  const pose = kwSpawnElbowGatePose();
+  const bag = (typeof NT !== 'undefined' ? NT : (window.NT = window.NT || {}));
+  bag._kwaiSpawnLock = {
+    x: pose.x, z: pose.z, heading: pose.heading,
+    until: (typeof performance !== 'undefined' ? performance.now() : Date.now()) + (ms == null ? 12000 : ms)
+  };
+  try { kwPurgeCollidersNearElbowSpawn(); } catch (e) { /* */ }
+  return bag._kwaiSpawnLock;
+}
+function kwEnforceElbowSpawnLock() {
+  const bag = (typeof NT !== 'undefined' ? NT : null);
+  if (!bag || !bag._kwaiSpawnLock) return false;
+  const L = bag._kwaiSpawnLock;
+  const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  if (now > L.until) { bag._kwaiSpawnLock = null; return false; }
+  if (typeof car === 'undefined' || !car || !car.pos) return false;
+  if (Math.hypot(car.pos.x - L.x, car.pos.z - L.z) <= 2) return false;
+  car.pos.x = L.x; car.pos.z = L.z;
+  if (car.vel) { car.vel.x = 0; car.vel.y = 0; }
+  if (car.root) car.root.position.set(L.x, car.root.position.y || 0, L.z);
+  if (L.heading != null) {
+    car.heading = L.heading;
+    if (car.root) car.root.rotation.y = L.heading;
+    try { if (typeof state !== 'undefined') { state.camYaw = L.heading; state.yawOffset = 0; } } catch (e) { /* */ }
+  }
+  return true;
+}
+/** rev3：拖頭第一幀 chase 即刻 ≥12.5，禁 cam_dist≈4.75 金黃櫃內 */
+function kwSnapTractorChaseCam() {
+  if (typeof car === 'undefined' || !car || !car.pos) return;
+  const back = Math.max((typeof CAM_DRIVE !== 'undefined' ? CAM_DRIVE.back : 12.5) || 12.5, (car.halfLen || 4.6) + 5.5);
+  const h = Math.max((typeof CAM_DRIVE !== 'undefined' ? CAM_DRIVE.height : 3.2) || 3.2, 3.1);
+  let yaw = car.heading || 0;
+  try { if (typeof state !== 'undefined' && state.camYaw != null) yaw = state.camYaw + (state.yawOffset || 0); } catch (e) { /* */ }
+  const sx = Math.sin(yaw), cz = Math.cos(yaw);
+  const px = car.pos.x - sx * back, pz = car.pos.z - cz * back;
+  try {
+    if (typeof camState !== 'undefined') {
+      camState.pos.set(px, h, pz);
+      camState.look.set(car.pos.x + sx * 3, 0.6, car.pos.z + cz * 3);
+      camState.fov = 50;
+      camState.init = true;
+    }
+    if (typeof camera !== 'undefined') {
+      camera.position.set(px, h, pz);
+      camera.lookAt(car.pos.x + sx * 3, 0.6, car.pos.z + cz * 3);
+      camera.updateMatrixWorld();
+    }
+  } catch (e2) { /* */ }
 }
 function kwForceKwaiDayUnlessNight() {
   try {
@@ -2688,6 +2775,21 @@ function updateCamera(dt) {
   camState.fov = damp(camState.fov, fov, 10, dt);
   const safePos = cameraCollide(pivot, camState.pos, includeCar, minDist);
   camera.position.copy(safePos);
+  /* rev3 paint：拖頭／貨櫃禁 cameraCollide 拉入 halfLen+5.5（QA cam≈4.75 金黃櫃內） */
+  if (state.mode === 'drive' && (car.halfLen || 0) >= 4) {
+    const minBack = Math.max((CAM_DRIVE && CAM_DRIVE.back) || 12.5, (car.halfLen || 4.6) + 5.5);
+    const dx = camera.position.x - car.pos.x, dz = camera.position.z - car.pos.z;
+    const d = Math.hypot(dx, dz);
+    if (d < minBack - 0.05) {
+      const yaw = state.camYaw + state.yawOffset;
+      const sx = Math.sin(yaw), cz = Math.cos(yaw);
+      const h = Math.max((CAM_DRIVE && CAM_DRIVE.height) || 3.2, 3.1);
+      camera.position.x = car.pos.x - sx * minBack;
+      camera.position.z = car.pos.z - cz * minBack;
+      camera.position.y = Math.max(camera.position.y, h);
+      camState.pos.copy(camera.position);
+    }
+  }
   if (state.shake > 0.01) camera.position.add(new THREE.Vector3((Math.random() - .5) * state.shake * 0.25, (Math.random() - .5) * state.shake * 0.25, 0));
   camera.lookAt(camState.look);
   if (Math.abs(camera.fov - camState.fov) > 0.01) { camera.fov = camState.fov; camera.updateProjectionMatrix(); }
@@ -4437,6 +4539,7 @@ const MISSIONS = {
         placeCar(_pose.x, _pose.z, _pose.heading); putPlayerInCar();
         try { if (typeof state !== 'undefined') { state.camYaw = _pose.heading; state.yawOffset = 0; } } catch (eY) { /* */ }
         try { if (typeof camState !== 'undefined') camState.init = false; } catch (eC) { /* */ }
+        try { if (typeof kwArmElbowSpawnLock === 'function') kwArmElbowSpawnLock(12000); } catch (eL) { /* */ }
         try { if (typeof kwForceKwaiDayUnlessNight === 'function') kwForceKwaiDayUnlessNight(); } catch (eD) { /* */ }
         try {
           if (typeof kwApplySpawnTractorTruck === 'function') kwApplySpawnTractorTruck();
@@ -10185,6 +10288,12 @@ HKM.go = function (id) {
   if (INT.active) exitInterior(true);
   if (state.mode === 'foot') HKM.raw.putPlayerOnFoot(x, z, h);
   HKM.raw.placeCar(x, z, h); car.root.position.set(x, 0, z); camState.init = false; HKM.lastFill.set(1e9, 0, 1e9); HKM.streamT = 0;
+  try {
+    if (id === 'kwai' || id === 'kwai_tsing' || id === 'kt' || id === 'pier' || id === 'yard') {
+      if (typeof kwArmElbowSpawnLock === 'function') kwArmElbowSpawnLock(12000);
+      if (typeof kwSnapTractorChaseCam === 'function') kwSnapTractorChaseCam();
+    }
+  } catch (eArm) { /* */ }
   return true;
 };
 { const q = new URLSearchParams(location.search).get('hkzone'); if (q) {
@@ -21252,6 +21361,8 @@ function kwApplySpawnTractorTruck() {
   /* 拖頭預設鏡頭：追車 6m 會貼喺 20ft 櫃尾 ~1.3m → 成屏藍；拉後／抬高 */
   CAM_DRIVE.back = 12.5; CAM_DRIVE.height = 3.2;
   loadState.car = true;
+  try { if (typeof kwSnapTractorChaseCam === 'function') kwSnapTractorChaseCam(); } catch (eCam) { /* */ }
+  try { if (typeof kwArmElbowSpawnLock === 'function') kwArmElbowSpawnLock(12000); } catch (eLk) { /* */ }
   console.info('[kwai] spawn tractor／貨櫃車');
   return model;
 }
@@ -21287,7 +21398,7 @@ function kwCullSpawnForwardCone(root) {
   const forwardM = 30;
   const halfAngle = (20 * Math.PI) / 180; /* 40° 錐 · parent ±20°；JSON half 40 當全角 */
   const cosHalf = Math.cos(halfAngle);
-  const banRe = /^kt_ind_block|kt_alley_cont_blocker|container_blocks_aisle|kt_d4_shed|kt_ind_bay|kt_ind_wall|kt_p2_north_block|kt_osm_facade|industrial.?mass|green_facade|warehouse_shell/i;
+  const banRe = /^kt_ind_block|kt_alley_cont_blocker|container_blocks_aisle|kt_d4_shed|kt_ind_bay|kt_ind_wall|kt_p2_north_block|kt_osm_facade|industrial.?mass|green_facade|warehouse_shell|kt_bld_|kt_csdi_|kt_extrude|kt_shed|shed|gold.?cont|yel.?cont|hazard|container_stack|yard_cont|shipping.?cont|corrugat|rusty.?cont/i;
   const keepRe = /kt-quay-crane|kt_quay|kt_gate|kt_dock|barrier|weigh|sign_height|kt_berth|sts|crane_rail|tractor|kt_elbow|kt_asphalt|yard_road|kt_service|kt_tee|kt_spawn|kt_left_turn|high_mast|kt_yard_high|bollard|fender|kt_sts|kt_barrier|kt_sign|kt_weigh|kt_station|gatehouse|kt_part_|kt_rambler|kt_tsing|kt_ting|flyover|tunnel|kt_hull|kt_oil|kwaichung-dock/i;
   const hubX = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : 0);
   const hubZ = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : 0);
@@ -21326,7 +21437,7 @@ function kwCullSpawnForwardCone(root) {
     const side = sideDot >= 0 ? 1 : -1;
     const needLat = Math.tan(halfAngle) * h.dist + 10;
     const curLat = Math.abs(sideDot);
-    const kill = /container_blocks_aisle|kt_alley_cont_blocker|kt_d4_shed/i.test(o.name) || h.dist < 8;
+    const kill = /container_blocks_aisle|kt_alley_cont_blocker|kt_d4_shed|kt_bld_|kt_csdi_|kt_extrude|shed|gold|yel.?cont|hazard|container_stack/i.test(o.name) || h.dist < 10;
     if (kill || curLat + 0.5 >= needLat && /kt_ind_block/i.test(o.name) === false) {
       o.parent.remove(o);
       removed++;
@@ -23275,6 +23386,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       const ring = c.footprint_ring;
       if (!ring || ring.length < 3) continue;
       const cen = c.centroid; if (!cen) continue;
+      if (typeof kwBldBlocksElbowSpawn === 'function' && kwBldBlocksElbowSpawn(c.aabb, cen.dx, cen.dz)) continue;
       // skip if OSM already near
       let nearOsm = false;
       for (const b of ranked.slice(0, Math.min(nBld, 200))) {
@@ -24015,6 +24127,8 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       const ring = b.footprint_ring;
       if (!ring || ring.length < 3) continue;
       const c = b.centroid || {};
+      /* rev3：禁 OSM 樓腳蓋肘 spawn（機構 AABB→東推 Δx≈53） */
+      if (typeof kwBldBlocksElbowSpawn === 'function' && kwBldBlocksElbowSpawn(b.aabb, c.dx, c.dz)) continue;
       const near = ktNearestCsdi(c.dx || ring[0].dx, c.dz || ring[0].dz, csdi);
       const h = ktHeight(b, near);
       const mat = ktPickMat(b);
@@ -24027,6 +24141,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
       const ring = c.footprint_ring;
       if (!ring || ring.length < 3) continue;
       const cen = c.centroid; if (!cen) continue;
+      if (typeof kwBldBlocksElbowSpawn === 'function' && kwBldBlocksElbowSpawn(c.aabb, cen.dx, cen.dz)) continue;
       let nearOsm = false;
       for (const b of ranked.slice(0, Math.min(nBld, 200))) {
         const bc = b.centroid; if (!bc) continue;
@@ -24082,6 +24197,8 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
     }
 
     KT.ready = true;
+    try { if (typeof kwPurgeCollidersNearElbowSpawn === 'function') kwPurgeCollidersNearElbowSpawn(); } catch (eP) { /* */ }
+    try { if (typeof kwCullSpawnForwardCone === 'function' && KT.group) kwCullSpawnForwardCone(KT.group); } catch (eC) { /* */ }
     console.info('[kt] core26 drive+extrude densify', {
       roadSegs,
       buildings: nBld,
@@ -26636,10 +26753,11 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
               if (dRoad < 90) { px = s2[0].dx; pz = s2[0].dz; }
             }
           } else if (id === 'kwai_tsing' || id === 'kwai' || id === 'kt') {
-            // 鎖死可玩碼頭座標；yaw 對肘閘（唔再用 0 望堆場長軸）
+            // rev3：鎖死肘 hub world；禁 c28SnapRoad／OSM 區心／地理 hub (−1390,332)
             px = tx; pz = tz;
             const _poseY = (typeof kwSpawnElbowGatePose === 'function') ? kwSpawnElbowGatePose() : null;
             yaw = _poseY ? _poseY.heading : Math.atan2(8, -43);
+            if (_poseY) { px = _poseY.x; pz = _poseY.z; }
             try { if (typeof putPlayerInCar === 'function') putPlayerInCar(); } catch (eCar) { /* */ }
           } else if (s2) {
             px = s2[0].dx; pz = s2[0].dz;
@@ -26647,13 +26765,33 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
           }
           if (typeof HKM !== 'undefined' && HKM.raw && HKM.raw.placeCar) HKM.raw.placeCar(px, pz, yaw);
           else if (typeof placeCar === 'function') placeCar(px, pz, yaw);
-          try { if (typeof car !== 'undefined' && car) { car.heading = yaw; if (car.root) car.root.rotation.y = yaw; } } catch (e0) { /* */ }
+          try { if (typeof car !== 'undefined' && car) { car.heading = yaw; if (car.root) { car.root.position.set(px, 0, pz); car.root.rotation.y = yaw; } car.pos.x = px; car.pos.z = pz; } } catch (e0) { /* */ }
           try { if (typeof state !== 'undefined') { state.camYaw = yaw; state.yawOffset = 0; } } catch (e1) { /* */ }
           if (typeof camState !== 'undefined') camState.init = false;
-          try { if (typeof NT.c27fPushArcade === 'function' && typeof car !== 'undefined') NT.c27fPushArcade(car, false); } catch (e2) { /* */ }
+          try {
+            if (id === 'kwai_tsing' || id === 'kwai' || id === 'kt') {
+              if (typeof kwArmElbowSpawnLock === 'function') kwArmElbowSpawnLock(12000);
+              if (typeof kwSnapTractorChaseCam === 'function') kwSnapTractorChaseCam();
+            } else if (typeof NT.c27fPushArcade === 'function' && typeof car !== 'undefined') {
+              NT.c27fPushArcade(car, false);
+            }
+          } catch (e2) { /* */ }
         } catch (e) { /* */ }
       };
-      snap(); setTimeout(snap, 3500); // 懶載區啱啱 build 完再貼一次
+      snap();
+      setTimeout(() => {
+        /* rev3：kwai 第二輪只 re-arm 肘 lock／清 collider，唔准 OSM snap 改位 */
+        try {
+          if (id === 'kwai_tsing' || id === 'kwai' || id === 'kt') {
+            if (typeof kwArmElbowSpawnLock === 'function') kwArmElbowSpawnLock(8000);
+            if (typeof kwPurgeCollidersNearElbowSpawn === 'function') kwPurgeCollidersNearElbowSpawn();
+            if (typeof kwEnforceElbowSpawnLock === 'function') kwEnforceElbowSpawnLock();
+            if (typeof kwSnapTractorChaseCam === 'function') kwSnapTractorChaseCam();
+            return;
+          }
+        } catch (eRe) { /* */ }
+        snap();
+      }, 3500); // 懶載區啱啱 build 完再貼一次
       if (id === 'kwai_tsing' || id === 'kwai' || id === 'kt') {
         try {
           const free = (typeof URLQ !== 'undefined' && URLQ.has) ? URLQ.has('free') : false;
@@ -27832,6 +27970,12 @@ const CROWD = {
       who.pos.x = cx; who.pos.z = cz;
       if (who.root) who.root.position.set(cx, who.root.position.y || 0, cz);
     }
+    /* rev3：肘 spawn lock —— arcade 東推 Δx≈53 即拉返 (−1245,-373) */
+    try {
+      if (who === car && typeof kwEnforceElbowSpawnLock === 'function' && kwEnforceElbowSpawnLock()) {
+        out.moved = 0; out.dx = 0; out.dz = 0;
+      }
+    } catch (eLk) { /* */ }
     return out;
   };
   /** QA：塞入指定世界座標，即刻推，回 moved */
@@ -27876,6 +28020,7 @@ const CROWD = {
       try {
         if (typeof car === 'undefined' || !car || !car.pos) return;
         NT.c27fPushArcade(car, false);
+        if (typeof kwEnforceElbowSpawnLock === 'function') kwEnforceElbowSpawnLock();
       } catch (e) { /* */ }
     };
     if (HOOKS.frame) HOOKS.frame.push(_arcTick);

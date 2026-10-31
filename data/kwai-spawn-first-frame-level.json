@@ -1,71 +1,43 @@
 {
   "id": "kwai_spawn_first_frame_level",
-  "rev": 2,
-  "updated": "2026-10-31T11:34:03+08:00",
-  "aligns_art": "data/kwai-spawn-first-frame-art.json",
-  "after_tip": "5e60dab",
-  "qa_fail": "15344c0 第一幀仍青綠牆角；(-14,-95)→南閘視線被工廈／倉殼擋",
+  "rev": 3,
+  "updated": "2026-10-31T11:40:00+08:00",
+  "after_tip": "01fcb8f",
+  "qa_fail": {
+    "tip": "01fcb8f",
+    "seen": "第一幀金黃填滿；cam≈4.75；世界 x≈-1192（應 -1245＝hubX-8）偏 +53",
+    "crawler": "boot origin／雙尺度，唔係 latlon",
+    "no_sample": true
+  },
   "no_bump_v": true,
-  "coord": "hub_local → kwWorld(lx,lz)",
-  "spawn": {
+  "spawn_lock_keep": {
     "hub_local": {
-      "x": -8.0,
-      "z": -228.0
+      "x": -8,
+      "z": -228
     },
     "look_at_hub_local": {
-      "x": 0.0,
-      "z": -271.0
+      "x": 0,
+      "z": -271
     },
-    "heading_rad": 2.95765,
-    "clear_forward_m": 43.7,
-    "vehicle": "tractor_container",
-    "cam_clear": "halfLen+5.5",
-    "note_zh": "貼近南閘北側開闊瀝青；第一幀要見閘牌／黃黑／限高輪廓，唔係倉牆"
-  },
-  "clear_cone": {
-    "half_angle_deg": 20,
-    "forward_m": 30,
-    "ban_props": [
-      "kt_ind_block_*",
-      "indMassing",
-      "warehouse_shell",
-      "green_facade",
-      "alleyBlocker"
-    ],
-    "coder": "kwCullSpawnForwardCone after densify+kenney; ±20°×30m; ban kt_ind_block/alley/shell; keep STS/gate/D2b/barrier",
-    "impl": [
-      "kwCullSpawnForwardCone",
-      "kwInSpawnForwardCone",
-      "kwBreakStraightTunnel skip"
-    ]
-  },
-  "replace": {
-    "r0": {
-      "hub_local": {
-        "x": -18,
-        "z": 14
-      },
-      "why": "堆場北轉角"
+    "world_assert": {
+      "x": -1245,
+      "z": -373,
+      "tol_m": 2
     },
-    "r1_15344c0": {
-      "hub_local": {
-        "x": -14,
-        "z": -95
-      },
-      "why": "距離閘遠，視線中段青綠牆角／chase cam 塞殼"
-    }
+    "note": "KWAI_GEO.hub (-1237,-145) + hub_local；1:1 米，禁 ×1.5 街景尺"
   },
-  "apply": [
-    "kwSpawnElbowGatePose()",
-    "manifest.start",
-    "hkzone=kwai",
-    "free=1&hkzone=kwai",
-    "kwCullSpawnForwardCone()"
+  "coder_knife": [
+    "placeCar 後 assert |car.x+1245|<2 且 |car.z+373|<2；唔啱即重置 pose",
+    "hkzone=kwai：禁 c28SnapRoad／OSM 區心／第二輪 3500ms snap 改位；只准 kwSpawnElbowGatePose",
+    "禁雙尺度：hub_local 唔乘 K=1.5；碼頭 1:1",
+    "禁 boot 落 origin(0,0) 再加 hub——要一次過 world = hub+local",
+    "拖頭 cam chase back ≥ halfLen+5.5（目標 ≥12.5）；禁 cam≈4.75 貼殼／金黃填屏",
+    "錐清加：金黃／黃櫃／shed 填屏 mesh（唔只綠工廈）"
   ],
   "qa": [
-    "frame0 見南閘／D2b 輪廓或開闊瀝青通往閘，唔係青綠牆角",
-    "前方≥25 m 開闊",
-    "日景",
-    "≤1 轉 STS"
+    "car 世界位 ≈ (-1245, -373)",
+    "frame0 開闊見閘向，唔係金黃／牆角填屏",
+    "cam back ≥12.5（拖頭）",
+    "日景"
   ]
 }
