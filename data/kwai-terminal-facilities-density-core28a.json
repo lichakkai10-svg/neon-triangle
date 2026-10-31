@@ -1,0 +1,313 @@
+{
+  "id": "kwai_terminal_facilities_density_core28a",
+  "updated": "2026-10-25",
+  "owner": "關卡與地圖設計師",
+  "for_code": true,
+  "parent_stub": "kwai-terminal-rebuild-core28a-stub.json",
+  "align": [
+    "kwai-street-density-brief.md",
+    "kwai-dock-plus-stub.md",
+    "gov-municipal-street-props.md",
+    "gov-kwai-d2b-signage.md",
+    "core27f-sidewalk-railing-bin-layout.md",
+    "core28a-kwai-access-elevated-locks.md"
+  ],
+  "ban": [
+    "photo_board",
+    "HIT",
+    "MTL",
+    "葵涌站",
+    "flyover_through_yard",
+    "旺角霓虹雨",
+    "google_3d_mesh"
+  ],
+  "bands": [
+    {
+      "id": "yard_interior",
+      "zh": "堆場內",
+      "facilities": [
+        {
+          "id": "sts_crane",
+          "count_min": 8,
+          "spacing_m": [
+            45,
+            60
+          ]
+        },
+        {
+          "id": "container_stack",
+          "levels": [
+            3,
+            5
+          ],
+          "aisle_driveable": true
+        },
+        {
+          "id": "crane_rail",
+          "count": [
+            4,
+            6
+          ]
+        },
+        {
+          "id": "bollard",
+          "spacing_m": [
+            12,
+            16
+          ]
+        },
+        {
+          "id": "fender",
+          "spacing_m": [
+            12,
+            14
+          ]
+        },
+        {
+          "id": "high_mast",
+          "count": [
+            4,
+            6
+          ],
+          "h_m": [
+            25,
+            40
+          ]
+        },
+        {
+          "id": "berth_sign_8",
+          "count": 1
+        },
+        {
+          "id": "quay_face_waterline",
+          "required": true
+        },
+        {
+          "id": "oil_stain_dead_end",
+          "count": [
+            4,
+            8
+          ]
+        },
+        {
+          "id": "ship_hull",
+          "count_min": 1,
+          "deck_cont_per_ship": [
+            2,
+            3
+          ]
+        },
+        {
+          "id": "yard_drive_corridor",
+          "elbow_segments_min": 3
+        }
+      ],
+      "forbid": [
+        "residential",
+        "tong_lau",
+        "mall_podium",
+        "ped_crowd"
+      ]
+    },
+    {
+      "id": "gate_elbow",
+      "zh": "肘閘",
+      "facilities": [
+        {
+          "id": "gatehouse",
+          "count_min": 2
+        },
+        {
+          "id": "weighbridge",
+          "count_min": 1
+        },
+        {
+          "id": "barrier_yb",
+          "at": [
+            "gate_corners",
+            "quay_corners"
+          ]
+        },
+        {
+          "id": "d2b_signs",
+          "items": [
+            "貨櫃碼頭閘口（戲仿）",
+            "限高 4.5/4.2",
+            "地磅 · 跟指示停"
+          ]
+        },
+        {
+          "id": "kt_elbow_trunk",
+          "ban_straight_axis": true
+        },
+        {
+          "id": "roundabout_or_T",
+          "count_min": 1
+        }
+      ]
+    },
+    {
+      "id": "industrial_corridor",
+      "zh": "閘外工廈帶",
+      "facilities": [
+        {
+          "id": "kt_ind_block",
+          "count": [
+            12,
+            20
+          ],
+          "note": "was 4–8 too sparse; continuous wall"
+        },
+        {
+          "id": "loading_bay",
+          "per_blocks": 2
+        },
+        {
+          "id": "parody_ind_sign",
+          "per_blocks": [
+            3,
+            4
+          ]
+        },
+        {
+          "id": "service_road_parallel",
+          "count_min": 1
+        },
+        {
+          "id": "tee_spur",
+          "count": [
+            2,
+            3
+          ]
+        },
+        {
+          "id": "street_light",
+          "spacing_m": [
+            25,
+            40
+          ]
+        },
+        {
+          "id": "bin_orange",
+          "count": [
+            4,
+            6
+          ]
+        },
+        {
+          "id": "railing_segments",
+          "note": "breaks at driveways; h=1.0m offset 500mm"
+        }
+      ]
+    },
+    {
+      "id": "flyover_tunnel",
+      "zh": "高架／隧",
+      "facilities": [
+        {
+          "id": "kt_flyover_north",
+          "span_m": [
+            120,
+            200
+          ],
+          "clearance_m": [
+            4.5,
+            5.5
+          ]
+        },
+        {
+          "id": "pier_row",
+          "required": true
+        },
+        {
+          "id": "ramp_silhouette",
+          "count_min": 1
+        },
+        {
+          "id": "kt_tunnel_portal",
+          "count_min": 1
+        },
+        {
+          "id": "sign_height",
+          "at": "portal_and_flyover"
+        },
+        {
+          "id": "barrier_yb",
+          "at": "portal"
+        }
+      ],
+      "ban_through_yard": true
+    },
+    {
+      "id": "urban_skyline",
+      "zh": "葵芳／公屋遠景",
+      "facilities": [
+        {
+          "id": "kt_station_kwai_fong",
+          "count": 1,
+          "name_zh": "葵芳（戲仿）",
+          "forbid_name": "葵涌站",
+          "enterable": true
+        },
+        {
+          "id": "public_housing_slab",
+          "count": [
+            6,
+            10
+          ],
+          "h_m": [
+            30,
+            55
+          ]
+        },
+        {
+          "id": "podium_mall_tint",
+          "optional": true,
+          "note": "far only"
+        }
+      ]
+    },
+    {
+      "id": "water_opposite",
+      "zh": "海峽／青衣",
+      "facilities": [
+        {
+          "id": "rambler_water",
+          "gap_m": [
+            150,
+            250
+          ]
+        },
+        {
+          "id": "ct9_crane_wall",
+          "required": true
+        },
+        {
+          "id": "tsing_ma_sil",
+          "required": true
+        },
+        {
+          "id": "ting_kau_sil",
+          "cable_stayed": true
+        },
+        {
+          "id": "part_b_ct8_hint",
+          "quay_m_min": 200
+        }
+      ]
+    }
+  ],
+  "lite": {
+    "ind_block": [
+      8,
+      12
+    ],
+    "housing": [
+      4,
+      6
+    ],
+    "sts_crane": 6,
+    "high_mast": 4,
+    "note": "counts floor only; spacing/尺唔減"
+  }
+}

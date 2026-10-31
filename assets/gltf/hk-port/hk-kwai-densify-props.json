@@ -1,0 +1,63 @@
+{
+  "updated": "2026-10-25T10:57+08",
+  "boss": "碼頭其他設施加密——工廈／STS／高架／隧／櫃巷／街設；禁相板",
+  "stubs": [
+    "kwai-dock-plus-stub",
+    "kwai-street-density-d1",
+    "d2a",
+    "d2b",
+    "d3",
+    "kwai-infra-gltf-hang"
+  ],
+  "already_have": [
+    "hk-sts-quay-crane.glb(~70m)",
+    "hk-flyover-undercroft-bay.glb",
+    "hk-tunnel-portal.glb",
+    "hk-industrial-wall-bay.glb",
+    "ISO/yard/quay/ship"
+  ],
+  "new_props": [
+    "hk-quay-fender.glb",
+    "hk-quay-bollard.glb",
+    "hk-yard-high-mast.glb",
+    "hk-sts-crane-rail-12m.glb",
+    "hk-gate-weighbridge.glb",
+    "hk-gate-hut.glb",
+    "hk-barrier-yb-2m.glb",
+    "hk-street-lamp-9m.glb",
+    "hk-street-bin.glb",
+    "hk-street-manhole.glb",
+    "hk-sign-height.glb",
+    "hk-alley-cont-blocker.glb",
+    "hk-pallet-stack.glb",
+    "hk-loading-canopy.glb",
+    "hk-industrial-massing-14x22.glb",
+    "hk-flyover-ramp-bay.glb",
+    "hk-prop-ac-split.glb",
+    "hk-prop-lightbox.glb"
+  ],
+  "instance_hints": {
+    "fender": "沿泊位 ~12–14 m（lite ~18）",
+    "bollard": "沿泊位 ~12–16 m",
+    "high_mast": "堆場疏 4–6",
+    "crane_rail": "吊機腳下 ×4–6 modules",
+    "weighbridge": "閘口 1",
+    "gate_hut": "閘／地磅旁 1–2",
+    "barrier_yb": "閘角／肘／迴旋稀疏",
+    "lamp": "泊位→肘→輔路 ~28–32 m",
+    "bin": "~5",
+    "manhole": "~5",
+    "sign_height": "閘 4.5／橋底 4.2（文案代碼 overlay）",
+    "alley_blocker": "櫃巷死巷封口",
+    "pallet_canopy": "工廈側疏",
+    "ind_massing": "肘臂兩側連牆加密（跟 D1 ~18 感）",
+    "flyover_ramp": "接 undercroft",
+    "ac_lightbox": "D3 疏"
+  },
+  "forbid": [
+    "photo boards",
+    "HIT/MTL/shipping logos",
+    "旺角霓虹密度"
+  ],
+  "hang": "KWAI_GEO hub；唔 origin；未升 ?v= 除非主房"
+}

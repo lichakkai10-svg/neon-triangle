@@ -140,5 +140,10 @@
       "facade": "hkPushThickWall + hk-buildings shell kit; DoubleSide",
       "containers": "kwContainerRoot @ KWAI_GEO.hub; no urban origin"
     }
+  },
+  "kwai_densify_2026_10_25": {
+    "doc": "docs/kwai-terminal-art-densify-core28a.md",
+    "json": "assets/data/kwai-terminal-art-densify-core28a.json",
+    "status": "targets_locked_await_code_wire"
   }
 }

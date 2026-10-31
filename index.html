@@ -382,7 +382,27 @@ const KWAI_SCALE = {
     tunnel: 'gltf/hk-port/hk-tunnel-portal.glb',
     indWall: 'assets/gltf/hk-buildings/hk-facade-industrial-shell.glb', // 厚殼 ≥0.45；覆寫紙片工廈牆
     scaleJson: 'gltf/hk-port/hk-kwai-port-scale.json',
-    gisOverlay: 'assets/data/kwai-terminal-gis-overlay-p0.json'
+    gisOverlay: 'assets/data/kwai-terminal-gis-overlay-p0.json',
+    /* core28a densify props · assets/gltf/hk-port/hk-kwai-densify-props.json */
+    fender: 'gltf/hk-port/hk-quay-fender.glb',
+    bollard: 'gltf/hk-port/hk-quay-bollard.glb',
+    highMast: 'gltf/hk-port/hk-yard-high-mast.glb',
+    craneRail: 'gltf/hk-port/hk-sts-crane-rail-12m.glb',
+    weighbridge: 'gltf/hk-port/hk-gate-weighbridge.glb',
+    gateHut: 'gltf/hk-port/hk-gate-hut.glb',
+    barrierYb: 'gltf/hk-port/hk-barrier-yb-2m.glb',
+    lamp: 'gltf/hk-port/hk-street-lamp-9m.glb',
+    bin: 'gltf/hk-port/hk-street-bin.glb',
+    manhole: 'gltf/hk-port/hk-street-manhole.glb',
+    signHeight: 'gltf/hk-port/hk-sign-height.glb',
+    alleyBlocker: 'gltf/hk-port/hk-alley-cont-blocker.glb',
+    pallet: 'gltf/hk-port/hk-pallet-stack.glb',
+    canopy: 'gltf/hk-port/hk-loading-canopy.glb',
+    indMassing: 'gltf/hk-port/hk-industrial-massing-14x22.glb',
+    flyoverRamp: 'gltf/hk-port/hk-flyover-ramp-bay.glb',
+    acSplit: 'gltf/hk-port/hk-prop-ac-split.glb',
+    lightbox: 'gltf/hk-port/hk-prop-lightbox.glb',
+    densifyJson: 'gltf/hk-port/hk-kwai-densify-props.json'
   }
 };
 const ROAD_HALF = 7.0;                                // 行車道半闊（兩線雙程，每線 3.5 米）
@@ -394,7 +414,10 @@ const BOUND = { x: 90, z: 280 };                     // 可活動範圍（圍欄
  */
 const KWAI_GEO = {
   hubX: -1237, hubZ: -145,
-  gateX: -870.2, gateZ: -1551.1
+  gateX: -870.2, gateZ: -1551.1,
+  /* stub anchors · data/kwai-terminal-rebuild-core28a-stub.json */
+  kwaiFongX: -1389.9, kwaiFongZ: 331.7,
+  laiKingX: -1095, laiKingZ: -1101
 };
 function kwWorld(lx, lz) { return { x: KWAI_GEO.hubX + lx, z: KWAI_GEO.hubZ + lz }; }
 function kwHubCol(cx, cz, hw, hd, h) {
@@ -18203,6 +18226,8 @@ function kwBuildThreePartStub() {
   // 追加岸吊（真尺 STS glTF）＋岸牆 tile＋堆場 block
   kwProcCrane(root, bx + 26, -130, 1, 0.08);
   kwProcCrane(root, bx + 28, 160, 1, -0.06);
+  kwProcCrane(root, bx + 27, -55, 1, -Math.PI / 2); /* densify：Part A STS ≥8 */
+  kwProcCrane(root, bx + 27, 55, 1, -Math.PI / 2);
   kwQuayWallRow(root, bx + 2, -140, 6, 0);
   kwQuayWallRow(root, bx + 2, 40, 5, 0);
   kwYardStack(root, -8, 60, 0.1);
@@ -20968,6 +20993,325 @@ function kwBuildP1Urban() {
 }
 
 
+/** core28a · 美術＋關卡 densify 掛 tip（唔升 ?v=）
+ *  對齊：docs/kwai-terminal-art-densify-core28a.md
+ *        data/kwai-terminal-facilities-density-core28a.json
+ *        assets/gltf/hk-port/hk-kwai-densify-props.json
+ *  目標：STS≥8／岸牆≥20／櫃3–5×3巷只堆場／高架120–200／隧≥1／工廈12–20／公屋6–10／閘≥2＋D2b／葵芳戲仿
+ *  禁相板；唔動任務閘 BootGeneric。
+ */
+function kwBuildArtDensifyCore28a() {
+  if (KWAI.artDensify28a || typeof scene === 'undefined') return;
+  const root = (typeof kwEnsureGroup === 'function' ? kwEnsureGroup() : null) || KWAI.group;
+  if (!root) { console.warn('[kwai] densify28a: no root'); return; }
+  if (typeof kwEnsureGroup === 'function') kwEnsureGroup();
+  KWAI._colHub = true;
+  const bx = typeof BOUND !== 'undefined' ? BOUND.x : 90;
+  const bz = typeof BOUND !== 'undefined' ? BOUND.z : 280;
+  const lite = (typeof IS_SAFARI !== 'undefined' && IS_SAFARI)
+    || (typeof IS_IPHONE !== 'undefined' && IS_IPHONE)
+    || (typeof LOW_MEM !== 'undefined' && LOW_MEM);
+  const g = new THREE.Group();
+  g.name = 'kt_art_densify_core28a';
+  g.userData.kwaichung = true;
+  g.userData.noMerge = true;
+  const stats = { sts: 0, quay: 0, stacks: 0, ind: 0, housing: 0, gate: 0, mast: 0, props: 0 };
+
+  const countByName = (re) => {
+    let n = 0;
+    root.traverse((o) => { if (o.name && re.test(o.name)) n++; });
+    return n;
+  };
+
+  // —— 1. STS Part A ≥8（沿彎岸 45–60 m；真尺 70 m）——
+  {
+    let stsN = countByName(/^kt-quay-crane$/);
+    const want = lite ? 6 : 8;
+    const spots = [-220, -165, -110, -55, 0, 55, 110, 165, 220];
+    for (const cz of spots) {
+      if (stsN >= want) break;
+      // 略避已有吊機（±25 m 內當已有）
+      let near = false;
+      root.traverse((o) => {
+        if (near || o.name !== 'kt-quay-crane') return;
+        if (Math.abs(o.position.z - cz) < 25 && Math.abs(o.position.x - (bx + 28)) < 40) near = true;
+      });
+      if (near) continue;
+      kwProcCrane(g, bx + 28, cz, 1.0, -Math.PI / 2);
+      stsN++;
+      stats.sts++;
+    }
+  }
+
+  // —— 2. 岸牆 tile ≥20（24 m 模組；覆蓋 ≥500 m 岸）——
+  {
+    let quayN = 0;
+    root.traverse((o) => {
+      if (o.name === 'kt-quay-wall-row') quayN += Math.max(1, o.children.length);
+    });
+    const wantQ = lite ? 14 : 20;
+    if (quayN < wantQ) {
+      const need = wantQ - quayN;
+      const half = Math.ceil(need / 2);
+      kwQuayWallRow(g, bx + 2, -bz + 20, half, 0);
+      kwQuayWallRow(g, bx + 2, 20, need - half, 0);
+      stats.quay = need;
+    }
+  }
+
+  // —— 3. 櫃疊 3–5 block × 3 巷（只 hub 堆場；禁市區）——
+  {
+    let stackN = countByName(/^kt-yard-stack$/);
+    const lanes = [-18, -6, 8];
+    const zBlocks = lite
+      ? [-90, -20, 40, 100]
+      : [-120, -60, 0, 60, 120];
+    for (const lx of lanes) {
+      for (const lz of zBlocks) {
+        if (stackN >= (lite ? 9 : 12)) break;
+        let near = false;
+        root.traverse((o) => {
+          if (near || o.name !== 'kt-yard-stack') return;
+          if (Math.hypot(o.position.x - lx, o.position.z - lz) < 18) near = true;
+        });
+        if (near) continue;
+        kwYardStack(g, lx, lz, (lz % 40 === 0) ? 0.08 : -0.05);
+        stackN++;
+        stats.stacks++;
+      }
+    }
+    // 櫃巷死巷封口（alley blocker）
+    const placeBlocker = (x, z, yaw) => {
+      kwPortLoad('alleyBlocker', KWAI_SCALE.gltf.alleyBlocker).then((proto) => {
+        if (!proto || !g.parent) return;
+        kwPortMount(g, proto, x, z, yaw, 'kt_alley_cont_blocker');
+        stats.props++;
+      }).catch(() => {});
+    };
+    placeBlocker(-18, -145, 0);
+    placeBlocker(8, 145, Math.PI);
+  }
+
+  // —— 4. 護舷／纜樁／高桅／岸吊軌（glTF densify props）——
+  {
+    const fStep = lite ? 18 : 13;
+    const bStep = lite ? 16 : 12;
+    kwPortLoad('fender', KWAI_SCALE.gltf.fender).then((proto) => {
+      if (!proto || !g.parent) return;
+      for (let z = -bz + 30; z <= bz - 30; z += fStep) {
+        kwPortMount(g, proto, bx - 0.9, z, 0, 'kt_quay_fender');
+        stats.props++;
+      }
+    }).catch(() => {});
+    kwPortLoad('bollard', KWAI_SCALE.gltf.bollard).then((proto) => {
+      if (!proto || !g.parent) return;
+      for (let z = -bz + 24; z <= bz - 24; z += bStep) {
+        kwPortMount(g, proto, bx - 2.1, z, 0, 'kt_quay_bollard');
+        stats.props++;
+      }
+    }).catch(() => {});
+    const mastZs = lite
+      ? [[-8, -40], [-8, 40], [-8, 100], [6, -90]]
+      : [[-8, -80], [-8, -20], [-8, 40], [-8, 100], [6, -120], [6, 140]];
+    kwPortLoad('highMast', KWAI_SCALE.gltf.highMast).then((proto) => {
+      if (!proto || !g.parent) return;
+      for (const [mx, mz] of mastZs) {
+        kwPortMount(g, proto, mx, mz, 0, 'kt_yard_high_mast');
+        stats.mast++;
+        stats.props++;
+      }
+    }).catch(() => {});
+    const railZs = lite ? [-70, -5, 60, 125] : [-165, -110, -55, 0, 55, 110];
+    kwPortLoad('craneRail', KWAI_SCALE.gltf.craneRail).then((proto) => {
+      if (!proto || !g.parent) return;
+      for (const cz of railZs) {
+        kwPortMount(g, proto, bx + 28, cz, 0, 'kt_sts_crane_rail');
+        stats.props++;
+      }
+    }).catch(() => {});
+  }
+
+  // —— 5. 閘口 ≥2（地磅＋閘亭 glTF）＋黃黑欄 ——
+  {
+    let gateN = countByName(/kt_gate|gatehouse|kt_dock_gate_hut|kt_dock_weighbridge/i);
+    kwPortLoad('weighbridge', KWAI_SCALE.gltf.weighbridge).then((proto) => {
+      if (!proto || !g.parent) return;
+      kwPortMount(g, proto, -14, 36, 0, 'kt_gate_weighbridge');
+      stats.props++;
+    }).catch(() => {});
+    kwPortLoad('gateHut', KWAI_SCALE.gltf.gateHut).then((proto) => {
+      if (!proto || !g.parent) return;
+      kwPortMount(g, proto, -8, 33, 0, 'kt_gate_hut');
+      kwPortMount(g, proto, -22, 38, 0.15, 'kt_gate_hut');
+      stats.gate += 2;
+      stats.props += 2;
+    }).catch(() => {
+      if (typeof kwGatehouse === 'function' && gateN < 2) {
+        kwGatehouse(g, -22, 38);
+        stats.gate++;
+      }
+    });
+    kwPortLoad('barrierYb', KWAI_SCALE.gltf.barrierYb).then((proto) => {
+      if (!proto || !g.parent) return;
+      for (const [x, z, yaw] of [[-24, 36, Math.PI / 2], [-16, 44, 0.25], [-66, 70, 0.4], [bx - 3, bz - 6, Math.PI / 2]]) {
+        kwPortMount(g, proto, x, z, yaw, 'kt_barrier_yb');
+        stats.props++;
+      }
+    }).catch(() => {});
+  }
+
+  // —— 6. 工廈連續牆加密（12–20；massing 14×22＋既有 D1）——
+  {
+    let indN = countByName(/^kt_ind_block/);
+    const wantInd = lite ? 12 : 16;
+    const massPts = [
+      [-48, 38], [-50, 56], [-47, 74], [-51, 92], [-49, 110],
+      [-26, 40], [-24, 58], [-28, 76], [-25, 94], [-27, 112],
+      [-62, 55], [-68, 78], [-72, 100], [-40, 120]
+    ];
+    kwPortLoad('indMassing', KWAI_SCALE.gltf.indMassing).then((proto) => {
+      if (!proto || !g.parent) return;
+      let added = 0;
+      for (const [x, z] of massPts) {
+        if (indN + added >= wantInd) break;
+        kwPortMount(g, proto, x, z, Math.PI / 2, 'kt_ind_block_n');
+        if (typeof addCollider === 'function') addCollider(x, z, 7, 5, 14);
+        added++;
+        stats.ind++;
+        stats.props++;
+      }
+    }).catch(() => {
+      // 程序後備
+      if (typeof kwIndBlock === 'function') {
+        for (const [x, z] of massPts.slice(0, Math.max(0, wantInd - indN))) {
+          kwIndBlock(g, x, z, 14, 22, 11, null);
+          stats.ind++;
+        }
+      }
+    });
+    // 貨台棚＋卡板（工廈側疏）
+    kwPortLoad('canopy', KWAI_SCALE.gltf.canopy).then((proto) => {
+      if (!proto || !g.parent) return;
+      for (const [x, z] of [[-43, 52], [-43, 72], [-43, 92], [-43, 112]]) {
+        kwPortMount(g, proto, x, z, Math.PI / 2, 'kt_loading_canopy');
+        stats.props++;
+      }
+    }).catch(() => {});
+    kwPortLoad('pallet', KWAI_SCALE.gltf.pallet).then((proto) => {
+      if (!proto || !g.parent) return;
+      for (const [x, z] of [[-41, 58], [-41, 88], [-45, 105]]) {
+        kwPortMount(g, proto, x, z, 0, 'kt_pallet_stack');
+        stats.props++;
+      }
+    }).catch(() => {});
+  }
+
+  // —— 7. 公屋遠景 6–10（唔入堆場）——
+  {
+    let phN = countByName(/kt_estate|public_housing/i);
+    const wantPh = lite ? 6 : 8;
+    if (phN < wantPh && typeof kwEstateSlab === 'function') {
+      const extras = [
+        [-105, 170, 26, 88, 10], [-122, 175, 28, 100, 11],
+        [-98, 68, 24, 75, 10], [-125, 55, 30, 95, 11]
+      ];
+      for (const s of extras) {
+        if (phN >= wantPh) break;
+        kwEstateSlab(g, s[0], s[1], s[2], s[3], s[4]);
+        phN++;
+        stats.housing++;
+      }
+    }
+  }
+
+  // —— 8. 高架匝道接 undercroft；禁穿堆場 ——
+  {
+    kwPortLoad('flyoverRamp', KWAI_SCALE.gltf.flyoverRamp).then((proto) => {
+      if (!proto || !g.parent) return;
+      // 北側內陸；|x| 大過 40
+      kwPortMount(g, proto, -92, -100, 0, 'kt_flyover_ramp');
+      kwPortMount(g, proto, -92, 80, Math.PI, 'kt_flyover_ramp');
+      stats.props += 2;
+    }).catch(() => {});
+  }
+
+  // —— 9. 街燈／桶／渠蓋／限高（閘→肘→輔路）——
+  {
+    kwPortLoad('lamp', KWAI_SCALE.gltf.lamp).then((proto) => {
+      if (!proto || !g.parent) return;
+      for (let z = 40; z <= 120; z += 30) {
+        kwPortMount(g, proto, -32, z, 0, 'kt_street_lamp');
+        stats.props++;
+      }
+      for (let z = -80; z <= 80; z += 32) {
+        kwPortMount(g, proto, bx - 8, z, 0, 'kt_street_lamp');
+        stats.props++;
+      }
+    }).catch(() => {});
+    kwPortLoad('bin', KWAI_SCALE.gltf.bin).then((proto) => {
+      if (!proto || !g.parent) return;
+      for (const [x, z] of [[-30, 60], [-46, 70], [-28, 90], [-50, 100], [-20, 40]]) {
+        kwPortMount(g, proto, x, z, 0, 'kt_street_bin');
+        stats.props++;
+      }
+    }).catch(() => {});
+    kwPortLoad('manhole', KWAI_SCALE.gltf.manhole).then((proto) => {
+      if (!proto || !g.parent) return;
+      for (const [x, z] of [[-38, 55], [-40, 75], [-42, 95], [-28, 48], [-55, 68]]) {
+        kwPortMount(g, proto, x, z, 0, 'kt_street_manhole');
+        stats.props++;
+      }
+    }).catch(() => {});
+    kwPortLoad('signHeight', KWAI_SCALE.gltf.signHeight).then((proto) => {
+      if (!proto || !g.parent) return;
+      kwPortMount(g, proto, -28, 42, 0.1, 'kt_sign_height_mesh');
+      kwPortMount(g, proto, -52, 66, Math.PI / 2, 'kt_sign_height_mesh');
+      stats.props += 2;
+    }).catch(() => {});
+  }
+
+  // —— 10. 葵芳戲仿 stub（禁「葵涌站」）；確保有 ——
+  {
+    if (!root.getObjectByName('kt_station_kwai_fong') && !g.getObjectByName('kt_station_kwai_fong')) {
+      const sx = -120, sz = 130;
+      if (typeof kwKwaiFongStub === 'function') kwKwaiFongStub(g, sx, sz);
+      else if (typeof kwStationKwaiFong === 'function') kwStationKwaiFong(g, sx, sz, null);
+    }
+  }
+
+  // —— 11. D3 疏冷氣／燈箱（工廈面）——
+  if (!lite) {
+    kwPortLoad('acSplit', KWAI_SCALE.gltf.acSplit).then((proto) => {
+      if (!proto || !g.parent) return;
+      for (const [x, z, y] of [[-48, 62, 8], [-50, 82, 10], [-26, 70, 9]]) {
+        const m = kwPortMount(g, proto, x, z, Math.PI / 2, 'kt_prop_ac');
+        m.position.y = y;
+        stats.props++;
+      }
+    }).catch(() => {});
+    kwPortLoad('lightbox', KWAI_SCALE.gltf.lightbox).then((proto) => {
+      if (!proto || !g.parent) return;
+      for (const [x, z, y] of [[-47, 64, 12], [-25, 72, 11]]) {
+        const m = kwPortMount(g, proto, x, z, Math.PI / 2, 'kt_prop_lightbox');
+        m.position.y = y;
+        stats.props++;
+      }
+    }).catch(() => {});
+  }
+
+  root.add(g);
+  KWAI._colHub = false;
+  KWAI.artDensify28a = true;
+  KWAI.zones = Object.assign(KWAI.zones || {}, {
+    art_densify: 'kt_art_densify_core28a',
+    densify_sts: 'kt-quay-crane',
+    densify_ind: 'kt_ind_block_n',
+    densify_gate: 'kt_gate_hut'
+  });
+  console.info('[kwai] art densify core28a hung', stats);
+}
+
+
 {
   const boot = async () => {
     if (typeof loadTex !== 'function' || typeof scene === 'undefined') return false;
@@ -20998,6 +21342,7 @@ function kwBuildP1Urban() {
     kwRegisterEnterables();
     kwQuayEdgeSoft();
     kwBuildDockPlus();
+    try { if (typeof kwBuildArtDensifyCore28a === 'function') kwBuildArtDensifyCore28a(); } catch (e) { console.warn('[kwai-densify28a]', e && e.message); }
     try { kwApplyOsmFacadeDensity(); } catch (e) { console.warn('[kwai-osm-fac]', e && e.message); }
     try { kwApplyKwaiBranchingRoads(); } catch (e) { console.warn('[kwai-branch]', e && e.message); }
     try { kwApplyOsmNextDensity(); } catch (e) { console.warn('[kwai-osm-next-dens]', e && e.message); }

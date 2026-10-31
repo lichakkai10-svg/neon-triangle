@@ -1,0 +1,114 @@
+{
+  "id": "kwai_terminal_art_densify_core28a",
+  "updated": "2026-10-25T10:58:00+08:00",
+  "for_tip_after": "22e4bf2",
+  "no_bump_v": true,
+  "ban": [
+    "photo_board",
+    "HIT",
+    "MTL",
+    "google_3d_mesh",
+    "flyover_through_yard"
+  ],
+  "assets": {
+    "sts": "assets/gltf/hk-port/hk-sts-quay-crane-70m.glb",
+    "quay_wall": "assets/gltf/hk-port/hk-quay-wall-module.glb",
+    "yard_stack": "assets/gltf/hk-port/hk-container-yard-stack.glb",
+    "ship": "assets/gltf/hk-port/hk-port-ship-hull.glb",
+    "flyover": "assets/gltf/hk-port/hk-flyover-undercroft-bay.glb",
+    "tunnel": "assets/gltf/hk-port/hk-tunnel-portal.glb",
+    "ind_wall": "assets/gltf/hk-port/hk-industrial-wall-bay.glb",
+    "facade_ind": "assets/gltf/hk-buildings/hk-facade-industrial-shell.glb"
+  },
+  "targets": {
+    "sts_part_a": {
+      "min": 8,
+      "h_m": 70,
+      "along": "bent_quay"
+    },
+    "quay_wall_tiles": {
+      "min": 20,
+      "module_m": 24
+    },
+    "yard_stacks": {
+      "blocks": [
+        3,
+        5
+      ],
+      "lanes": 3,
+      "only": "KWAI hub yard"
+    },
+    "ships": {
+      "min": 1,
+      "prefer": 2
+    },
+    "flyover_bays": {
+      "span_m": [
+        120,
+        200
+      ],
+      "clear_h_m": [
+        4.5,
+        5.5
+      ],
+      "side": "north_inland"
+    },
+    "tunnel_portal": {
+      "min": 1
+    },
+    "ind_blocks": {
+      "count": [
+        12,
+        20
+      ],
+      "continuous_wall": true,
+      "h_lt_crane": true
+    },
+    "kwai_fong_stub": {
+      "parody_name": true,
+      "enterable": true,
+      "no_葵涌站": true
+    },
+    "street_furniture_gate": [
+      "d2b_signs",
+      "barrier_yb",
+      "weighbridge",
+      "bins_cones_sparse"
+    ],
+    "public_housing_distant": {
+      "count": [
+        6,
+        10
+      ],
+      "near_kwai_fong": true
+    },
+    "dock_plus": {
+      "bollards": true,
+      "fenders": true,
+      "high_masts": true,
+      "quay_stain_line": true
+    },
+    "gates": {
+      "min": 2,
+      "d2b_signs": true
+    },
+    "yard_ban": [
+      "residential",
+      "公屋 in yard"
+    ]
+  },
+  "qa_pull": [
+    "工廈→肘閘剖面",
+    "STS≥8 高過樓",
+    "高架唔穿場",
+    "櫃只堆場",
+    "葵芳戲仿無真站名"
+  ],
+  "align_facilities": "kwai-terminal-facilities-density-core28a",
+  "room5_props": {
+    "accepted": true,
+    "manifest": "assets/gltf/hk-port/hk-kwai-densify-props.json",
+    "doc": "docs/hk-kwai-densify-props-2026-10-25.md",
+    "note": "Dock+／閘／街設／工廈塊／匝道；跟 instance_hints"
+  }
+}

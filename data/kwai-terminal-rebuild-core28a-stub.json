@@ -176,5 +176,10 @@
     "禁相板櫃",
     "岸線≥500m 彎＋櫃巷＋STS≥8",
     "入場只經肘"
+  ],
+  "facilities_density": "kwai-terminal-facilities-density-core28a.json",
+  "industrial_count_override": [
+    12,
+    20
   ]
 }

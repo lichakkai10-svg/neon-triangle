@@ -22,3 +22,8 @@
 - `hk-flyover-undercroft-bay.glb` — 高架橋底一跨
 - `hk-tunnel-portal.glb` — 隧口
 - `hk-industrial-wall-bay.glb` — 工廈牆 bay（禁相板）
+
+
+## Densify props（Dock+／D1–D3）
+見 `hk-kwai-densify-props.json`：護舷／纜樁／高桅／軌／地磅／閘亭／黃黑欄／燈柱／桶／渠蓋／限高／櫃巷封／卡板／貨台棚／工廈塊／高架匝道／冷氣／燈箱。
+禁相板。
