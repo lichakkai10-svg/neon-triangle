@@ -318,6 +318,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
  * 因此毋須伺服器，直接開單一檔案即可。 */
 /*__EMBEDDED_ASSETS_BEGIN__*/const EMBEDDED_ASSETS = {};/*__EMBEDDED_ASSETS_END__*/
 /* TIP_MARK geometry-fail knife · after b5e0865 · pier-first / defer-kenney · keep ?v=core28 */
+/* TIP_MARK paint-fail · tractor chase back halfLen+5.5 / CAM 12.5 · rear door detail · keep ?v=core28 */
 const ASSET_BASE = 'assets/';
 const ASSET_FILES = {
   car: 'concept-car.glb',          // 開局黑色跑車：Khronos CarConcept（CC-BY 4.0；已去標誌／減面）；後備 kenney-sedan-sports.glb
@@ -1698,6 +1699,9 @@ async function loadVehicle(name = ASSET_FILES.car) {
     const fb2 = new THREE.Box3().setFromObject(model);
     if (fb2.min.y > 0.02) model.position.y -= fb2.min.y;
   } catch (e) { /* */ }
+  // 普通車還原追車鏡頭（拖頭曾拉到 12.5）
+  if (!car.isBoat) { CAM_DRIVE.back = 6.0; CAM_DRIVE.height = 2.2; }
+  if (car.dims) delete car.dims.device;
   loadState.car = true;
   return model;
 }
@@ -2631,8 +2635,10 @@ function updateCamera(dt) {
     state.camYaw = dampAngle(state.camYaw, want, 2.6 + Math.min(3, spd / 10), dt);
     const yaw = state.camYaw + state.yawOffset;
     const f = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
-    const back = CAM_DRIVE.back + Math.min(CAM_DRIVE.maxLag, spd * 0.02);
-    desiredPos = car.pos.clone().addScaledVector(f, -back); desiredPos.y = CAM_DRIVE.height;
+    /* paint-fail：長車（拖頭／貨櫃）半長≥4 → 鏡頭至少 halfLen+5.5，禁貼藍櫃門成屏 */
+    const back = Math.max(CAM_DRIVE.back, (car.halfLen || 2.2) + 5.5) + Math.min(CAM_DRIVE.maxLag, spd * 0.02);
+    const camH = Math.max(CAM_DRIVE.height, (car.halfLen || 2.2) >= 4 ? 3.1 : CAM_DRIVE.height);
+    desiredPos = car.pos.clone().addScaledVector(f, -back); desiredPos.y = camH;
     desiredLook = car.pos.clone().addScaledVector(f, 3.0); desiredLook.y = 0.6;
     fov = 50 + Math.min(9, (car.speedKmh || 0) / 16);
     if ((car.speedKmh || 0) > 90) state.shake = Math.max(state.shake, ((car.speedKmh - 90) / 200) * 0.25);
@@ -21193,9 +21199,24 @@ function kwApplySpawnTractorTruck() {
   model.traverse((o) => { if (o.isMesh) o.userData.isPlayerCar = true; });
   car.tailMats = []; car.headMats = [];
   try { if (typeof addCarLamps === 'function') addCarLamps(true); } catch (e) { /* */ }
+  // 櫃尾門／鎖杆——禁一片死藍貼鏡（paint-fail #1a4a7a 成屏）
+  {
+    const doorL = new THREE.Mesh(new THREE.BoxGeometry(1.15, 2.35, 0.08), contMat2);
+    doorL.position.set(-0.6, 2.05, -4.66); inner.add(doorL);
+    const doorR = new THREE.Mesh(new THREE.BoxGeometry(1.15, 2.35, 0.08), contMat);
+    doorR.position.set(0.6, 2.05, -4.66); inner.add(doorR);
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.2, 0.08), yel);
+    bar.position.set(0, 2.05, -4.72); inner.add(bar);
+    for (const y of [1.2, 2.05, 2.9]) {
+      const rib = new THREE.Mesh(new THREE.BoxGeometry(2.42, 0.06, 0.05), frameMat);
+      rib.position.set(0, y, -4.64); inner.add(rib);
+    }
+  }
   // 碰撞略加長（拖頭＋櫃）
   car.halfLen = 4.6; car.halfW = 1.25;
-  car.dims = { L: 9.2, H: 3.5, W: 2.5, wheelR: wheelR, tris: 0, fleet: 'tractor_container' };
+  car.dims = { L: 9.2, H: 3.5, W: 2.5, wheelR: wheelR, tris: 0, device: 'tractor_container' };
+  /* 拖頭預設鏡頭：追車 6m 會貼喺 20ft 櫃尾 ~1.3m → 成屏藍；拉後／抬高 */
+  CAM_DRIVE.back = 12.5; CAM_DRIVE.height = 3.2;
   loadState.car = true;
   console.info('[kwai] spawn tractor／貨櫃車');
   return model;

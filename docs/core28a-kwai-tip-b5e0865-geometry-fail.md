@@ -23,3 +23,6 @@
 7. densify cull／vendor／LDR／quest gate／device-knife 視覺鎖 **唔郁**
 
 修好有幾何後先再喊 gta／地道／政府抽 P0。
+
+## tip `aa74933` 暫用 URL
+舊 `…/neon-triangle/` 404。抽樣改：`https://lichakkai10-svg.github.io/neontriangle/?v=core28&day&hkzone=kwai`（同 free=1）。有 mesh 先抽 P0。
