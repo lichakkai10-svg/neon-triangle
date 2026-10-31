@@ -1,7 +1,7 @@
 {
   "id": "kwai_4263b75_rev7_didao_gov_art",
   "updated": "2026-10-31T13:06:17+08:00",
-  "after_tip": "e49e397→rev7",
+  "after_tip": "c301f26",
   "no_bump_v": true,
   "gov_fail": {
     "pass": [
@@ -135,5 +135,5 @@
       "sts_boom_missing_frame0": true
     }
   },
-  "code_tip": "pending_push"
+  "code_tip": "c301f26"
 }
