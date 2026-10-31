@@ -309,5 +309,23 @@
     "sts_crane": 6,
     "high_mast": 4,
     "note": "counts floor only; spacing/尺唔減"
-  }
+  },
+  "d2b_land_knife": "docs/core28a-kwai-d2b-land-knife.md",
+  "d2b_fail_tip": "b0f4256",
+  "replace_neon": [
+    "葵涌八號碼頭",
+    "葵涌碼頭"
+  ],
+  "gate_title_only": "貨櫃碼頭閘口（戲仿）",
+  "signage_zone": {
+    "allow": [
+      "elbow_gate",
+      "industrial_corridor"
+    ],
+    "forbid": [
+      "public_housing_facade",
+      "housing_near_neon"
+    ]
+  },
+  "densify_fail_knife": "docs/core28a-kwai-densify-fail-knife.md"
 }

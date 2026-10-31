@@ -1,0 +1,89 @@
+{
+  "id": "core28a_kwai_d2b_land_knife_art",
+  "updated": "2026-10-31T09:00:33+08:00",
+  "no_bump_v": true,
+  "d2b": "assets/data/kwai-d2b-gate-art-lock.json",
+  "art": {
+    "barrier_yb_world": "KWAI hub／GATE 世界座標；禁只掛肘本地",
+    "sts_gantry_visible": "STS／岸吊 gantry 真機可見（高度／對比跟 70m 鎖）",
+    "housing_skyline_layer": {
+      "y_band_m": [
+        40,
+        90
+      ],
+      "note": "公屋遠景層，唔同地面同層；count 仍 6–10 prefer 8"
+    },
+    "spawn_fleet_bias": {
+      "prefer": [
+        "貨車",
+        "拖頭",
+        "櫃車"
+      ],
+      "ban_near_gate": [
+        "超跑",
+        "跑車霓虹"
+      ]
+    },
+    "kwai_fong_parody_name_visible": true,
+    "ban": [
+      "八號碼頭霓虹",
+      "葵涌八號碼頭",
+      "HIT",
+      "MTL",
+      "堆場直巷入場",
+      "虛線長直道入場"
+    ],
+    "spawn_hub_view": {
+      "ban": "困公屋廊／瀝青空地開場",
+      "need": "開場／hub 一見到剖面層：工廈→高架隧→肘閘→堆場→岸吊"
+    },
+    "sts_visible_device": {
+      "min": 6,
+      "prefer": 8
+    },
+    "yard_stack_layers": [
+      3,
+      5
+    ],
+    "dock_sign": {
+      "text": "貨櫃碼頭閘口（戲仿）",
+      "ban_on_housing": true,
+      "ban_titles": [
+        "葵涌八號碼頭"
+      ]
+    },
+    "kwai_fong": {
+      "name": "葵芳站（戲仿）",
+      "visible_at": "肘盡頭",
+      "ban": [
+        "真港鐵字樣",
+        "相板",
+        "八號碼頭霓虹"
+      ]
+    }
+  },
+  "qa_pull": [
+    "開場見剖面層（唔困公屋廊）",
+    "STS≥6–8 真機可見；櫃巷 3–5 層",
+    "碼頭牌唔貼公屋；無葵涌八號碼頭",
+    "D2b 主牌／限高／地磅·跟指示停／barrier_yb 世界位",
+    "葵芳站（戲仿）肘盡頭可見"
+  ],
+  "section_smoke_fail": {
+    "seen": "混凝土廊＋公屋瀝青",
+    "need_silhouette": [
+      "工廈",
+      "高架／隧",
+      "肘閘",
+      "堆場",
+      "岸吊／STS"
+    ]
+  },
+  "copy": {
+    "gate_title": "貨櫃碼頭閘口（戲仿）",
+    "height_gate": "限高 4.5 m",
+    "height_inner": "限高 4.2 m",
+    "weighbridge": "地磅 · 跟指示停",
+    "kwai_fong": "葵芳站（戲仿）"
+  }
+}

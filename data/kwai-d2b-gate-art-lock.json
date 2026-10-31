@@ -1,0 +1,80 @@
+{
+  "id": "kwai_d2b_gate_art_lock",
+  "updated": "2026-10-31T09:00:33+08:00",
+  "for_tip_after": "b0f4256",
+  "no_bump_v": true,
+  "gov_sample_fail": {
+    "tip": "b0f4256",
+    "missing": [
+      "parody_gate_title",
+      "height_4_5_4_2",
+      "weighbridge_line",
+      "barrier_yb"
+    ],
+    "ok": [
+      "no_HIT",
+      "no_MTL"
+    ]
+  },
+  "copy": {
+    "gate_title": "貨櫃碼頭閘口（戲仿）",
+    "ban_titles": [
+      "葵涌八號碼頭",
+      "HIT",
+      "MTL",
+      "Modern Terminals",
+      "Hongkong International Terminals"
+    ],
+    "height_gate": "限高 4.5 m",
+    "height_undercroft": "限高 4.2 m",
+    "weighbridge": "地磅 · 跟指示停",
+    "aligned_with": "劇本台詞師 D2b 閘口台詞鎖",
+    "weighbridge_dialogue_alt": "請過地磅",
+    "kwai_fong_station": "葵芳站（戲仿）"
+  },
+  "mount": {
+    "sign_height": {
+      "asset": "assets/gltf/hk-port/hk-sign-height.glb",
+      "gate": {
+        "label": "限高 4.5 m",
+        "count_min": 1
+      },
+      "flyover_bay": {
+        "label": "限高 4.2 m",
+        "count_min": 1
+      },
+      "note": "文案用代碼 overlay／sprite，唔刻真 logo"
+    },
+    "weighbridge": {
+      "asset": "assets/gltf/hk-port/hk-gate-weighbridge.glb",
+      "count_min": 1,
+      "label": "地磅 · 跟指示停"
+    },
+    "barrier_yb": {
+      "asset": "assets/gltf/hk-port/hk-barrier-yb-2m.glb",
+      "where": "閘角／肘／迴旋稀疏",
+      "count_min": 4,
+      "ban": "白灰欄頂替黃黑",
+      "space": "hub_gate_world",
+      "ban_local": "elbow_local_only_invisible_to_player",
+      "note": "掛 KWAI hub／GATE 世界位；肘本地座標玩家睇唔到"
+    },
+    "gate_hut": {
+      "asset": "assets/gltf/hk-port/hk-gate-hut.glb",
+      "count_min": 1
+    },
+    "gate_title_board": {
+      "text": "貨櫃碼頭閘口（戲仿）",
+      "style": "plain_procedural_sign",
+      "ban": "真碼頭號／營運商名"
+    }
+  },
+  "qa_pull": [
+    "閘口標題＝貨櫃碼頭閘口（戲仿）",
+    "限高 4.5 閘＋4.2 橋底可見",
+    "地磅句可見",
+    "黃黑 barrier_yb ≥4",
+    "零 HIT／MTL"
+  ],
+  "knife": "core28a-kwai-d2b-land-knife"
+}

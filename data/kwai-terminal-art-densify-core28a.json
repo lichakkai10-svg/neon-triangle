@@ -1,6 +1,6 @@
 {
   "id": "kwai_terminal_art_densify_core28a",
-  "updated": "2026-10-25T10:58:00+08:00",
+  "updated": "2026-10-31T08:59:16+08:00",
   "for_tip_after": "22e4bf2",
   "no_bump_v": true,
   "ban": [
@@ -110,5 +110,15 @@
     "manifest": "assets/gltf/hk-port/hk-kwai-densify-props.json",
     "doc": "docs/hk-kwai-densify-props-2026-10-25.md",
     "note": "Dock+／閘／街設／工廈塊／匝道；跟 instance_hints"
-  }
+  },
+  "qa_pass_tip": "b0f4256",
+  "cull": {
+    "qa_pass": true,
+    "tip": "b0f4256",
+    "got": {
+      "ind": 16,
+      "housing": 8
+    }
+  },
+  "d2b_gate_lock": "assets/data/kwai-d2b-gate-art-lock.json"
 }

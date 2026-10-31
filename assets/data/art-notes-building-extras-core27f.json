@@ -145,5 +145,29 @@
     "doc": "docs/kwai-terminal-art-densify-core28a.md",
     "json": "assets/data/kwai-terminal-art-densify-core28a.json",
     "status": "targets_locked_await_code_wire"
+  },
+  "densify_cull_b0f4256_pass": {
+    "when": "2026-10-31T08:44:17+08:00",
+    "tip": "b0f4256",
+    "ind": 16,
+    "housing": 8,
+    "rest_pass": true,
+    "no_bump_v": true
+  },
+  "d2b_gate_gov_fail_b0f4256": {
+    "when": "2026-10-31T08:59:16+08:00",
+    "lock": "docs/kwai-d2b-gate-art-lock-2026-10-31.md",
+    "hang": [
+      "貨櫃碼頭閘口（戲仿）",
+      "限高 4.5/4.2",
+      "地磅句",
+      "barrier_yb≥4"
+    ],
+    "no_bump_v": true
+  },
+  "d2b_land_knife": {
+    "when": "2026-10-31T09:00:20+08:00",
+    "doc": "docs/kwai-d2b-land-knife-art-2026-10-31.md",
+    "no_bump_v": true
   }
 }
