@@ -319,7 +319,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 /*__EMBEDDED_ASSETS_BEGIN__*/const EMBEDDED_ASSETS = {};/*__EMBEDDED_ASSETS_END__*/
 /* TIP_MARK geometry-fail knife · after b5e0865 · pier-first / defer-kenney · keep ?v=core28 */
 /* TIP_MARK paint-fail · tractor chase back halfLen+5.5 / CAM 12.5 · rear door detail · keep ?v=core28 */
-/* TIP_MARK room2-rev6c · height↑ clear weigh · sideCam 90s hardHold · keep ?v=core28 */
+/* TIP_MARK room2-rev7 · height clear + STS boom frame0 + PH≥180 + sideCam hardHold · keep ?v=core28 */
 const ASSET_BASE = 'assets/';
 const ASSET_FILES = {
   car: 'concept-car.glb',          // 開局黑色跑車：Khronos CarConcept（CC-BY 4.0；已去標誌／減面）；後備 kenney-sedan-sports.glb
@@ -423,7 +423,7 @@ const KWAI_GEO = {
   laiKingX: -1095, laiKingZ: -1101
 };
 function kwWorld(lx, lz) { return { x: KWAI_GEO.hubX + lx, z: KWAI_GEO.hubZ + lz }; }
-/** spawn-first-frame：對齊 data/kwai-spawn-first-frame-level.json rev6
+/** spawn-first-frame：對齊 data/kwai-spawn-first-frame-level.json rev7
  *  hub_local (36,-222) 望南閘側 (-2,-271)；側≥4 m＋chase side lock；world = elbow hub + local（1:1 米）
  *  Origin = KWAI_GEO.hub (−1237,−145) 肘 —— 禁 geographic hub (−1390,332)／禁 ×1.5
  *  assert world ≈ (−1201,−367) tol≤2；廢 OSM／arcade 東推 Δx≈53 */
@@ -17551,7 +17551,7 @@ const KWAI = {
   osmLayout: null,
   /* room2：公屋遠景層 y 55–100；閘 150 m 內零 estate／近閘工廈 */
   estateSkyY: 58,
-  estateGateClearM: 180
+  estateGateClearM: 200
 };
 
 function kwAtlas(mat, col, row, cols, rows) {
@@ -18860,11 +18860,13 @@ function kwEstateSlab(parent, x, z, w, h, d) {
   let skyY = (typeof KWAI !== 'undefined' && KWAI.estateSkyY != null) ? KWAI.estateSkyY : 58;
   skyY = Math.max(55, Math.min(100, skyY));
   // 閘口 150 m 內零 estate——呼叫端應已推遠；雙重保險
-  const clearM = (typeof KWAI !== 'undefined' && KWAI.estateGateClearM != null) ? KWAI.estateGateClearM : 180;
-  const gatePts = [[-20, 38], [0, -((typeof BOUND !== 'undefined' ? BOUND.z : 280) - 18)]];
+  const clearM = (typeof KWAI !== 'undefined' && KWAI.estateGateClearM != null) ? KWAI.estateGateClearM : 200;
+  const bzE = (typeof BOUND !== 'undefined' ? BOUND.z : 280);
+  /* rev7：閘＋spawn＋望點 清公屋≥180–200 m */
+  const gatePts = [[-20, 38], [0, -(bzE - 18)], [36, -222], [-2, -bzE + 9], [-6, -bzE + 4]];
   for (const [gx, gz] of gatePts) {
     if (Math.hypot(x - gx, z - gz) < clearM) {
-      console.warn('[kwai] estate cull near gate', x, z);
+      console.warn('[kwai] estate cull near gate/spawn', x, z);
       return null;
     }
   }
@@ -21627,8 +21629,59 @@ function kwEnsureSouthWeighSign() {
   } catch (e) { /* */ }
 }
 
+function kwEnsureStsSpawnBoomView() {
+  /* rev7／地道：開場真機見吊臂——唔靠 densify 旗／唔計遠岸數量 */
+  try {
+    if (typeof KWAI !== 'undefined' && KWAI._stsSpawnView) return 0;
+    if (typeof scene === 'undefined' || typeof kwProcCrane !== 'function') return 0;
+    const root = (typeof kwEnsureGroup === 'function' ? kwEnsureGroup() : null) || (typeof KWAI !== 'undefined' ? KWAI.group : null);
+    if (!root) return 0;
+    const g = new THREE.Group();
+    g.name = 'kt_sts_spawn_view';
+    g.userData.kwaichung = true;
+    g.userData.noMerge = true;
+    root.add(g);
+    /* hub_local：spawn (36,-222) 望 (-2,-271) 右側／前方岸吊臂剪影 */
+    const spots = [[62, -248], [72, -268], [68, -238], [80, -255]];
+    for (const [cx, cz] of spots) {
+      kwProcCrane(g, cx, cz, 1.0, -Math.PI / 2);
+    }
+    if (typeof KWAI !== 'undefined') KWAI._stsSpawnView = true;
+    console.info('[kwai] STS spawn-view boom +' + spots.length);
+    return spots.length;
+  } catch (e) { return 0; }
+}
+
+function kwCullEstateNearGateSpawn() {
+  /* rev7：公屋／天際再清≥180 m（閘＋spawn）；唔理 densify 旗 */
+  try {
+    const root = (typeof kwEnsureGroup === 'function' ? kwEnsureGroup() : null) || (typeof KWAI !== 'undefined' ? KWAI.group : null);
+    if (!root || typeof THREE === 'undefined') return 0;
+    const clearM = (typeof KWAI !== 'undefined' && KWAI.estateGateClearM != null) ? KWAI.estateGateClearM : 200;
+    const bzL = typeof BOUND !== 'undefined' ? BOUND.z : 280;
+    const gates = [[-20, 38], [0, -bzL + 18], [-6, -bzL + 4], [36, -222], [-2, -bzL + 9]];
+    const drop = [];
+    const _wp = new THREE.Vector3();
+    const hx = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237);
+    const hz = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145);
+    root.traverse((o) => {
+      if (!o || !o.name) return;
+      if (!/kt_estate_skyline|public_housing|kt_mall_podium|skyline/i.test(o.name) && !(o.userData && o.userData.skylineLayer)) return;
+      o.getWorldPosition(_wp);
+      const lx = _wp.x - hx, lz = _wp.z - hz;
+      for (const [gx, gz] of gates) {
+        if (Math.hypot(lx - gx, lz - gz) < clearM) { drop.push(o); break; }
+      }
+    });
+    for (const o of drop) { if (o.parent) o.parent.remove(o); }
+    if (drop.length) console.info('[kwai] estate cull near gate/spawn', drop.length);
+    return drop.length;
+  } catch (e) { return 0; }
+}
+
 function kwEnsureStsShoreWall(minN) {
   minN = minN == null ? 8 : minN;
+  let added = 0;
   try {
     if (typeof scene === 'undefined' || typeof kwProcCrane !== 'function') return 0;
     const root = (typeof kwEnsureGroup === 'function' ? kwEnsureGroup() : null) || (typeof KWAI !== 'undefined' ? KWAI.group : null);
@@ -21636,21 +21689,23 @@ function kwEnsureStsShoreWall(minN) {
     let n = 0;
     root.traverse((o) => { if (o && (o.name === 'kt-quay-crane' || o.name === 'kt-quay-crane-boot')) n++; });
     try { scene.traverse((o) => { if (o && o.name === 'kt-quay-crane-boot') n++; }); } catch (e) { /* */ }
-    if (n >= minN) return 0;
-    const bx = (typeof BOUND !== 'undefined' ? BOUND.x : 140);
-    const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280);
-    const g = new THREE.Group(); g.name = 'kt_sts_ensure'; g.userData.kwaichung = true; g.userData.noMerge = true;
-    root.add(g);
-    const spots = [-bz + 35, -bz + 85, -bz + 135, -40, 20, 80, 140, 200];
-    let added = 0;
-    for (const cz of spots) {
-      if (n + added >= minN) break;
-      kwProcCrane(g, bx + 24, cz, 1.0, -Math.PI / 2);
-      added++;
+    if (n < minN) {
+      const bx = (typeof BOUND !== 'undefined' ? BOUND.x : 140);
+      const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280);
+      const g = new THREE.Group(); g.name = 'kt_sts_ensure'; g.userData.kwaichung = true; g.userData.noMerge = true;
+      root.add(g);
+      const spots = [-bz + 35, -bz + 85, -bz + 135, -40, 20, 80, 140, 200];
+      for (const cz of spots) {
+        if (n + added >= minN) break;
+        kwProcCrane(g, bx + 24, cz, 1.0, -Math.PI / 2);
+        added++;
+      }
+      console.info('[kwai] STS ensure +' + added + ' (was ' + n + ')');
     }
-    console.info('[kwai] STS ensure +' + added + ' (was ' + n + ')');
-    return added;
-  } catch (e) { return 0; }
+  } catch (e) { /* */ }
+  try { added += (typeof kwEnsureStsSpawnBoomView === 'function' ? kwEnsureStsSpawnBoomView() : 0) || 0; } catch (e2) { /* */ }
+  try { if (typeof kwCullEstateNearGateSpawn === 'function') kwCullEstateNearGateSpawn(); } catch (e3) { /* */ }
+  return added;
 }
 
 function kwBuildArtDensifyCore28a() {
@@ -21700,9 +21755,13 @@ function kwBuildArtDensifyCore28a() {
       stsN++;
       stats.sts++;
     }
-    /* room2：南閘視線內至少兩座吊臂剪影（spawn 望南閘可瞥 STS） */
+    /* room2／rev7：南閘＋spawn 視線內吊臂（hub_local 近望點，禁只有遠岸腳） */
     for (const cz of [-bz + 40, -bz + 90]) {
       kwProcCrane(g, bx + 22, cz, 1.0, -Math.PI / 2);
+      stats.sts++;
+    }
+    for (const [cx, cz] of [[62, -248], [72, -268], [68, -238]]) {
+      kwProcCrane(g, cx, cz, 1.0, -Math.PI / 2);
       stats.sts++;
     }
   }
@@ -22004,9 +22063,9 @@ function kwBuildArtDensifyCore28a() {
     stats.housingFinal = countByName(/kt_estate_skyline|public_housing/i);
     // room2：閘前公屋／近閘大廈推遠（世界座標）
     {
-      const clearM = (KWAI.estateGateClearM != null) ? KWAI.estateGateClearM : 180;
+      const clearM = (KWAI.estateGateClearM != null) ? KWAI.estateGateClearM : 200;
       const bzL = typeof BOUND !== 'undefined' ? BOUND.z : 280;
-      const gates = [[-20, 38], [0, -bzL + 18], [-6, -bzL + 4]];
+      const gates = [[-20, 38], [0, -bzL + 18], [-6, -bzL + 4], [36, -222], [-2, -bzL + 9]];
       const drop = [];
       const _wp = new THREE.Vector3();
       root.traverse((o) => {

@@ -1,0 +1,139 @@
+{
+  "id": "kwai_4263b75_rev7_didao_gov_art",
+  "updated": "2026-10-31T13:06:17+08:00",
+  "after_tip": "e49e397→rev7",
+  "no_bump_v": true,
+  "gov_fail": {
+    "pass": [
+      "gate_parody",
+      "weighbridge_single",
+      "barrier_yb",
+      "kf",
+      "day",
+      "audio_ship_horn_sts"
+    ],
+    "fail": {
+      "height_m_digits_occluded_by_weighbridge_blue": true,
+      "chase_opens_side_then_snaps_center": true
+    }
+  },
+  "art_lock": {
+    "height_signs": {
+      "texts": [
+        "限高 4.5 m",
+        "限高 4.2 m"
+      ],
+      "note": "rev7：抬高≥1.2 m＋前移≥0.8 m——米字清地磅藍牌",
+      "raise_m": 1.2,
+      "forward_toward_spawn_m": 0.8,
+      "char_h_m_min": 1.0,
+      "z_above_weighbridge_plaque": true,
+      "ban_occluded_by": [
+        "weighbridge_blue_plaque",
+        "weighbridge_board",
+        "地磅藍牌"
+      ],
+      "digits_device_readable_frame0": true,
+      "placement": "face_spawn; clear silhouette vs blue plaque"
+    },
+    "weighbridge": {
+      "keep_copy": "地磅 · 跟指示停",
+      "layout": "single_line",
+      "note": "藍牌可留，但唔遮限高米字——牌位／限高錯開深度或高度"
+    },
+    "chase_cam": {
+      "note": "開場側偏後禁彈返置中——凍 yaw＋側偏鎖全程",
+      "side_bias_m_min": 14,
+      "hold_s": 45,
+      "every_frame": true,
+      "freeze_yaw": true,
+      "hard_follow": true,
+      "ban": [
+        "snap_center_after_open_side",
+        "overlay_drop_side_bias",
+        "recenter_mid_chase",
+        "snap_center_after_~7s"
+      ]
+    },
+    "regress_keep": {
+      "spawn": [
+        36,
+        -222
+      ],
+      "look": [
+        -2,
+        -271
+      ],
+      "sts_wall_min": 8,
+      "ph_clear_m": 200,
+      "barrier_yb": true,
+      "kf": true,
+      "day": true
+    },
+    "sts": {
+      "wall_min": 8,
+      "boom_visible_frame0": true,
+      "note": "開場真機見吊臂——禁只有腳／剪影唔見臂",
+      "ban": [
+        "legs_only",
+        "boom_culled_on_open",
+        "sts_0_first_frame"
+      ]
+    },
+    "housing": {
+      "near_gate": 0,
+      "min_dist_gate_m": 200,
+      "ban_in_front_of_gate": true,
+      "note": "公屋又貼——再清≥180 m"
+    }
+  },
+  "qa_pull": [
+    "限高米字清地磅藍牌（抬≥1.2／前≥0.8）",
+    "chase 0–14s 側偏穩——禁 ~7s 彈返置中",
+    "STS 吊臂開場可見＋岸牆≥8",
+    "公屋閘旁 near=0（清≥180 m）",
+    "回歸：日景／閘／地磅單行／YB／KF"
+  ],
+  "doc": "docs/core28a-kwai-tip-4263b75-gov-fail-knife.md",
+  "level_rev": 7,
+  "level_lock": {
+    "rev": 7,
+    "hub_local_spawn": [
+      36,
+      -222
+    ],
+    "look": [
+      -2,
+      -271
+    ],
+    "height_raise_m": 1.2,
+    "height_forward_m": 0.8,
+    "chase_hold_s": 45,
+    "side_bias_m_min": 14,
+    "freeze_yaw": true,
+    "keep": [
+      "gate_parody",
+      "weighbridge_single",
+      "barrier_yb",
+      "kf"
+    ],
+    "sts_boom_frame0": true,
+    "ph_clear_m": 200
+  },
+  "didao_fail": {
+    "pass": [
+      "day",
+      "gate",
+      "weighbridge_single",
+      "barrier_yb",
+      "kf"
+    ],
+    "fail": {
+      "height_occluded_by_weighbridge_blue": true,
+      "chase_snap_center_~7s": true,
+      "ph_stuck_again": true,
+      "sts_boom_missing_frame0": true
+    }
+  },
+  "code_tip": "pending_push"
+}

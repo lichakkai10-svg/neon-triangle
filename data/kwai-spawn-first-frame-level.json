@@ -1,10 +1,11 @@
 {
   "id": "kwai_spawn_first_frame_level",
-  "rev": 6,
-  "updated": "2026-10-31T12:40:00+08:00",
-  "after_tip": "9d9d0e3",
-  "landed_tip": "9d9d0e3",
-  "note": "主房 tip 9d9d0e3：chase 14s 每幀側偏；閘／限高／黃黑／公屋 180 m／STS 剪影／KF。等 TIP_MARK chase-side。",
+  "rev": 7,
+  "level_knife": "rev7",
+  "updated": "2026-10-31T13:05:00+08:00",
+  "landed_tip": "e49e397",
+  "after_tip": "4263b75",
+  "note": "tip e49e397／rev6c：限高抬清＋chase 90s 側偏硬鎖。地道另驗 STS 吊臂。對齊關卡 rev7 刀。 · rev7 STS boom frame0 + PH≥200 + height/chase from rev6c",
   "no_bump_v": true,
   "env": {
     "day_default": true,
@@ -19,46 +20,39 @@
     "look_at_hub_local": {
       "x": -2.0,
       "z": -271.0
-    },
-    "world_assert": {
-      "x": -1201.0,
-      "z": -367.0,
-      "tol_m": 2
-    },
-    "why": "rev6 (36,-222)；側≥4 m；chase side lock≥2.5s"
+    }
   },
   "cam_lock": {
-    "chase_side_bias_s": 14,
-    "chase_side_every_frame": true,
-    "ban_chase_center_on_trailer": true,
-    "cam_min_dist": 12.5,
-    "tip_mark_expect": "chase-side"
+    "chase_side_bias_s": 90,
+    "freeze_yaw": true,
+    "hard_lock": true,
+    "ban_recenter_after_side": true,
+    "tip_mark_expect": "rev6c"
   },
-  "d2b_readability": {
-    "kt_gate_title": "開場幀全文「貨櫃碼頭閘口（戲仿）」",
-    "height_45_42": "限高 4.5 m／4.2 m 米數字真機可讀",
-    "weighbridge": "單行「地磅 · 跟指示停」開場真機見",
-    "barrier_yb": "黃黑欄可見"
+  "d2b_height_clear": {
+    "raise_m": 1.2,
+    "forward_toward_spawn_m": 0.8,
+    "ban_occluded_by": "地磅藍牌"
+  },
+  "d2b_keep": {
+    "kt_gate_title": "全文戲仿",
+    "weighbridge": "單行地磅 · 跟指示停",
+    "barrier_yb": true,
+    "kwai_fong": true
   },
   "sts_wall": {
     "min_count": 8,
-    "silhouette_ok": true
+    "arms_visible_on_device": true,
+    "separate_check": "地道"
   },
   "housing": {
-    "gate_front_clear_m": 180,
-    "near_count": 0
+    "gate_front_clear_m": 180
   },
-  "kwai_fong": "葵芳（戲仿）可見",
   "qa": [
-    "TIP_MARK chase-side",
-    "frame0 日景",
-    "chase 唔置中櫃尾",
-    "閘戲仿全文",
-    "限高米數字",
-    "地磅單行真機見",
-    "黃黑",
-    "STS 剪影／吊臂≥8",
-    "公屋清≥180 m",
-    "葵芳"
+    "TIP_MARK rev6c",
+    "限高米字唔被地磅擋",
+    "chase 側偏≥90s",
+    "閘／地磅／YB／KF",
+    "STS 吊臂真機見（地道）"
   ]
 }
