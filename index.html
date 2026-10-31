@@ -319,7 +319,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 /*__EMBEDDED_ASSETS_BEGIN__*/const EMBEDDED_ASSETS = {};/*__EMBEDDED_ASSETS_END__*/
 /* TIP_MARK geometry-fail knife · after b5e0865 · pier-first / defer-kenney · keep ?v=core28 */
 /* TIP_MARK paint-fail · tractor chase back halfLen+5.5 / CAM 12.5 · rear door detail · keep ?v=core28 */
-/* TIP_MARK spawn-first-frame · level rev2 (-8,-228)→南閘 clear≥25m, lateral off teal shell, day kwai · keep ?v=core28 */
+/* TIP_MARK spawn-first-frame · rev2 (-8,-228)→南閘 + forward 30m×40° cone cull ind/shell/alley · day · keep ?v=core28 */
 const ASSET_BASE = 'assets/';
 const ASSET_FILES = {
   car: 'concept-car.glb',          // 開局黑色跑車：Khronos CarConcept（CC-BY 4.0；已去標誌／減面）；後備 kenney-sedan-sports.glb
@@ -18757,6 +18757,7 @@ function kwQuayEdgeSoft() {
 function kwBreakStraightTunnel(parent) {
   // 櫃巷／死巷塊：只放路肩 —— 嚴禁 x≈0 中軸碰撞（否則開唔到前面）
   // land-knife：加南→北路肩塊，打斷開場直衝／長虛線感；入場只經肘
+  // spawn-first-frame：禁放進 (-8,-228)→南閘 前方 30m×40° 錐／貼鏡走廊
   const wall = new THREE.MeshStandardMaterial({ color: 0x2a3036, roughness: 0.75, metalness: 0.1 });
   const spots = [
     { x: -16, z: 15, w: 6, h: 8, d: 14 },
@@ -18773,10 +18774,16 @@ function kwBreakStraightTunnel(parent) {
     { x: 16, z: 35, w: 5, h: 8, d: 10 }
   ];
   for (const s of spots) {
+    let x = s.x, z = s.z;
+    if (typeof kwInSpawnForwardCone === 'function' && kwInSpawnForwardCone(x, z)) continue;
+    /* 貼近 spawn／cam 走廊（z -258..-200）側牆外推，免 chase 第一幀填屏 */
+    if (z <= -200 && z >= -258 && Math.abs(x) < 24) {
+      x = (x < 0 ? -1 : 1) * Math.max(28, Math.abs(x) + 12);
+    }
     const m = new THREE.Mesh(new THREE.BoxGeometry(s.w, s.h, s.d), wall);
-    m.position.set(s.x, s.h / 2, s.z); m.castShadow = true;
+    m.position.set(x, s.h / 2, z); m.castShadow = true;
     m.name = 'container_blocks_aisle'; m.userData.kwaichung = true; parent.add(m);
-    if (typeof addCollider === 'function') addCollider(s.x, s.z, s.w / 2, s.d / 2, s.h);
+    if (typeof addCollider === 'function') addCollider(x, z, s.w / 2, s.d / 2, s.h);
   }
 }
 
@@ -21268,6 +21275,84 @@ function kwCullByName(root, re, keepMax) {
   return removed;
 }
 
+/** spawn-first-frame rev2 · 前方 30 m×40°（±20°）錐：清／搬 kt_ind_block／工廈殼／alleyBlocker
+ *  對齊 data/kwai-spawn-first-frame-level.json clear_cone；唔動 STS／閘／D2b／barrier／岸牆／拖頭
+ */
+function kwCullSpawnForwardCone(root) {
+  if (!root || typeof kwSpawnElbowGatePose !== 'function') return 0;
+  const pose = kwSpawnElbowGatePose();
+  const sx = pose.lx, sz = pose.lz;
+  const hx = pose.heading;
+  const fx = Math.sin(hx), fz = Math.cos(hx);
+  const forwardM = 30;
+  const halfAngle = (20 * Math.PI) / 180; /* 40° 錐 · parent ±20°；JSON half 40 當全角 */
+  const cosHalf = Math.cos(halfAngle);
+  const banRe = /^kt_ind_block|kt_alley_cont_blocker|container_blocks_aisle|kt_d4_shed|kt_ind_bay|kt_ind_wall|kt_p2_north_block|kt_osm_facade|industrial.?mass|green_facade|warehouse_shell/i;
+  const keepRe = /kt-quay-crane|kt_quay|kt_gate|kt_dock|barrier|weigh|sign_height|kt_berth|sts|crane_rail|tractor|kt_elbow|kt_asphalt|yard_road|kt_service|kt_tee|kt_spawn|kt_left_turn|high_mast|kt_yard_high|bollard|fender|kt_sts|kt_barrier|kt_sign|kt_weigh|kt_station|gatehouse|kt_part_|kt_rambler|kt_tsing|kt_ting|flyover|tunnel|kt_hull|kt_oil|kwaichung-dock/i;
+  const hubX = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : 0);
+  const hubZ = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : 0);
+  try { root.updateMatrixWorld(true); } catch (e) { /* */ }
+  const hits = [];
+  root.traverse((o) => {
+    if (!o || !o.name || !banRe.test(o.name)) return;
+    if (keepRe.test(o.name)) return;
+    /* 只動命名根組／mesh（唔拆子 mesh 留空名 parent） */
+    if (o.parent && o.parent !== root && banRe.test(o.parent.name || '')) return;
+    let lx, lz;
+    if (o.parent === root || (o.parent && o.parent.name === 'kt_art_densify_core28a') || (o.parent && o.parent.userData && o.parent.userData.kwaichung && Math.abs((o.parent.position && o.parent.position.x) || 0) < 1e-6 && o.parent !== root && o.parent.parent === root)) {
+      /* hub-local：直掛 root／densify 組 */
+      const wp = new THREE.Vector3();
+      try { o.getWorldPosition(wp); lx = wp.x - hubX; lz = wp.z - hubZ; }
+      catch (e2) { lx = o.position.x; lz = o.position.z; }
+    } else {
+      const wp = new THREE.Vector3();
+      try { o.getWorldPosition(wp); lx = wp.x - hubX; lz = wp.z - hubZ; }
+      catch (e3) { lx = o.position.x; lz = o.position.z; }
+    }
+    const dx = lx - sx, dz = lz - sz;
+    const dist = Math.hypot(dx, dz);
+    if (!(dist > 0.35) || dist > forwardM) return;
+    const dot = (dx / dist) * fx + (dz / dist) * fz;
+    if (dot < cosHalf) return;
+    hits.push({ o, lx, lz, dist, dx, dz });
+  });
+  let removed = 0, moved = 0;
+  const px = -fz, pz = fx; /* 水平垂直 heading */
+  for (const h of hits) {
+    const o = h.o;
+    if (!o || !o.parent) continue;
+    /* 優先側移出錐（保留遠景密度）；太貼／櫃巷塊直接砍 */
+    const sideDot = h.dx * px + h.dz * pz;
+    const side = sideDot >= 0 ? 1 : -1;
+    const needLat = Math.tan(halfAngle) * h.dist + 10;
+    const curLat = Math.abs(sideDot);
+    const kill = /container_blocks_aisle|kt_alley_cont_blocker|kt_d4_shed/i.test(o.name) || h.dist < 8;
+    if (kill || curLat + 0.5 >= needLat && /kt_ind_block/i.test(o.name) === false) {
+      o.parent.remove(o);
+      removed++;
+      continue;
+    }
+    const push = needLat - curLat + 2;
+    o.position.x += side * px * push;
+    o.position.z += side * pz * push;
+    moved++;
+  }
+  if (removed || moved) console.info('[kwai] spawn cone cull', { removed, moved, forwardM, halfDeg: 20 });
+  return removed + moved;
+}
+
+function kwInSpawnForwardCone(lx, lz) {
+  if (typeof kwSpawnElbowGatePose !== 'function') return false;
+  const pose = kwSpawnElbowGatePose();
+  const dx = lx - pose.lx, dz = lz - pose.lz;
+  const dist = Math.hypot(dx, dz);
+  if (!(dist > 0.35) || dist > 30) return false;
+  const hx = pose.heading;
+  const fx = Math.sin(hx), fz = Math.cos(hx);
+  const cosHalf = Math.cos((20 * Math.PI) / 180);
+  return (dx / dist) * fx + (dz / dist) * fz >= cosHalf;
+}
+
 /** core28a · 美術＋關卡 densify 掛 tip（唔升 ?v=）
  *  對齊：docs/kwai-terminal-art-densify-core28a.md
  *        data/kwai-terminal-facilities-density-core28a.json
@@ -21363,8 +21448,10 @@ function kwBuildArtDensifyCore28a() {
     }
     // 櫃巷死巷封口（alley blocker）
     const placeBlocker = (x, z, yaw) => {
+      if (typeof kwInSpawnForwardCone === 'function' && kwInSpawnForwardCone(x, z)) return;
       kwPortLoad('alleyBlocker', KWAI_SCALE.gltf.alleyBlocker).then((proto) => {
         if (!proto || !g.parent) return;
+        if (typeof kwInSpawnForwardCone === 'function' && kwInSpawnForwardCone(x, z)) return;
         kwPortMount(g, proto, x, z, yaw, 'kt_alley_cont_blocker');
         stats.props++;
       }).catch(() => {});
@@ -21469,6 +21556,7 @@ function kwBuildArtDensifyCore28a() {
         let added = 0;
         for (const [x, z] of massPts) {
           if (live + added >= wantInd) break;
+          if (typeof kwInSpawnForwardCone === 'function' && kwInSpawnForwardCone(x, z)) continue;
           kwPortMount(g, proto, x, z, Math.PI / 2, 'kt_ind_block_n');
           if (typeof addCollider === 'function') addCollider(x, z, 7, 5, 14);
           added++;
@@ -21631,6 +21719,8 @@ function kwBuildArtDensifyCore28a() {
       for (const o of drop) { if (o.parent) o.parent.remove(o); }
       stats.housingFinal = countByName(/kt_estate_skyline|public_housing/i);
     }
+    stats.spawnCone = (typeof kwCullSpawnForwardCone === 'function')
+      ? kwCullSpawnForwardCone(root) : 0;
   }
   KWAI._colHub = false;
   KWAI.artDensify28a = true;
@@ -21682,6 +21772,10 @@ function kwBuildArtDensifyCore28a() {
       try { if (typeof kwBuildArtDensifyCore28a === 'function') kwBuildArtDensifyCore28a(); } catch (e) { console.warn('[kwai-densify28a]', e && e.message); }
       try { kwApplyOsmFacadeDensity(); } catch (e) { console.warn('[kwai-osm-fac]', e && e.message); }
       try { kwApplyKwaiBranchingRoads(); } catch (e) { console.warn('[kwai-branch]', e && e.message); }
+      try {
+        const _r = (typeof kwEnsureGroup === 'function' ? kwEnsureGroup() : null) || (typeof KWAI !== 'undefined' ? KWAI.group : null);
+        if (_r && typeof kwCullSpawnForwardCone === 'function') kwCullSpawnForwardCone(_r);
+      } catch (e) { console.warn('[kwai-spawn-cone]', e && e.message); }
       /* OSM／interior 可與 pier 並行後載；kenney 延後 fire-and-forget */
       Promise.resolve().then(async () => {
         try { await kwLoadInteriorTiles(); } catch (e) { console.warn('[kwai-int]', e && e.message); }
@@ -21691,6 +21785,10 @@ function kwBuildArtDensifyCore28a() {
         try { await kwHangElbowArterialsFromSkeleton(); } catch (e) { console.warn('[kwai-skel-art]', e && e.message); }
         try { kwBuildHk18Skeleton(); } catch (e) { console.warn('[kwai-hk18]', e && e.message); }
         try { await kwLoadKenney(); } catch (e) { console.warn('[kwai-kenney]', e && e.message); }
+        try {
+          const _r2 = (typeof KWAI !== 'undefined' ? KWAI.group : null);
+          if (_r2 && typeof kwCullSpawnForwardCone === 'function') kwCullSpawnForwardCone(_r2);
+        } catch (e) { console.warn('[kwai-spawn-cone2]', e && e.message); }
         if (typeof kwStripPhotoBoards === 'function') kwStripPhotoBoards();
       });
       if (typeof kwStripPhotoBoards === 'function') kwStripPhotoBoards();

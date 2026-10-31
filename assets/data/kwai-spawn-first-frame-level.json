@@ -1,9 +1,9 @@
 {
   "id": "kwai_spawn_first_frame_level",
   "rev": 2,
-  "updated": "2026-10-31T11:31:04+08:00",
+  "updated": "2026-10-31T11:34:03+08:00",
   "aligns_art": "data/kwai-spawn-first-frame-art.json",
-  "after_tip": "15344c0",
+  "after_tip": "5e60dab",
   "qa_fail": "15344c0 第一幀仍青綠牆角；(-14,-95)→南閘視線被工廈／倉殼擋",
   "no_bump_v": true,
   "coord": "hub_local → kwWorld(lx,lz)",
@@ -23,7 +23,7 @@
     "note_zh": "貼近南閘北側開闊瀝青；第一幀要見閘牌／黃黑／限高輪廓，唔係倉牆"
   },
   "clear_cone": {
-    "half_angle_deg": 40,
+    "half_angle_deg": 20,
     "forward_m": 30,
     "ban_props": [
       "kt_ind_block_*",
@@ -32,7 +32,12 @@
       "green_facade",
       "alleyBlocker"
     ],
-    "coder": "spawn 前方 30 m×40° 錐內清／搬開工廈塊；禁青綠牆填屏"
+    "coder": "kwCullSpawnForwardCone after densify+kenney; ±20°×30m; ban kt_ind_block/alley/shell; keep STS/gate/D2b/barrier",
+    "impl": [
+      "kwCullSpawnForwardCone",
+      "kwInSpawnForwardCone",
+      "kwBreakStraightTunnel skip"
+    ]
   },
   "replace": {
     "r0": {
@@ -54,7 +59,8 @@
     "kwSpawnElbowGatePose()",
     "manifest.start",
     "hkzone=kwai",
-    "free=1&hkzone=kwai"
+    "free=1&hkzone=kwai",
+    "kwCullSpawnForwardCone()"
   ],
   "qa": [
     "frame0 見南閘／D2b 輪廓或開闊瀝青通往閘，唔係青綠牆角",
