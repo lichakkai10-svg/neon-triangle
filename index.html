@@ -319,7 +319,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 /*__EMBEDDED_ASSETS_BEGIN__*/const EMBEDDED_ASSETS = {};/*__EMBEDDED_ASSETS_END__*/
 /* TIP_MARK geometry-fail knife · after b5e0865 · pier-first / defer-kenney · keep ?v=core28 */
 /* TIP_MARK paint-fail · tractor chase back halfLen+5.5 / CAM 12.5 · rear door detail · keep ?v=core28 */
-/* TIP_MARK room2-rev7b · STS sync boom yaw0 + h45/h42 clear + weigh1 + PH right cull · keep ?v=core28 */
+/* TIP_MARK room2-rev7c · STS in-FOV boomY22 + chase 180s + height clear pillar + PH scene cull · keep ?v=core28 */
 const ASSET_BASE = 'assets/';
 const ASSET_FILES = {
   car: 'concept-car.glb',          // 開局黑色跑車：Khronos CarConcept（CC-BY 4.0；已去標誌／減面）；後備 kenney-sedan-sports.glb
@@ -475,9 +475,9 @@ function kwArmElbowSpawnLock(ms) {
   if (typeof kwSpawnElbowGatePose !== 'function') return null;
   const pose = kwSpawnElbowGatePose();
   const bag = (typeof NT !== 'undefined' ? NT : (window.NT = window.NT || {}));
-  /* room2-rev6c：側偏至少 90s；ms 只影響 spawn 位鎖；禁開場後彈返置中 */
+  /* room2-rev7c：側偏至少 180s；ms 只影響 spawn 位鎖；禁 ~58s 彈返置中櫃尾 */
   const untilPos = (typeof performance !== 'undefined' ? performance.now() : Date.now()) + (ms == null ? 14000 : ms);
-  const untilCam = (typeof performance !== 'undefined' ? performance.now() : Date.now()) + Math.max(90000, ms == null ? 90000 : ms);
+  const untilCam = (typeof performance !== 'undefined' ? performance.now() : Date.now()) + Math.max(180000, ms == null ? 180000 : ms);
   bag._kwaiSpawnLock = {
     x: pose.x, z: pose.z, heading: pose.heading,
     until: untilPos
@@ -485,10 +485,10 @@ function kwArmElbowSpawnLock(ms) {
   const hx = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237);
   const hz = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145);
   bag._kwaiSideCam = {
-    side: 16,
+    side: 18,
     lookX: hx + (pose.lookX != null ? pose.lookX : -2),
     lookZ: hz + (pose.lookZ != null ? pose.lookZ : -271),
-    gateY: 3.6,
+    gateY: 8.5,
     heading: pose.heading,
     until: untilCam
   };
@@ -521,8 +521,8 @@ function kwSnapTractorChaseCam() {
   let yaw = car.heading || 0;
   try { if (typeof state !== 'undefined' && state.camYaw != null) yaw = state.camYaw + (state.yawOffset || 0); } catch (e) { /* */ }
   const sx = Math.sin(yaw), cz = Math.cos(yaw);
-  /* room2-rev6c：側移同 _kwaiSideCam（禁正中擋「戲仿）」） */
-  const side = 16;
+  /* room2-rev7c：側移同 _kwaiSideCam（禁正中擋「戲仿）」） */
+  const side = 18;
   const px = car.pos.x - sx * back + cz * side;
   const pz = car.pos.z - cz * back - sx * side;
   let lx = car.pos.x + sx * 18, lz = car.pos.z + cz * 18;
@@ -538,13 +538,13 @@ function kwSnapTractorChaseCam() {
   try {
     if (typeof camState !== 'undefined') {
       camState.pos.set(px, h, pz);
-      camState.look.set(lx, 2.8, lz);
+      camState.look.set(lx, 8.5, lz);
       camState.fov = 50;
       camState.init = true;
     }
     if (typeof camera !== 'undefined') {
       camera.position.set(px, h, pz);
-      camera.lookAt(lx, 2.8, lz);
+      camera.lookAt(lx, 8.5, lz);
       camera.updateMatrixWorld();
     }
   } catch (e2) { /* */ }
@@ -2815,15 +2815,24 @@ function updateCamera(dt) {
           const sx2 = Math.sin(sc.heading), cz2 = Math.cos(sc.heading);
           f.set(sx2, 0, cz2);
           const back2 = Math.max(CAM_DRIVE.back, (car.halfLen || 2.2) + 5.5);
-          desiredPos.set(car.pos.x - sx2 * back2 + cz2 * (sc.side || 16), Math.max(camH, 3.8), car.pos.z - cz2 * back2 - sx2 * (sc.side || 16));
+          desiredPos.set(car.pos.x - sx2 * back2 + cz2 * (sc.side || 18), Math.max(camH, 3.8), car.pos.z - cz2 * back2 - sx2 * (sc.side || 18));
         } else {
           const right = new THREE.Vector3(f.z, 0, -f.x);
-          desiredPos.addScaledVector(right, sc.side || 16);
+          desiredPos.addScaledVector(right, sc.side || 18);
           desiredPos.y = Math.max(desiredPos.y, 3.8);
         }
         desiredLook.set(sc.lookX, sc.gateY != null ? sc.gateY : 3.6, sc.lookZ);
       } else if (sc && now > sc.until) {
-        NT._kwaiSideCam = null;
+        /* rev7c：仍近 spawn 就延期，禁 ~58s 彈置中櫃尾 */
+        let nearSp = false;
+        try {
+          if (typeof car !== 'undefined' && car && car.pos && typeof kwSpawnElbowGatePose === 'function') {
+            const p = kwSpawnElbowGatePose();
+            nearSp = Math.hypot(car.pos.x - p.x, car.pos.z - p.z) < 90;
+          }
+        } catch (eN) { /* */ }
+        if (nearSp) sc.until = now + 60000;
+        else NT._kwaiSideCam = null;
       }
     } catch (eSc) { /* */ }
     fov = 50 + Math.min(9, (car.speedKmh || 0) / 16);
@@ -2888,8 +2897,8 @@ function updateCamera(dt) {
       const h = Math.max((CAM_DRIVE && CAM_DRIVE.height) || 3.2, sideOn ? 3.8 : 3.1);
       let px = car.pos.x - sx * minBack, pz = car.pos.z - cz * minBack;
       if (sideOn) {
-        px += cz * (sc.side || 16);
-        pz -= sx * (sc.side || 16);
+        px += cz * (sc.side || 18);
+        pz -= sx * (sc.side || 18);
       }
       camera.position.x = px;
       camera.position.z = pz;
@@ -17551,7 +17560,7 @@ const KWAI = {
   osmLayout: null,
   /* room2：公屋遠景層 y 55–100；閘 150 m 內零 estate／近閘工廈 */
   estateSkyY: 58,
-  estateGateClearM: 200
+  estateGateClearM: 220
 };
 
 function kwAtlas(mat, col, row, cols, rows) {
@@ -19448,13 +19457,13 @@ function kwBuildDensityD2b() {
 
   // —— 1a. 南閘套件（玩家 hkzone=kwai／manifest 第一眼）——
   kwSignLabeled(g, -14, 5.6, southZ + 1, 0.12, 7.8, 1.5, 0x1a3a6a, 'kt_gate_title', COPY.gate); /* left of LOS · above truck */
-  /* room2-rev7b：限高 4.5＋4.2 抬清；地磅單牌單行（禁暗第二行） */
-  kwSignLabeled(g, -28, 7.8, southZ + 0, 0.12, 3.4, 3.4, 0xf0f0f0, 'kt_sign_height_gate', COPY.h45, { kind: 'height' });
-  kwSignLabeled(g, 22, 7.8, southZ + 0, -0.12, 3.4, 3.4, 0xf0f0f0, 'kt_sign_height_gate', COPY.h45, { kind: 'height' });
-  kwSignLabeled(g, -18, 6.6, southZ + 3, 0.1, 2.8, 2.8, 0xf0f0f0, 'kt_sign_height_bridge', COPY.h42, { kind: 'height' });
-  kwSignLabeled(g, 14, 6.6, southZ + 3, -0.1, 2.8, 2.8, 0xf0f0f0, 'kt_sign_height_bridge', COPY.h42, { kind: 'height' });
+  /* room2-rev7c：限高離閘柱／更前更高——禁 4.5 被柱切 */
+  kwSignLabeled(g, -38, 8.6, southZ - 4, 0.08, 3.6, 3.6, 0xf0f0f0, 'kt_sign_height_gate', COPY.h45, { kind: 'height' });
+  kwSignLabeled(g, 32, 8.6, southZ - 4, -0.08, 3.6, 3.6, 0xf0f0f0, 'kt_sign_height_gate', COPY.h45, { kind: 'height' });
+  kwSignLabeled(g, -24, 7.4, southZ - 1, 0.08, 3.0, 3.0, 0xf0f0f0, 'kt_sign_height_bridge', COPY.h42, { kind: 'height' });
+  kwSignLabeled(g, 20, 7.4, southZ - 1, -0.08, 3.0, 3.0, 0xf0f0f0, 'kt_sign_height_bridge', COPY.h42, { kind: 'height' });
   kwSignLabeled(g, -4, 2.3, southZ + 14, 0.15, 3.4, 0.95, 0x1a3a6a, 'kt_sign_split', COPY.split);
-  kwSignLabeled(g, 6, 2.4, southZ + 20, -0.15, 5.6, 1.15, 0x1a3a6a, 'kt_weigh_hint', COPY.weigh, { kind: 'weigh' });
+  kwSignLabeled(g, 6, 2.4, southZ + 22, -0.15, 5.6, 1.15, 0x1a3a6a, 'kt_weigh_hint', COPY.weigh, { kind: 'weigh' });
   kwSignLabeled(g, 12, 2.2, southZ + 22, Math.PI * 0.9, 2.6, 0.85, 0x1a3a6a, 'kt_sign_exit', COPY.exit);
 
   // —— 1b. 肘閘／工廈側（到達肘後仍見）——
@@ -21631,82 +21640,108 @@ function kwEnsureSouthWeighSign() {
     const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280);
     const southZ = -bz + 18;
     const copy = '地磅 · 跟指示停';
-    /* rev7b：只留一牌單行；限高 4.5＋4.2 抬清 */
-    kwSignLabeled(root, 6, 2.4, southZ + 20, -0.15, 5.6, 1.15, 0x1a3a6a, 'kt_weigh_hint', copy, { kind: 'weigh' });
-    kwSignLabeled(root, -28, 7.8, southZ + 0, 0.12, 3.4, 3.4, 0xf0f0f0, 'kt_sign_height_gate', '限高 4.5 m', { kind: 'height' });
-    kwSignLabeled(root, 22, 7.8, southZ + 0, -0.12, 3.4, 3.4, 0xf0f0f0, 'kt_sign_height_gate', '限高 4.5 m', { kind: 'height' });
-    kwSignLabeled(root, -18, 6.6, southZ + 3, 0.1, 2.8, 2.8, 0xf0f0f0, 'kt_sign_height_bridge', '限高 4.2 m', { kind: 'height' });
-    kwSignLabeled(root, 14, 6.6, southZ + 3, -0.1, 2.8, 2.8, 0xf0f0f0, 'kt_sign_height_bridge', '限高 4.2 m', { kind: 'height' });
+    /* rev7c：限高離柱；地磅單行 */
+    kwSignLabeled(root, 6, 2.4, southZ + 22, -0.15, 5.6, 1.15, 0x1a3a6a, 'kt_weigh_hint', copy, { kind: 'weigh' });
+    kwSignLabeled(root, -38, 8.6, southZ - 4, 0.08, 3.6, 3.6, 0xf0f0f0, 'kt_sign_height_gate', '限高 4.5 m', { kind: 'height' });
+    kwSignLabeled(root, 32, 8.6, southZ - 4, -0.08, 3.6, 3.6, 0xf0f0f0, 'kt_sign_height_gate', '限高 4.5 m', { kind: 'height' });
+    kwSignLabeled(root, -24, 7.4, southZ - 1, 0.08, 3.0, 3.0, 0xf0f0f0, 'kt_sign_height_bridge', '限高 4.2 m', { kind: 'height' });
+    kwSignLabeled(root, 20, 7.4, southZ - 1, -0.08, 3.0, 3.0, 0xf0f0f0, 'kt_sign_height_bridge', '限高 4.2 m', { kind: 'height' });
     if (typeof KWAI !== 'undefined') KWAI._southWeigh = true;
   } catch (e) { /* */ }
 }
 
 function kwEnsureStsSpawnBoomView() {
-  /* rev7b／地道：開場＋側視真機見吊臂——yaw=0 臂橫過南望視線；t0 sync */
+  /* rev7c／gta P0：真機 FOV 內見臂——真尺 boomY≈62 超出 chase 望閘錐；開場用 boomY≈22 剪影≥8 */
   try {
-    if (typeof scene === 'undefined' || typeof kwProcCrane !== 'function') return 0;
+    if (typeof scene === 'undefined' || typeof THREE === 'undefined') return 0;
     const root = (typeof kwEnsureGroup === 'function' ? kwEnsureGroup() : null) || (typeof KWAI !== 'undefined' ? KWAI.group : null);
     if (!root) return 0;
     let boomN = 0;
     try {
       root.traverse((o) => { if (o && o.name === 'kt_sts_boom_sil') boomN++; });
+      if (typeof scene !== 'undefined') scene.traverse((o) => { if (o && o.name === 'kt_sts_boom_sil') boomN++; });
     } catch (eC) { /* */ }
-    if (typeof KWAI !== 'undefined' && KWAI._stsSpawnView && boomN >= 2) return 0;
+    if (typeof KWAI !== 'undefined' && KWAI._stsSpawnView && boomN >= 8) return 0;
     let g = root.getObjectByName('kt_sts_spawn_view');
-    if (!g) {
-      g = new THREE.Group();
-      g.name = 'kt_sts_spawn_view';
-      g.userData.kwaichung = true;
-      g.userData.noMerge = true;
-      root.add(g);
-    }
-    /* 近望點／偏右：臂沿 +X 橫過南望 FOV（禁 -PI/2 臂指北出畫） */
-    const spots = [[42, -252], [52, -272], [48, -242], [58, -262]];
+    if (g && g.parent) g.parent.remove(g);
+    g = new THREE.Group();
+    g.name = 'kt_sts_spawn_view';
+    g.userData.kwaichung = true;
+    g.userData.noMerge = true;
+    root.add(g);
+    const steel = new THREE.MeshStandardMaterial({ color: 0x2a3036, roughness: 0.55, metalness: 0.65 });
+    const gold = new THREE.MeshStandardMaterial({ color: 0xc9a000, roughness: 0.5, metalness: 0.4 });
+    /* hub_local：南望 FOV 內（Y 18–28；臂橫過 +X）；≥8 臂 */
+    const spots = [
+      [28, -248], [38, -258], [48, -268], [34, -238],
+      [44, -252], [54, -262], [22, -255], [58, -245]
+    ];
     for (const [cx, cz] of spots) {
-      kwProcCrane(g, cx, cz, 1.0, 0);
+      const cg = new THREE.Group();
+      cg.position.set(cx, 0, cz);
+      cg.name = 'kt-quay-crane';
+      cg.userData.kwaichung = true;
+      cg.userData.noMerge = true;
+      g.add(cg);
+      const boomY = 22, boomLen = 42, portalH = 26;
+      for (const lx of [-6, 6]) for (const lz of [-5, 5]) {
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(1.6, portalH, 1.6), steel);
+        leg.position.set(lx, portalH / 2, lz); cg.add(leg);
+      }
+      const boom = new THREE.Mesh(new THREE.BoxGeometry(boomLen, 2.8, 3.2), steel);
+      boom.position.set(boomLen * 0.32, boomY, 0);
+      boom.name = 'kt_sts_boom_sil'; boom.userData.kwaichung = true; cg.add(boom);
+      const tip = new THREE.Mesh(new THREE.BoxGeometry(4, 2.2, 2.8), gold);
+      tip.position.set(boomLen * 0.68, boomY, 0); tip.name = 'kt_sts_boom_tip'; cg.add(tip);
     }
     if (typeof KWAI !== 'undefined') KWAI._stsSpawnView = true;
-    console.info('[kwai] STS spawn-view boom yaw0 +' + spots.length);
+    console.info('[kwai] STS spawn-view in-FOV boomY22 +' + spots.length);
     return spots.length;
   } catch (e) { return 0; }
 }
 
 function kwCullEstateNearGateSpawn() {
-  /* rev7b：公屋／天際／右側大廈再清（閘＋spawn＋開場右扇）；唔理 densify 旗 */
+  /* rev7c／gta：公屋＋格網樓＋工廈——閘／spawn／右扇；兼掃 scene */
   try {
     const root = (typeof kwEnsureGroup === 'function' ? kwEnsureGroup() : null) || (typeof KWAI !== 'undefined' ? KWAI.group : null);
     if (!root || typeof THREE === 'undefined') return 0;
-    const clearM = (typeof KWAI !== 'undefined' && KWAI.estateGateClearM != null) ? KWAI.estateGateClearM : 200;
+    const clearM = (typeof KWAI !== 'undefined' && KWAI.estateGateClearM != null) ? KWAI.estateGateClearM : 220;
     const bzL = typeof BOUND !== 'undefined' ? BOUND.z : 280;
-    const gates = [[-20, 38], [0, -bzL + 18], [-6, -bzL + 4], [36, -222], [-2, -bzL + 9]];
+    const gates = [[-20, 38], [0, -bzL + 18], [-6, -bzL + 4], [36, -222], [-2, -bzL + 9], [20, -250]];
     const drop = [];
     const seen = new Set();
     const _wp = new THREE.Vector3();
     const hx = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237);
     const hz = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145);
+    const nameRe = /kt_estate|public_housing|kt_mall|kt_ind_block|skyline|extrude|osm_bld|bldg|building|grid|ph_|estate|facade_block/i;
     const mark = (o) => {
-      let t = o;
-      while (t && t.parent && t.parent !== root && t.parent !== scene) {
-        if (/kt_estate|public_housing|kt_mall|kt_ind_block|skyline|extrude|osm_bld/i.test(t.name || '')) { o = t; break; }
-        t = t.parent;
+      let cur = o;
+      while (cur && cur.parent && cur.parent !== root && cur.parent !== scene) {
+        if (nameRe.test(cur.name || '')) { o = cur; break; }
+        cur = cur.parent;
       }
       if (seen.has(o)) return;
       seen.add(o); drop.push(o);
     };
-    root.traverse((o) => {
-      if (!o || !o.name) return;
-      const isPh = /kt_estate_skyline|public_housing|kt_mall_podium|skyline|kt_ind_block/i.test(o.name) || (o.userData && o.userData.skylineLayer);
-      if (!isPh) return;
-      o.getWorldPosition(_wp);
-      const lx = _wp.x - hx, lz = _wp.z - hz;
-      for (const [gx, gz] of gates) {
-        if (Math.hypot(lx - gx, lz - gz) < clearM) { mark(o); return; }
-      }
-      /* 開場右側扇：spawn 右前方大廈（地道 FAIL 右邊仍有） */
-      if (lx > 20 && lx < 160 && lz > -300 && lz < -160) mark(o);
-    });
+    const visit = (node) => {
+      if (!node) return;
+      node.traverse((o) => {
+        if (!o) return;
+        const nm = o.name || '';
+        const isPh = nameRe.test(nm) || (o.userData && (o.userData.skylineLayer || o.userData.buildingType === 'public_housing'));
+        if (!isPh && !(o.isMesh && o.geometry && nm && /block|tower|slab|mass/i.test(nm))) return;
+        try { o.getWorldPosition(_wp); } catch (e) { return; }
+        const lx = _wp.x - hx, lz = _wp.z - hz;
+        for (const [gx, gz] of gates) {
+          if (Math.hypot(lx - gx, lz - gz) < clearM) { mark(o); return; }
+        }
+        if (lx > 8 && lx < 180 && lz > -320 && lz < -140) mark(o);
+      });
+    };
+    visit(root);
+    try { if (typeof scene !== 'undefined' && scene !== root) visit(scene); } catch (eS) { /* */ }
     for (const o of drop) { if (o.parent) o.parent.remove(o); }
-    if (drop.length) console.info('[kwai] estate/right cull', drop.length);
+    if (drop.length) console.info('[kwai] estate/grid cull', drop.length);
     return drop.length;
   } catch (e) { return 0; }
 }
@@ -26501,7 +26536,11 @@ Promise.race([
   if (r === 'timeout') { loadState.errors.push('timeout'); console.warn('模型載入逾時，暫用佔位物件'); }
   else if (Array.isArray(r)) r.forEach((x) => { if (x && x.status === 'rejected') { loadState.errors.push(String(x.reason && x.reason.message || x.reason)); console.warn('模型載入失敗：', x.reason); } });
   state.camYaw = car.heading;
-  dismissLoading(loadState.errors.length ? '部分模型載入失敗（顯示佔位）' : null);
+  {
+    let kwaiBoot = false;
+    try { kwaiBoot = typeof URLQ !== 'undefined' && URLQ.has && (URLQ.has('hkzone') && /kwai/i.test(String(URLQ.get('hkzone') || ''))); } catch (eK) { /* */ }
+    dismissLoading((loadState.errors.length && !kwaiBoot) ? '部分模型載入失敗（顯示佔位）' : null);
+  }
   const loc = $('loc'); if (loc) { loc.classList.add('show'); setTimeout(() => loc.classList.remove('show'), 5000); }
   updateCashHUD(0);
   const mq = URLQ.get('m');
@@ -27069,7 +27108,8 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
         /* rev3：kwai 第二輪只 re-arm 肘 lock／清 collider，唔准 OSM snap 改位 */
         try {
           if (id === 'kwai_tsing' || id === 'kwai' || id === 'kt') {
-            if (typeof kwArmElbowSpawnLock === 'function') kwArmElbowSpawnLock(45000);
+            if (typeof kwArmElbowSpawnLock === 'function') kwArmElbowSpawnLock(180000);
+            try { if (typeof kwEnsureStsShoreWall === 'function') kwEnsureStsShoreWall(8); } catch (eSt2) { /* */ }
             if (typeof kwPurgeCollidersNearElbowSpawn === 'function') kwPurgeCollidersNearElbowSpawn();
             if (typeof kwEnforceElbowSpawnLock === 'function') kwEnforceElbowSpawnLock();
             if (typeof kwSnapTractorChaseCam === 'function') kwSnapTractorChaseCam();

@@ -1,0 +1,129 @@
+{
+  "id": "kwai_c301f26_didao_fail_art",
+  "updated": "2026-10-31T13:46:51+08:00",
+  "after_tip": "c301f26",
+  "live": "room2-rev7",
+  "no_bump_v": true,
+  "didao_fail": {
+    "pass": [
+      "chase_side",
+      "gate",
+      "barrier_yb",
+      "kf",
+      "day"
+    ],
+    "fail": {
+      "height_4_5_not_clean": true,
+      "height_4_2_missing": true,
+      "weighbridge_dark_second_line": true,
+      "sts_boom_t0_and_side_zero": true,
+      "ph_right_towers_still": true,
+      "toast_model_fail": true
+    }
+  },
+  "art_lock": {
+    "height_signs": {
+      "texts": [
+        "限高 4.5 m",
+        "限高 4.2 m"
+      ],
+      "both_visible_device": true,
+      "4_5_clean_no_clip": true,
+      "4_2_must_exist": true,
+      "raise_m": 1.2,
+      "forward_m": 0.8,
+      "ban_occluded_by": [
+        "weighbridge_blue",
+        "pillar",
+        "container"
+      ]
+    },
+    "weighbridge": {
+      "exact": "地磅 · 跟指示停",
+      "layout": "single_line",
+      "ban": [
+        "dark_second_line",
+        "two_line_split",
+        "堆場",
+        "ghost_subtitle"
+      ]
+    },
+    "sts": {
+      "boom_visible_t0": true,
+      "boom_visible_side_pan": true,
+      "wall_min": 8,
+      "spawn_boom_count_near_look": 4,
+      "ban": [
+        "sts_0_t0",
+        "sts_0_side",
+        "legs_only"
+      ],
+      "t0_min": 8
+    },
+    "housing": {
+      "clear_m": 200,
+      "near_gate_spawn_look": 0,
+      "ban_right_towers_in_frame": true,
+      "cull_ensure": true
+    },
+    "chase_cam": {
+      "keep": true,
+      "side_bias_m_min": 16,
+      "hold_s": 90,
+      "freeze_yaw": true
+    },
+    "toast": {
+      "ban_primary_fail_toast_on_kwai_open": true,
+      "note": "模型失敗 toast 仍有——載入／fallback 唔焗出死 toast 當開場"
+    }
+  },
+  "qa_pull": [
+    "限高 4.5 淨＋4.2 可見",
+    "地磅單行——禁暗第二行",
+    "STS 吊臂 t0＋側視可見（≠0）",
+    "公屋右／閘旁大廈清≥200 m",
+    "開場無模型失敗 toast（或可接受降級無擋畫）"
+  ],
+  "doc": "docs/core28a-kwai-tip-c301f26-didao-fail-knife.md",
+  "level_rev": "7c",
+  "level_lock": {
+    "rev": "7c",
+    "sts_t0_min": 8,
+    "ph_clear_m": 200,
+    "height": [
+      "限高 4.5 m",
+      "限高 4.2 m"
+    ],
+    "weighbridge": "地磅 · 跟指示停",
+    "toast": "separate",
+    "tip": "93e0822"
+  },
+  "qa_pass": false,
+  "qa_pass_tip": "93e0822",
+  "qa_live": "room2-rev7b",
+  "art_accept": false,
+  "pending_tip": "rev7c after gta fail",
+  "toast": "separate — still generic placeholder, not this knife",
+  "got": {
+    "height_4_5_and_4_2": true,
+    "weighbridge_single_ghost_0": true,
+    "sts_t0": 24,
+    "ph_near": 0,
+    "chase_0_14s": true,
+    "gate_yb_kf_day": true
+  },
+  "gta_fail_after_qa": "93e0822",
+  "next_knife": "kwai-93e0822-gta-fail-art.json",
+  "gta_p0_fail_93e0822": {
+    "sts_t0_0_empty_sky": true,
+    "chase_no_side_open_snap_58s": true,
+    "ph_grid_near_gate": true,
+    "height_45_cut_by_pillar": true
+  },
+  "knife_rev7c": [
+    "STS in-FOV boomY22 x8",
+    "chase 180s side18 gateY8.5 near-spawn extend",
+    "height clear of pillars",
+    "PH+grid scene cull 220m"
+  ]
+}
