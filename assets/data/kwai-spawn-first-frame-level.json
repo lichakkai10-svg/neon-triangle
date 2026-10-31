@@ -1,43 +1,51 @@
 {
   "id": "kwai_spawn_first_frame_level",
-  "rev": 3,
-  "updated": "2026-10-31T11:40:00+08:00",
-  "after_tip": "01fcb8f",
-  "qa_fail": {
-    "tip": "01fcb8f",
-    "seen": "第一幀金黃填滿；cam≈4.75；世界 x≈-1192（應 -1245＝hubX-8）偏 +53",
-    "crawler": "boot origin／雙尺度，唔係 latlon",
-    "no_sample": true
+  "rev": 4,
+  "updated": "2026-10-31T11:55:00+08:00",
+  "after_tip": "304e9c2",
+  "gov_d2b_fail": {
+    "gate_title": "只見「貨櫃碼頭閘口（」——拖頭擋「戲仿）」",
+    "height": "紅圈有，限高…m 讀唔到",
+    "weighbridge": "PASS",
+    "barrier_yb": "PASS",
+    "no_housing_on_sign": "PASS",
+    "kwai_fong": "開場未見"
   },
   "no_bump_v": true,
-  "spawn_lock_keep": {
+  "spawn": {
     "hub_local": {
-      "x": -8,
-      "z": -228
+      "x": 16.0,
+      "z": -232.0
     },
     "look_at_hub_local": {
-      "x": 0,
-      "z": -271
+      "x": -2.0,
+      "z": -271.0
     },
+    "heading_rad": -2.70918,
     "world_assert": {
-      "x": -1245,
-      "z": -373,
+      "x": -1221.0,
+      "z": -377.0,
       "tol_m": 2
     },
-    "note": "KWAI_GEO.hub (-1237,-145) + hub_local；1:1 米，禁 ×1.5 街景尺"
+    "why": "偏東側望閘——拖頭唔擋路中閘牌；前方仍≥25 m"
   },
-  "coder_knife": [
-    "placeCar 後 assert |car.x+1245|<2 且 |car.z+373|<2；唔啱即重置 pose",
-    "hkzone=kwai：禁 c28SnapRoad／OSM 區心／第二輪 3500ms snap 改位；只准 kwSpawnElbowGatePose",
-    "禁雙尺度：hub_local 唔乘 K=1.5；碼頭 1:1",
-    "禁 boot 落 origin(0,0) 再加 hub——要一次過 world = hub+local",
-    "拖頭 cam chase back ≥ halfLen+5.5（目標 ≥12.5）；禁 cam≈4.75 貼殼／金黃填屏",
-    "錐清加：金黃／黃櫃／shed 填屏 mesh（唔只綠工廈）"
+  "d2b_readability": {
+    "kt_gate_title": "全文「貨櫃碼頭閘口（戲仿）」開場幀可讀；字面朝 spawn；高度≥車頂",
+    "height_45_42": "限高 4.5 m／4.2 m 全文可讀；禁糊／被柱切；可加大字或雙面",
+    "weighbridge": "保持「地磅 · 跟指示停」",
+    "barrier_yb": "保持可見",
+    "tractor_offset": "spawn 唔停喺閘牌視線軸上"
+  },
+  "kwai_fong": "肘盡頭遠景「葵芳（戲仿）」——開場唔強制入幀，≤1 轉或行肘可見即可（政府開場未見可接受若閘字先過）",
+  "coder": [
+    "kwSpawnElbowGatePose → lx=16 lz=-232 look=(-2,-271)",
+    "閘牌／限高 canvas 字加大、抗糊；sign 抬高過拖頭頂",
+    "cam 維持 ≥12.5；assert 新 world 位"
   ],
   "qa": [
-    "car 世界位 ≈ (-1245, -373)",
-    "frame0 開闊見閘向，唔係金黃／牆角填屏",
-    "cam back ≥12.5（拖頭）",
-    "日景"
+    "frame0 讀到完整閘口戲仿句",
+    "讀到限高 4.5／4.2 m",
+    "地磅＋黃黑仍在",
+    "拖頭唔擋牌"
   ]
 }

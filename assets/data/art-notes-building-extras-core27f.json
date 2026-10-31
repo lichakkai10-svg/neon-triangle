@@ -183,5 +183,10 @@
   "device_fail_246e47c": {
     "when": "2026-10-31T09:33:48+08:00",
     "doc": "docs/kwai-device-fail-art-knife-2026-10-31.md"
+  },
+  "spawn_rev3_304e9c2_pass": {
+    "when": "2026-10-31T11:47:40+08:00",
+    "tip": "304e9c2",
+    "no_bump_v": true
   }
 }

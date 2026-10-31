@@ -1,6 +1,6 @@
 {
   "id": "kwai_d2b_gate_art_lock",
-  "updated": "2026-10-31T09:19:51+08:00",
+  "updated": "2026-10-31T11:56:42+08:00",
   "for_tip_after": "b0f4256",
   "no_bump_v": true,
   "gov_sample_fail": {
@@ -30,7 +30,10 @@
     "weighbridge": "地磅 · 跟指示停",
     "aligned_with": "劇本台詞師 D2b 閘口台詞鎖",
     "weighbridge_dialogue_alt": "請過地磅",
-    "kwai_fong_station": "葵芳站（戲仿）"
+    "kwai_fong_station": "葵芳站（戲仿）",
+    "weighbridge_ban": [
+      "堆場 跟指示停"
+    ]
   },
   "mount": {
     "sign_height": {

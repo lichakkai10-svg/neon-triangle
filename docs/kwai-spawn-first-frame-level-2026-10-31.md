@@ -1,20 +1,17 @@
-# Kwai spawn 第一幀 · 關卡 rev2 + 錐清（after `5e60dab`）
+# Kwai spawn／D2b · rev4（tip `304e9c2` 政府 FAIL）
 
-**唔升 ?v=** · 對齊美術鎖
+**唔升 ?v=**
 
 ## FAIL
-tip `15344c0` 用 (-14,-95)→南閘，真機仍**青綠牆角填屏**。
+開闊見閘 ✅，但**拖頭擋閘牌**；限高字糊／被切；葵芳開場未見。
 
-## rev2 鎖位（hub_local）
+## rev4 鎖位
 | | lx | lz |
 |---|---|---|
-| **spawn** | **-8.0** | **-228.0** |
-| **look_at 南閘** | **0** | **-271** |
+| spawn | **16.0** | **-232.0** |
+| look | **-2.0** | **-271.0** |
+| world | **-1221** | **-377** |
 
-- 距閘 ≈ **44 m**（≥25；貼閘開闊瀝青）
-- `heading = atan2(Δx,Δz)` ≈ 2.9576
-- 前方 **30 m×40°**（±20°）錐：**清／搬** `kt_ind_block`／工廈殼／alleyBlocker → `kwCullSpawnForwardCone`
-- 廢止 (-14,-95)
-- densify＋kenney 後再跑錐清；STS／閘／D2b／barrier 保留
-
-改 `kwSpawnElbowGatePose()` 內 lx/lz；錐清見 `kwCullSpawnForwardCone`。
+- 偏側望閘，牌全文可讀  
+- 限高 4.5／4.2 **真機可讀**  
+- 地磅／黃黑保持  

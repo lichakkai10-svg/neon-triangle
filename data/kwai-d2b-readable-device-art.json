@@ -1,0 +1,122 @@
+{
+  "id": "kwai_d2b_readable_device_art",
+  "updated": "2026-10-31T11:57:35+08:00",
+  "after_tip": "304e9c2",
+  "no_bump_v": true,
+  "gov_fail": {
+    "gate_title_occluded_by_tractor": true,
+    "height_blur_cut_by_pillar": true,
+    "kwai_fong_missing": true,
+    "pass": [
+      "weighbridge",
+      "barrier_yb",
+      "not_on_housing",
+      "no_HIT_MTL",
+      "mesh_not_empty"
+    ]
+  },
+  "copy": {
+    "gate_title": "貨櫃碼頭閘口（戲仿）",
+    "height_gate": "限高 4.5 m",
+    "height_inner": "限高 4.2 m",
+    "weighbridge": "地磅 · 跟指示停",
+    "kwai_fong": "葵芳站（戲仿）",
+    "weighbridge_ban": [
+      "堆場 跟指示停",
+      "堆場·跟指示停",
+      "跟指示停"
+    ]
+  },
+  "art_lock": {
+    "tractor_offset": {
+      "note": "拖頭／櫃偏側，第一幀閘牌全字可讀（含「戲仿）」）",
+      "lateral_clear_to_sign_m": 3,
+      "ban": "cab_or_container_occlude_gate_title",
+      "level_rev4": [
+        16,
+        -232
+      ]
+    },
+    "gate_title": {
+      "char_h_m_min": 1.4,
+      "full_string_visible_frame0": true,
+      "ban_cut_by": [
+        "pillar",
+        "tractor",
+        "container"
+      ]
+    },
+    "height_signs": {
+      "char_h_m_min": 1.0,
+      "contrast": "dark_on_light_or_yellow_black",
+      "placement": "not_behind_pillar; face_spawn_cam",
+      "ban": "blur_subpixel_or_pillar_clip"
+    },
+    "kwai_fong": {
+      "text": "葵芳站（戲仿）",
+      "at": "elbow_end_or_distant_readable",
+      "char_h_m_min": 1.2,
+      "visible_device": true
+    },
+    "sts_wall": {
+      "min": 8,
+      "prefer": 8,
+      "ban": "single_gray_leg_only"
+    },
+    "housing": {
+      "y_m": [
+        55,
+        100
+      ],
+      "min_dist_gate_m": 80,
+      "ban_in_front_of_gate": true
+    },
+    "weighbridge_copy": {
+      "exact": "地磅 · 跟指示停",
+      "ban": [
+        "堆場 跟指示停",
+        "missing 地磅",
+        "missing ·"
+      ]
+    }
+  },
+  "qa_pull": [
+    "frame0 閘牌「貨櫃碼頭閘口（戲仿）」全字無遮",
+    "限高 4.5／4.2 真機可讀無柱切",
+    "葵芳站（戲仿）可見",
+    "拖頭偏側；cam≥12.5 維持"
+  ],
+  "level_rev4": {
+    "hub_local": [
+      16,
+      -232
+    ],
+    "look": [
+      -2,
+      -271
+    ],
+    "world_expect": [
+      -1221,
+      -377
+    ]
+  },
+  "device_fail_extra": {
+    "sts_one_gray_leg": "need STS quay wall ≥6–8 gantry silhouette",
+    "housing_at_gate": "push PH to distant y55–100; gate 80m zero estate",
+    "kwai_fong": "missing — restore 葵芳站（戲仿）"
+  },
+  "level_pack": {
+    "rev4": [
+      16,
+      -232
+    ],
+    "look": [
+      -2,
+      -271
+    ],
+    "weighbridge": "地磅 · 跟指示停",
+    "sts_wall_min": 8,
+    "ph_far": true,
+    "kf_distant": true
+  }
+}

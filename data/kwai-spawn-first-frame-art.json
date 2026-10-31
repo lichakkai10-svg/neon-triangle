@@ -1,6 +1,6 @@
 {
   "id": "kwai_spawn_first_frame_art",
-  "updated": "2026-10-31T11:31:04+08:00",
+  "updated": "2026-10-31T11:56:27+08:00",
   "after_tip": "15344c0",
   "no_bump_v": true,
   "device_fail": {
@@ -74,6 +74,11 @@
         -1245.0,
         -373.0
       ]
+    },
+    "ban_osm_cover_spawn": true,
+    "cam_first_frame": {
+      "min_dist_xz": 12.5,
+      "force": "kwSnapTractorChaseCam back≥max(12.5, halfLen+5.5)"
     }
   },
   "qa_pull": [
@@ -96,8 +101,8 @@
   "level_lock": {
     "id": "kwai-spawn-first-frame-level",
     "hub_local_spawn": [
-      -8.0,
-      -228.0
+      16,
+      -232
     ],
     "look_south_gate_local": [
       0.0,
@@ -114,7 +119,30 @@
       ]
     ],
     "art_ok": true,
-    "note": "美術跟關卡 rev2：開闊望南閘；禁 (-14,-95) 牆角／cam 塞殼"
+    "note": "偏側唔擋閘牌；肘 origin + local",
+    "rev": 4,
+    "look": [
+      -2,
+      -271
+    ],
+    "world_expect": [
+      -1221,
+      -377
+    ]
   },
-  "coder_tip": "rev2 hub_local (-8,-228)→(0,-271); world≈(-1245,-373); clear≈44m; ban (-14,-95) teal shell"
+  "coder_tip": "rev2 hub_local (-8,-228)→(0,-271); world≈(-1245,-373); clear≈44m; ban (-14,-95) teal shell",
+  "root_cause_304e9c2": {
+    "delta_x": "OSM building AABB east-push spawn (not ×1.5)",
+    "cam_4_75": "cameraCollide into tractor container first frame"
+  },
+  "qa_pass_tip": "304e9c2",
+  "qa_pass": true,
+  "qa_got": {
+    "spawn": [
+      -1245,
+      -373
+    ],
+    "cam_dist_xz": 12.5,
+    "frame0": "open asphalt + gate"
+  }
 }

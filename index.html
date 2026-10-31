@@ -319,7 +319,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 /*__EMBEDDED_ASSETS_BEGIN__*/const EMBEDDED_ASSETS = {};/*__EMBEDDED_ASSETS_END__*/
 /* TIP_MARK geometry-fail knife · after b5e0865 · pier-first / defer-kenney · keep ?v=core28 */
 /* TIP_MARK paint-fail · tractor chase back halfLen+5.5 / CAM 12.5 · rear door detail · keep ?v=core28 */
-/* TIP_MARK spawn-first-frame · rev3 elbow-hub (-8,-228)→(-1245,-373) lock · ban OSM/arcade Δx · tractor cam≥12.5 · cone cull gold/shed · keep ?v=core28 */
+/* TIP_MARK d2b-readable · rev4 (16,-232)→(-2,-271) lateral · gate/height/weigh readable · KF · PH clear · STS · keep ?v=core28 */
 const ASSET_BASE = 'assets/';
 const ASSET_FILES = {
   car: 'concept-car.glb',          // 開局黑色跑車：Khronos CarConcept（CC-BY 4.0；已去標誌／減面）；後備 kenney-sedan-sports.glb
@@ -423,16 +423,17 @@ const KWAI_GEO = {
   laiKingX: -1095, laiKingZ: -1101
 };
 function kwWorld(lx, lz) { return { x: KWAI_GEO.hubX + lx, z: KWAI_GEO.hubZ + lz }; }
-/** spawn-first-frame：對齊 data/kwai-spawn-first-frame-level.json rev3
- *  hub_local (-8,-228) 望南閘 (0,-271)；world = elbow hub + local（1:1 米）
+/** spawn-first-frame：對齊 data/kwai-spawn-first-frame-level.json rev4
+ *  hub_local (16,-232) 望南閘側 (-2,-271)；偏側 ≥3 m 留閘牌視線；world = elbow hub + local（1:1 米）
  *  Origin = KWAI_GEO.hub (−1237,−145) 肘 —— 禁 geographic hub (−1390,332)／禁 ×1.5
- *  assert world ≈ (−1245,−373) tol≤2；廢 OSM／arcade 東推 Δx≈53 */
+ *  assert world ≈ (−1221,−377) tol≤2；廢 OSM／arcade 東推 Δx≈53 */
 function kwSpawnElbowGatePose() {
   const hx = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237);
   const hz = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145);
   const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280);
-  const lx = -8, lz = -228; /* rev3 鎖：肘 hub_local；唔乘 K=1.5 */
-  const lookX = 0, lookZ = -bz + 9; /* GATE_POS hub-local ≈ (0,-271) */
+  /* rev4：偏側 ≥3 m 唔擋閘牌；hub_local (16,-232)→(-2,-271)；world=肘+local 禁×1.5 */
+  const lx = 16, lz = -232;
+  const lookX = -2, lookZ = -bz + 9; /* ≈ (-2,-271) 南閘側 */
   const heading = Math.atan2(lookX - lx, lookZ - lz);
   return { x: hx + lx, z: hz + lz, heading, lx, lz, lookX, lookZ };
 }
@@ -3419,7 +3420,7 @@ const NEON_WORDS = ['大押', '茶餐廳', '麻雀', '賓館', '金行', '跌打
   boxMesh(boothMat, 2.8, 0.2, 2.8, ROAD_HALF + 2.2, 2.7, 0, g);
   const arm = boxMesh(shared(new THREE.MeshStandardMaterial({ color: 0xd03a2a, roughness: 0.5 })), 0.12, 6.5, 0.12, ROAD_HALF + 0.6, 4.2, 0, g); arm.rotation.z = 0.12;
   addCollider(_hx + ROAD_HALF + 2.2, _hz - BOUND.z - 0.4, 1.3, 1.3, 2.8);
-  const sign = makeNeonSign('貨櫃碼頭閘口（戲仿）', '#e8f0ff', false); sign.scale.setScalar(0.55); sign.position.set(_hx - ROAD_HALF - 2.5, 3.2, _hz - BOUND.z - 0.6); sign.name = 'kt_gate_title_neon'; sign.userData.labelId = 'kt_gate_title'; scene.add(sign);
+  const sign = makeNeonSign('貨櫃碼頭閘口（戲仿）', '#e8f0ff', false); sign.scale.setScalar(0.95); sign.position.set(_hx - ROAD_HALF - 2.5, 5.4, _hz - BOUND.z - 0.6); sign.name = 'kt_gate_title_neon'; sign.userData.labelId = 'kt_gate_title'; scene.add(sign); /* d2b-readable */
 }
 
 /* ---------- 8 號泊位辦事處（兩層組合屋）---------- */
@@ -4535,7 +4536,7 @@ const MISSIONS = {
       cleanupWorld(); resetPlayerState();
       FLAGS.bol = false; FLAGS.safeOpen = false;
       /* spawn 掛 KWAI hub；spawn-first-frame：第一眼肘閘，主車拖頭／貨櫃車 */
-      { const _pose = (typeof kwSpawnElbowGatePose === 'function') ? kwSpawnElbowGatePose() : { x: (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : 0) - 8, z: (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : 0) - 228, heading: Math.atan2(8, -43) };
+      { const _pose = (typeof kwSpawnElbowGatePose === 'function') ? kwSpawnElbowGatePose() : { x: (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : 0) + 16, z: (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : 0) - 232, heading: Math.atan2(-18, -39) };
         placeCar(_pose.x, _pose.z, _pose.heading); putPlayerInCar();
         try { if (typeof state !== 'undefined') { state.camYaw = _pose.heading; state.yawOffset = 0; } } catch (eY) { /* */ }
         try { if (typeof camState !== 'undefined') camState.init = false; } catch (eC) { /* */ }
@@ -17784,10 +17785,10 @@ function kwProcCrane(parent, x, z, scale, yaw) {
     try {
       const ST = KWAI_SCALE.sts;
       const steel = new THREE.MeshStandardMaterial({ color: 0x3a4248, roughness: 0.55, metalness: 0.65 });
-      const boom = new THREE.Mesh(new THREE.BoxGeometry(ST.boomLen, 2.6, 3.2), steel);
+      const boom = new THREE.Mesh(new THREE.BoxGeometry(ST.boomLen, 3.4, 4.0), steel);
       boom.position.set(ST.boomLen * 0.35, ST.boomY, 0);
       boom.name = 'kt_sts_boom_sil'; boom.userData.kwaichung = true; g.add(boom);
-      const tip = new THREE.Mesh(new THREE.BoxGeometry(4, 2.2, 2.8), new THREE.MeshStandardMaterial({ color: 0xc9a000, roughness: 0.5, metalness: 0.4 }));
+      const tip = new THREE.Mesh(new THREE.BoxGeometry(5, 2.8, 3.4), new THREE.MeshStandardMaterial({ color: 0xc9a000, roughness: 0.5, metalness: 0.4 }));
       tip.position.set(ST.boomLen * 0.72, ST.boomY, 0); tip.name = 'kt_sts_boom_tip'; g.add(tip);
     } catch (eB) { /* */ }
   }).catch(fillProc);
@@ -18258,13 +18259,14 @@ function kwSignLabeled(parent, x, y, z, yaw, w, h, bgHex, labelId, copy, opt) {
       }
       c.fillStyle = fg;
       c.textAlign = 'center'; c.textBaseline = 'middle';
-      const lines = String(copy).split('·').map((s) => s.trim()).filter(Boolean);
+      const keepOne = opt.kind === 'weigh' || opt.kind === 'gate' || (copy && copy.indexOf('地磅') >= 0);
+      const lines = keepOne ? [String(copy)] : String(copy).split('·').map((s) => s.trim()).filter(Boolean);
       const fontPx = lines.length > 1
-        ? Math.max(14, Math.round(H * 0.28))
-        : Math.max(16, Math.round(H * (copy.length > 10 ? 0.32 : 0.42)));
+        ? Math.max(18, Math.round(H * 0.32))
+        : Math.max(22, Math.round(H * (copy.length > 10 ? 0.36 : 0.46)));
       c.font = `bold ${fontPx}px "PingFang HK","Noto Sans TC",sans-serif`;
       if (lines.length <= 1) {
-        c.fillText(copy, W / 2, H / 2);
+        c.fillText(String(copy), W / 2, H / 2);
       } else {
         const gap = fontPx * 1.15;
         const start = H / 2 - (lines.length - 1) * gap / 2;
@@ -18598,30 +18600,30 @@ function kwStationKwaiFong(parent, x, z, tex) {
   }
   const canopy = new THREE.Mesh(new THREE.BoxGeometry(26, 0.35, 6), steel);
   canopy.position.set(0, 5.2, 8); g.add(canopy);
-  // 戲仿站名牌：葵芳站（戲仿）· 字高≥1.2 m 真機可讀；禁真 MTR／相板／葵涌站
+  // 戲仿站名牌：葵芳站（戲仿）· 字高≥1.2 m 真機可讀（d2b）；禁真 MTR／相板／葵涌站
   const signMat = new THREE.MeshStandardMaterial({ color: 0x1a4a8a, roughness: 0.45 });
   let signFace = signMat;
   if (typeof canvasTex === 'function') {
     const tex = canvasTex(1024, 256, (c, W, H) => {
       c.fillStyle = '#1a4a8a'; c.fillRect(0, 0, W, H);
       c.fillStyle = '#f4f6f8'; c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.font = 'bold 110px "PingFang HK","Noto Sans TC",sans-serif';
+      c.font = 'bold 140px "PingFang HK","Noto Sans TC",sans-serif';
       c.fillText('葵芳站（戲仿）', W / 2, H / 2);
     });
     signFace = new THREE.MeshStandardMaterial({ map: tex, color: 0xffffff, roughness: 0.45, emissive: new THREE.Color(0.12, 0.2, 0.35), emissiveIntensity: 0.35 });
   }
-  // 牌面高 2.4 m → 字約 ≥1.2 m
-  const sign = new THREE.Mesh(new THREE.BoxGeometry(14, 2.4, 0.16), signFace);
-  sign.position.set(0, 10.5, 7.2); sign.name = 'kt_station_kwai_fong_board';
+  // 牌面高 2.8 m → 字 ≥1.2 m（d2b-readable）
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(18, 2.8, 0.16), signFace);
+  sign.position.set(0, 11.2, 7.2); sign.name = 'kt_station_kwai_fong_board';
   sign.userData.copy = '葵芳站（戲仿）'; g.add(sign);
   // 遠景第二牌（肘盡頭再抬高）
-  const sign2 = new THREE.Mesh(new THREE.BoxGeometry(16, 2.6, 0.14), signFace.clone ? signFace.clone() : signFace);
-  sign2.position.set(0, 18, 0); sign2.name = 'kt_station_kwai_fong_board_hi';
+  const sign2 = new THREE.Mesh(new THREE.BoxGeometry(20, 3.0, 0.14), signFace.clone ? signFace.clone() : signFace);
+  sign2.position.set(0, 20, 0); sign2.name = 'kt_station_kwai_fong_board_hi';
   sign2.userData.copy = '葵芳站（戲仿）'; g.add(sign2);
   if (typeof makeNeonSign === 'function') {
     try {
       const ns = makeNeonSign('葵芳站（戲仿）', '#e8f4ff', false);
-      ns.scale.setScalar(1.15); ns.position.set(0, 10.5, 7.5); ns.name = 'kt_station_kwai_fong_neon'; g.add(ns);
+      ns.scale.setScalar(1.45); ns.position.set(0, 11.2, 7.5); ns.name = 'kt_station_kwai_fong_neon'; g.add(ns);
     } catch (e) { /* */ }
   }
   // 綠線色帶 stub
@@ -19299,30 +19301,31 @@ function kwBuildDensityD2b() {
     gate: '貨櫃碼頭閘口（戲仿）',
     h45: '限高 4.5 m',
     h42: '限高 4.2 m',
-    weigh: '地磅 · 跟指示停',
+    weigh: '地磅 · 跟指示停', /* 定稿；禁「堆場」 */
     split: '貨櫃車靠右 · 訪客靠左',
     exit: '離場跟箭咀',
-    kf: '往葵芳（戲仿）',
+    kf: '葵芳站（戲仿）',
     ind: '貨車入口 · 小心倒車',
     works: '工程進行中 · 小心重型車'
   };
 
   // —— 1a. 南閘套件（玩家 hkzone=kwai／manifest 第一眼）——
-  kwSignLabeled(g, -10, 3.6, southZ + 4, 0, 5.4, 0.9, 0x1a3a6a, 'kt_gate_title', COPY.gate);
-  kwSignLabeled(g, -18, 2.5, southZ + 8, 0.1, 1.7, 1.7, 0xf0f0f0, 'kt_sign_height_gate', COPY.h45, { kind: 'height' });
-  kwSignLabeled(g, 6, 2.5, southZ + 8, -0.1, 1.7, 1.7, 0xf0f0f0, 'kt_sign_height_gate', COPY.h45, { kind: 'height' });
+  kwSignLabeled(g, -6, 5.2, southZ + 2, 0, 7.2, 1.35, 0x1a3a6a, 'kt_gate_title', COPY.gate); /* readable · above truck */
+  kwSignLabeled(g, -20, 3.4, southZ + 6, 0.1, 2.4, 2.4, 0xf0f0f0, 'kt_sign_height_gate', COPY.h45, { kind: 'height' }); /* ≥1.0 m glyphs */
+  kwSignLabeled(g, 8, 3.4, southZ + 6, -0.1, 2.4, 2.4, 0xf0f0f0, 'kt_sign_height_gate', COPY.h45, { kind: 'height' });
   kwSignLabeled(g, -4, 2.3, southZ + 12, 0.15, 3.4, 0.95, 0x1a3a6a, 'kt_sign_split', COPY.split);
-  kwSignLabeled(g, 8, 2.4, southZ + 14, -0.2, 4.2, 1.1, 0x1a3a6a, 'kt_weigh_hint', COPY.weigh);
+  kwSignLabeled(g, 10, 3.0, southZ + 12, -0.2, 5.2, 1.4, 0x1a3a6a, 'kt_weigh_hint', COPY.weigh, { kind: 'weigh' });
   kwSignLabeled(g, 12, 2.2, southZ + 22, Math.PI * 0.9, 2.6, 0.85, 0x1a3a6a, 'kt_sign_exit', COPY.exit);
 
   // —— 1b. 肘閘／工廈側（到達肘後仍見）——
   kwSignLabeled(g, -28, 2.5, 42, 0.1, 1.7, 1.7, 0xf0f0f0, 'kt_sign_height_gate', COPY.h45, { kind: 'height' });
   kwSignLabeled(g, -14, 2.3, 41, 0.2, 3.4, 0.95, 0x1a3a6a, 'kt_sign_split', COPY.split);
-  kwSignLabeled(g, -20, 3.6, 36.5, 0, 5.2, 0.85, 0x1a3a6a, 'kt_gate_title', COPY.gate);
+  kwSignLabeled(g, -18, 5.0, 36.5, 0, 6.8, 1.25, 0x1a3a6a, 'kt_gate_title', COPY.gate); /* elbow readable */
   kwSignLabeled(g, -10, 2.2, 48, Math.PI * 0.85, 2.6, 0.85, 0x1a3a6a, 'kt_sign_exit', COPY.exit);
   kwSignLabeled(g, -52, 2.7, 66, Math.PI / 2, 1.5, 1.5, 0xf0f0f0, 'kt_sign_height_bridge', COPY.h42, { kind: 'height' });
   kwSignLabeled(g, -36, 2.9, 108, 0.05, 1.55, 1.55, 0xf0f0f0, 'kt_sign_height_bridge', COPY.h42, { kind: 'height' });
   kwSignLabeled(g, -76, 2.4, 74, Math.PI * 0.15, 3.0, 0.9, 0x1a3a6a, 'kt_sign_to_kf', COPY.kf);
+  kwSignLabeled(g, -4, 4.8, southZ - 90, 0, 6.5, 1.5, 0x1a3a6a, 'kt_sign_to_kf', COPY.kf); /* 肘盡頭遠景 ≥1.2 m */
   kwSignLabeled(g, -60, 2.2, 70, -0.4, 2.8, 0.85, 0x1a3a6a, 'kt_sign_to_kf', COPY.kf);
   kwSignLabeled(g, -34, 2.1, 54, Math.PI / 2, 2.8, 0.8, 0x1a3a6a, 'kt_sign_ind_lane', COPY.ind);
   kwSignLabeled(g, -48, 2.1, 72, 0, 2.8, 0.8, 0x1a3a6a, 'kt_sign_ind_lane', COPY.ind);
@@ -21503,8 +21506,8 @@ function kwBuildArtDensifyCore28a() {
         scene.traverse((o) => { if (o.name === 'kt-quay-crane-boot') stsN++; });
       }
     } catch (eS) { /* */ }
-    const want = 8; // device-fail prefer 8（lite 都至少 8 剪影）
-    const spots = [-220, -165, -110, -55, 0, 55, 110, 165, 220];
+    const want = 10; // d2b-readable：岸線 boom 牆 ≥8–10
+    const spots = [-240, -190, -140, -90, -40, 10, 60, 110, 160, 210, 250];
     for (const cz of spots) {
       if (stsN >= want) break;
       let near = false;
@@ -21816,7 +21819,7 @@ function kwBuildArtDensifyCore28a() {
     stats.housingFinal = countByName(/kt_estate_skyline|public_housing/i);
     // device-fail：閘 80 m 內清晒 estate（含舊座標殘留）
     {
-      const clearM = (KWAI.estateGateClearM != null) ? KWAI.estateGateClearM : 80;
+      const clearM = (KWAI.estateGateClearM != null) ? KWAI.estateGateClearM : 110; /* room2: 閘前公屋推遠 */
       const bzL = typeof BOUND !== 'undefined' ? BOUND.z : 280;
       const gates = [[-20, 38], [0, -bzL + 18]];
       const drop = [];
