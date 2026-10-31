@@ -319,7 +319,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 /*__EMBEDDED_ASSETS_BEGIN__*/const EMBEDDED_ASSETS = {};/*__EMBEDDED_ASSETS_END__*/
 /* TIP_MARK geometry-fail knife · after b5e0865 · pier-first / defer-kenney · keep ?v=core28 */
 /* TIP_MARK paint-fail · tractor chase back halfLen+5.5 / CAM 12.5 · rear door detail · keep ?v=core28 */
-/* TIP_MARK room2-day-los · rev5 (28,-228)→(-2,-271) side-cam · hard day · weigh 1-line · STS/PH/KF · keep ?v=core28 */
+/* TIP_MARK room2-chase-side · rev5 keep · chase side lock 12s · PH/YB/STS/height/KF · keep ?v=core28 */
 const ASSET_BASE = 'assets/';
 const ASSET_FILES = {
   car: 'concept-car.glb',          // 開局黑色跑車：Khronos CarConcept（CC-BY 4.0；已去標誌／減面）；後備 kenney-sedan-sports.glb
@@ -475,9 +475,19 @@ function kwArmElbowSpawnLock(ms) {
   if (typeof kwSpawnElbowGatePose !== 'function') return null;
   const pose = kwSpawnElbowGatePose();
   const bag = (typeof NT !== 'undefined' ? NT : (window.NT = window.NT || {}));
+  const until = (typeof performance !== 'undefined' ? performance.now() : Date.now()) + (ms == null ? 14000 : ms);
   bag._kwaiSpawnLock = {
     x: pose.x, z: pose.z, heading: pose.heading,
-    until: (typeof performance !== 'undefined' ? performance.now() : Date.now()) + (ms == null ? 12000 : ms)
+    until
+  };
+  const hx = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237);
+  const hz = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145);
+  bag._kwaiSideCam = {
+    side: 9.5,
+    lookX: hx + (pose.lookX != null ? pose.lookX : -2),
+    lookZ: hz + (pose.lookZ != null ? pose.lookZ : -271),
+    gateY: 3.4,
+    until
   };
   try { kwPurgeCollidersNearElbowSpawn(); } catch (e) { /* */ }
   return bag._kwaiSpawnLock;
@@ -2784,6 +2794,19 @@ function updateCamera(dt) {
     const camH = Math.max(CAM_DRIVE.height, (car.halfLen || 2.2) >= 4 ? 3.1 : CAM_DRIVE.height);
     desiredPos = car.pos.clone().addScaledVector(f, -back); desiredPos.y = camH;
     desiredLook = car.pos.clone().addScaledVector(f, 3.0); desiredLook.y = 0.6;
+    /* room2：spawn side-cam 每幀——禁 chase overlay 置中櫃切閘牌 */
+    try {
+      const sc = (typeof NT !== 'undefined') ? NT._kwaiSideCam : null;
+      const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+      if (sc && now <= sc.until) {
+        const right = new THREE.Vector3(f.z, 0, -f.x);
+        desiredPos.addScaledVector(right, sc.side || 9.5);
+        desiredLook.set(sc.lookX, sc.gateY != null ? sc.gateY : 3.2, sc.lookZ);
+        desiredPos.y = Math.max(desiredPos.y, 3.6);
+      } else if (sc && now > sc.until) {
+        NT._kwaiSideCam = null;
+      }
+    } catch (eSc) { /* */ }
     fov = 50 + Math.min(9, (car.speedKmh || 0) / 16);
     if ((car.speedKmh || 0) > 90) state.shake = Math.max(state.shake, ((car.speedKmh - 90) / 200) * 0.25);
     pivot = car.pos.clone(); pivot.y = CAR_H + 0.3; // 樞紐在車頂之上 → 線段永不穿過車身
@@ -2821,8 +2844,17 @@ function updateCamera(dt) {
       const yaw = state.camYaw + state.yawOffset;
       const sx = Math.sin(yaw), cz = Math.cos(yaw);
       const h = Math.max((CAM_DRIVE && CAM_DRIVE.height) || 3.2, 3.1);
-      camera.position.x = car.pos.x - sx * minBack;
-      camera.position.z = car.pos.z - cz * minBack;
+      let px = car.pos.x - sx * minBack, pz = car.pos.z - cz * minBack;
+      try {
+        const sc = (typeof NT !== 'undefined') ? NT._kwaiSideCam : null;
+        const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+        if (sc && now <= sc.until) {
+          px += cz * (sc.side || 9.5);
+          pz -= sx * (sc.side || 9.5);
+        }
+      } catch (eMb) { /* */ }
+      camera.position.x = px;
+      camera.position.z = pz;
       camera.position.y = Math.max(camera.position.y, h);
       camState.pos.copy(camera.position);
     }
@@ -17479,7 +17511,7 @@ const KWAI = {
   osmLayout: null,
   /* room2：公屋遠景層 y 55–100；閘 150 m 內零 estate／近閘工廈 */
   estateSkyY: 58,
-  estateGateClearM: 150
+  estateGateClearM: 180
 };
 
 function kwAtlas(mat, col, row, cols, rows) {
@@ -18788,7 +18820,7 @@ function kwEstateSlab(parent, x, z, w, h, d) {
   let skyY = (typeof KWAI !== 'undefined' && KWAI.estateSkyY != null) ? KWAI.estateSkyY : 58;
   skyY = Math.max(55, Math.min(100, skyY));
   // 閘口 150 m 內零 estate——呼叫端應已推遠；雙重保險
-  const clearM = (typeof KWAI !== 'undefined' && KWAI.estateGateClearM != null) ? KWAI.estateGateClearM : 150;
+  const clearM = (typeof KWAI !== 'undefined' && KWAI.estateGateClearM != null) ? KWAI.estateGateClearM : 180;
   const gatePts = [[-20, 38], [0, -((typeof BOUND !== 'undefined' ? BOUND.z : 280) - 18)]];
   for (const [gx, gz] of gatePts) {
     if (Math.hypot(x - gx, z - gz) < clearM) {
@@ -19364,9 +19396,9 @@ function kwBuildDensityD2b() {
   };
 
   // —— 1a. 南閘套件（玩家 hkzone=kwai／manifest 第一眼）——
-  kwSignLabeled(g, -6, 5.2, southZ + 2, 0, 7.2, 1.35, 0x1a3a6a, 'kt_gate_title', COPY.gate); /* readable · above truck */
-  kwSignLabeled(g, -20, 3.4, southZ + 6, 0.1, 2.4, 2.4, 0xf0f0f0, 'kt_sign_height_gate', COPY.h45, { kind: 'height' }); /* ≥1.0 m glyphs */
-  kwSignLabeled(g, 8, 3.4, southZ + 6, -0.1, 2.4, 2.4, 0xf0f0f0, 'kt_sign_height_gate', COPY.h45, { kind: 'height' });
+  kwSignLabeled(g, -14, 5.6, southZ + 1, 0.12, 7.8, 1.5, 0x1a3a6a, 'kt_gate_title', COPY.gate); /* left of LOS · above truck */
+  kwSignLabeled(g, -22, 4.0, southZ + 5, 0.15, 3.0, 3.0, 0xf0f0f0, 'kt_sign_height_gate', COPY.h45, { kind: 'height' }); /* ≥1.2 m glyphs */
+  kwSignLabeled(g, 10, 4.0, southZ + 5, -0.15, 3.0, 3.0, 0xf0f0f0, 'kt_sign_height_gate', COPY.h45, { kind: 'height' });
   kwSignLabeled(g, -4, 2.3, southZ + 12, 0.15, 3.4, 0.95, 0x1a3a6a, 'kt_sign_split', COPY.split);
   kwSignLabeled(g, 10, 3.0, southZ + 12, -0.2, 5.2, 1.4, 0x1a3a6a, 'kt_weigh_hint', COPY.weigh, { kind: 'weigh' });
   kwSignLabeled(g, 12, 2.2, southZ + 22, Math.PI * 0.9, 2.6, 0.85, 0x1a3a6a, 'kt_sign_exit', COPY.exit);
@@ -19379,7 +19411,8 @@ function kwBuildDensityD2b() {
   kwSignLabeled(g, -52, 2.7, 66, Math.PI / 2, 1.5, 1.5, 0xf0f0f0, 'kt_sign_height_bridge', COPY.h42, { kind: 'height' });
   kwSignLabeled(g, -36, 2.9, 108, 0.05, 1.55, 1.55, 0xf0f0f0, 'kt_sign_height_bridge', COPY.h42, { kind: 'height' });
   kwSignLabeled(g, -76, 2.4, 74, Math.PI * 0.15, 3.0, 0.9, 0x1a3a6a, 'kt_sign_to_kf', COPY.kf);
-  kwSignLabeled(g, -4, 4.8, southZ - 90, 0, 6.5, 1.5, 0x1a3a6a, 'kt_sign_to_kf', COPY.kf); /* 肘盡頭遠景 ≥1.2 m */
+  kwSignLabeled(g, -4, 6.5, southZ - 40, Math.PI, 8.0, 1.8, 0x1a3a6a, 'kt_sign_to_kf', COPY.kf); /* 朝 spawn 遠景 */
+  kwSignLabeled(g, 20, 7.0, southZ - 20, Math.PI * 0.95, 7.5, 1.7, 0x1a3a6a, 'kt_sign_to_kf', COPY.kf);
   kwSignLabeled(g, -60, 2.2, 70, -0.4, 2.8, 0.85, 0x1a3a6a, 'kt_sign_to_kf', COPY.kf);
   kwSignLabeled(g, -34, 2.1, 54, Math.PI / 2, 2.8, 0.8, 0x1a3a6a, 'kt_sign_ind_lane', COPY.ind);
   kwSignLabeled(g, -48, 2.1, 72, 0, 2.8, 0.8, 0x1a3a6a, 'kt_sign_ind_lane', COPY.ind);
@@ -19393,6 +19426,10 @@ function kwBuildDensityD2b() {
   if (typeof kwBarrierYB === 'function') {
     kwBarrierYB(g, -14, southZ + 6, Math.PI / 2, 5);   // 南閘柱左
     kwBarrierYB(g, 10, southZ + 6, Math.PI / 2, 5);    // 南閘柱右
+    kwBarrierYB(g, -8, southZ + 4, Math.PI / 2, 6);    // room2：正閘前黃黑
+    kwBarrierYB(g, 4, southZ + 4, Math.PI / 2, 6);
+    kwBarrierYB(g, -18, southZ + 10, 0.2, 5);
+    kwBarrierYB(g, 12, southZ + 10, -0.2, 5);
     kwBarrierYB(g, -24, 36, Math.PI / 2, 5);            // 肘閘柱
     kwBarrierYB(g, -16, 44, 0.25, 5);                   // 肘彎角
     kwBarrierYB(g, -66, 70, 0.4, 4);                    // 迴旋島緣
@@ -21575,6 +21612,11 @@ function kwBuildArtDensifyCore28a() {
       stsN++;
       stats.sts++;
     }
+    /* room2：南閘視線內至少兩座吊臂剪影（spawn 望南閘可瞥 STS） */
+    for (const cz of [-bz + 40, -bz + 90]) {
+      kwProcCrane(g, bx + 22, cz, 1.0, -Math.PI / 2);
+      stats.sts++;
+    }
   }
 
   // —— 2. 岸牆 tile ≥20（24 m 模組；覆蓋 ≥500 m 岸）——
@@ -21873,7 +21915,7 @@ function kwBuildArtDensifyCore28a() {
     stats.housingFinal = countByName(/kt_estate_skyline|public_housing/i);
     // room2：閘前公屋／近閘大廈推遠（世界座標）
     {
-      const clearM = (KWAI.estateGateClearM != null) ? KWAI.estateGateClearM : 150;
+      const clearM = (KWAI.estateGateClearM != null) ? KWAI.estateGateClearM : 180;
       const bzL = typeof BOUND !== 'undefined' ? BOUND.z : 280;
       const gates = [[-20, 38], [0, -bzL + 18], [-6, -bzL + 4]];
       const drop = [];
