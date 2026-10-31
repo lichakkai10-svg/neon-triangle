@@ -319,7 +319,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 /*__EMBEDDED_ASSETS_BEGIN__*/const EMBEDDED_ASSETS = {};/*__EMBEDDED_ASSETS_END__*/
 /* TIP_MARK geometry-fail knife · after b5e0865 · pier-first / defer-kenney · keep ?v=core28 */
 /* TIP_MARK paint-fail · tractor chase back halfLen+5.5 / CAM 12.5 · rear door detail · keep ?v=core28 */
-/* TIP_MARK room2-rev6b · (36,-222) · sideCam 45s freezeYaw · keep ?v=core28 */
+/* TIP_MARK room2-rev6c · height↑ clear weigh · sideCam 90s hardHold · keep ?v=core28 */
 const ASSET_BASE = 'assets/';
 const ASSET_FILES = {
   car: 'concept-car.glb',          // 開局黑色跑車：Khronos CarConcept（CC-BY 4.0；已去標誌／減面）；後備 kenney-sedan-sports.glb
@@ -475,9 +475,9 @@ function kwArmElbowSpawnLock(ms) {
   if (typeof kwSpawnElbowGatePose !== 'function') return null;
   const pose = kwSpawnElbowGatePose();
   const bag = (typeof NT !== 'undefined' ? NT : (window.NT = window.NT || {}));
-  /* room2：側偏至少 45s（QA ~8s 後置中）；ms 只影響 spawn 位鎖 */
+  /* room2-rev6c：側偏至少 90s；ms 只影響 spawn 位鎖；禁開場後彈返置中 */
   const untilPos = (typeof performance !== 'undefined' ? performance.now() : Date.now()) + (ms == null ? 14000 : ms);
-  const untilCam = (typeof performance !== 'undefined' ? performance.now() : Date.now()) + Math.max(45000, ms == null ? 45000 : ms);
+  const untilCam = (typeof performance !== 'undefined' ? performance.now() : Date.now()) + Math.max(90000, ms == null ? 90000 : ms);
   bag._kwaiSpawnLock = {
     x: pose.x, z: pose.z, heading: pose.heading,
     until: untilPos
@@ -485,7 +485,7 @@ function kwArmElbowSpawnLock(ms) {
   const hx = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237);
   const hz = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145);
   bag._kwaiSideCam = {
-    side: 14,
+    side: 16,
     lookX: hx + (pose.lookX != null ? pose.lookX : -2),
     lookZ: hz + (pose.lookZ != null ? pose.lookZ : -271),
     gateY: 3.6,
@@ -521,8 +521,8 @@ function kwSnapTractorChaseCam() {
   let yaw = car.heading || 0;
   try { if (typeof state !== 'undefined' && state.camYaw != null) yaw = state.camYaw + (state.yawOffset || 0); } catch (e) { /* */ }
   const sx = Math.sin(yaw), cz = Math.cos(yaw);
-  /* room2：側移 cam，視線繞過拖頭／櫃睇閘牌（禁正中擋「戲仿）」） */
-  const side = 8.5;
+  /* room2-rev6c：側移同 _kwaiSideCam（禁正中擋「戲仿）」） */
+  const side = 16;
   const px = car.pos.x - sx * back + cz * side;
   const pz = car.pos.z - cz * back - sx * side;
   let lx = car.pos.x + sx * 18, lz = car.pos.z + cz * 18;
@@ -2775,7 +2775,14 @@ function updateCamera(dt) {
     state.camPitch = clamp(state.camPitch - input.lookDY * sens * (state.aimT > 0.5 ? 0.6 : 1), -0.6, 0.75);
   } else {
     state.yawOffset = clamp(state.yawOffset - input.lookDX * sens, -2.6, 2.6);
-    if (lookId === null) state.yawOffset = damp(state.yawOffset, 0, 1.6, dt); // 放手後慢慢回正
+    let sideHold = false;
+    try {
+      const scY = (typeof NT !== 'undefined') ? NT._kwaiSideCam : null;
+      const nowY = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+      sideHold = !!(scY && nowY <= scY.until);
+    } catch (eY) { /* */ }
+    if (sideHold) { state.yawOffset = 0; }
+    else if (lookId === null) state.yawOffset = damp(state.yawOffset, 0, 1.6, dt); // 放手後慢慢回正
   }
   input.lookDX = input.lookDY = 0;
   state.recoil = damp(state.recoil, 0, 12, dt);
@@ -2797,7 +2804,7 @@ function updateCamera(dt) {
     const camH = Math.max(CAM_DRIVE.height, (car.halfLen || 2.2) >= 4 ? 3.1 : CAM_DRIVE.height);
     desiredPos = car.pos.clone().addScaledVector(f, -back); desiredPos.y = camH;
     desiredLook = car.pos.clone().addScaledVector(f, 3.0); desiredLook.y = 0.6;
-        /* room2：spawn side-cam 每幀≥45s——凍 yaw、硬跟側位，禁 ~8s 後置中 */
+        /* room2-rev6c：spawn side-cam 每幀≥90s——凍 yaw、硬鎖側位（跳過 collide），禁彈返置中 */
     try {
       const sc = (typeof NT !== 'undefined') ? NT._kwaiSideCam : null;
       const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
@@ -2808,10 +2815,10 @@ function updateCamera(dt) {
           const sx2 = Math.sin(sc.heading), cz2 = Math.cos(sc.heading);
           f.set(sx2, 0, cz2);
           const back2 = Math.max(CAM_DRIVE.back, (car.halfLen || 2.2) + 5.5);
-          desiredPos.set(car.pos.x - sx2 * back2 + cz2 * (sc.side || 14), Math.max(camH, 3.8), car.pos.z - cz2 * back2 - sx2 * (sc.side || 14));
+          desiredPos.set(car.pos.x - sx2 * back2 + cz2 * (sc.side || 16), Math.max(camH, 3.8), car.pos.z - cz2 * back2 - sx2 * (sc.side || 16));
         } else {
           const right = new THREE.Vector3(f.z, 0, -f.x);
-          desiredPos.addScaledVector(right, sc.side || 14);
+          desiredPos.addScaledVector(right, sc.side || 16);
           desiredPos.y = Math.max(desiredPos.y, 3.8);
         }
         desiredLook.set(sc.lookX, sc.gateY != null ? sc.gateY : 3.6, sc.lookZ);
@@ -2851,26 +2858,39 @@ function updateCamera(dt) {
   camState.pos.z = damp(camState.pos.z, desiredPos.z, aimSnap, dt);
   camState.look.lerp(desiredLook, 1 - Math.exp(-lookSnap * dt));
   camState.fov = damp(camState.fov, fov, 10, dt);
-  const safePos = cameraCollide(pivot, camState.pos, includeCar, minDist);
-  camera.position.copy(safePos);
-  /* rev3 paint：拖頭／貨櫃禁 cameraCollide 拉入 halfLen+5.5（QA cam≈4.75 金黃櫃內） */
+  /* room2-rev6c：側偏活躍時跳過 collide（禁拉返置中）；否則照舊 */
+  let _kwSideHold = false;
+  try {
+    const sc0 = (typeof NT !== 'undefined') ? NT._kwaiSideCam : null;
+    const now0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    _kwSideHold = !!(sc0 && now0 <= sc0.until && state.mode === 'drive');
+  } catch (eSh) { /* */ }
+  if (_kwSideHold) {
+    camera.position.copy(camState.pos);
+  } else {
+    const safePos = cameraCollide(pivot, camState.pos, includeCar, minDist);
+    camera.position.copy(safePos);
+  }
+  /* rev3 paint：拖頭／貨櫃禁 cameraCollide 拉入 halfLen+5.5；rev6c：側偏時每幀硬鎖側位 */
   if (state.mode === 'drive' && (car.halfLen || 0) >= 4) {
     const minBack = Math.max((CAM_DRIVE && CAM_DRIVE.back) || 12.5, (car.halfLen || 4.6) + 5.5);
     const dx = camera.position.x - car.pos.x, dz = camera.position.z - car.pos.z;
     const d = Math.hypot(dx, dz);
-    if (d < minBack - 0.05) {
-      const yaw = state.camYaw + state.yawOffset;
+    let sc = null, now = 0;
+    try {
+      sc = (typeof NT !== 'undefined') ? NT._kwaiSideCam : null;
+      now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    } catch (eSc0) { /* */ }
+    const sideOn = !!(sc && now <= sc.until);
+    if (sideOn || d < minBack - 0.05) {
+      const yaw = sideOn && sc.heading != null ? sc.heading : (state.camYaw + state.yawOffset);
       const sx = Math.sin(yaw), cz = Math.cos(yaw);
-      const h = Math.max((CAM_DRIVE && CAM_DRIVE.height) || 3.2, 3.1);
+      const h = Math.max((CAM_DRIVE && CAM_DRIVE.height) || 3.2, sideOn ? 3.8 : 3.1);
       let px = car.pos.x - sx * minBack, pz = car.pos.z - cz * minBack;
-      try {
-        const sc = (typeof NT !== 'undefined') ? NT._kwaiSideCam : null;
-        const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
-        if (sc && now <= sc.until) {
-          px += cz * (sc.side || 14);
-          pz -= sx * (sc.side || 14);
-        }
-      } catch (eMb) { /* */ }
+      if (sideOn) {
+        px += cz * (sc.side || 16);
+        pz -= sx * (sc.side || 16);
+      }
       camera.position.x = px;
       camera.position.z = pz;
       camera.position.y = Math.max(camera.position.y, h);
@@ -19417,10 +19437,11 @@ function kwBuildDensityD2b() {
 
   // —— 1a. 南閘套件（玩家 hkzone=kwai／manifest 第一眼）——
   kwSignLabeled(g, -14, 5.6, southZ + 1, 0.12, 7.8, 1.5, 0x1a3a6a, 'kt_gate_title', COPY.gate); /* left of LOS · above truck */
-  kwSignLabeled(g, -22, 4.0, southZ + 5, 0.15, 3.0, 3.0, 0xf0f0f0, 'kt_sign_height_gate', COPY.h45, { kind: 'height' }); /* ≥1.2 m glyphs */
-  kwSignLabeled(g, 10, 4.0, southZ + 5, -0.15, 3.0, 3.0, 0xf0f0f0, 'kt_sign_height_gate', COPY.h45, { kind: 'height' });
+  /* room2-rev6c：限高抬高＋前移＋X 離地磅藍牌，禁米字被擋 */
+  kwSignLabeled(g, -26, 7.2, southZ + 1, 0.15, 3.2, 3.2, 0xf0f0f0, 'kt_sign_height_gate', COPY.h45, { kind: 'height' }); /* ≥1.2 m glyphs · above weigh */
+  kwSignLabeled(g, 20, 7.2, southZ + 1, -0.15, 3.2, 3.2, 0xf0f0f0, 'kt_sign_height_gate', COPY.h45, { kind: 'height' });
   kwSignLabeled(g, -4, 2.3, southZ + 12, 0.15, 3.4, 0.95, 0x1a3a6a, 'kt_sign_split', COPY.split);
-  kwSignLabeled(g, 10, 3.0, southZ + 12, -0.2, 5.2, 1.4, 0x1a3a6a, 'kt_weigh_hint', COPY.weigh, { kind: 'weigh' });
+  kwSignLabeled(g, 8, 2.6, southZ + 16, -0.2, 5.0, 1.3, 0x1a3a6a, 'kt_weigh_hint', COPY.weigh, { kind: 'weigh' }); /* 後移降高 · 清限高米字 */
   kwSignLabeled(g, 12, 2.2, southZ + 22, Math.PI * 0.9, 2.6, 0.85, 0x1a3a6a, 'kt_sign_exit', COPY.exit);
 
   // —— 1b. 肘閘／工廈側（到達肘後仍見）——
@@ -21597,8 +21618,11 @@ function kwEnsureSouthWeighSign() {
     const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280);
     const southZ = -bz + 18;
     const copy = '地磅 · 跟指示停';
-    kwSignLabeled(root, 14, 3.6, southZ + 8, -0.25, 6.2, 1.55, 0x1a3a6a, 'kt_weigh_hint', copy, { kind: 'weigh' });
-    kwSignLabeled(root, -16, 3.4, southZ + 10, 0.2, 5.8, 1.45, 0x1a3a6a, 'kt_weigh_hint', copy, { kind: 'weigh' });
+    /* rev6c：地磅後移降高；限高抬高前移清米字 */
+    kwSignLabeled(root, 10, 2.7, southZ + 16, -0.25, 5.4, 1.35, 0x1a3a6a, 'kt_weigh_hint', copy, { kind: 'weigh' });
+    kwSignLabeled(root, -14, 2.6, southZ + 18, 0.2, 5.2, 1.3, 0x1a3a6a, 'kt_weigh_hint', copy, { kind: 'weigh' });
+    kwSignLabeled(root, -26, 7.2, southZ + 1, 0.15, 3.2, 3.2, 0xf0f0f0, 'kt_sign_height_gate', '限高 4.5 m', { kind: 'height' });
+    kwSignLabeled(root, 20, 7.2, southZ + 1, -0.15, 3.2, 3.2, 0xf0f0f0, 'kt_sign_height_gate', '限高 4.5 m', { kind: 'height' });
     if (typeof KWAI !== 'undefined') KWAI._southWeigh = true;
   } catch (e) { /* */ }
 }
@@ -21929,7 +21953,8 @@ function kwBuildArtDensifyCore28a() {
       kwPortMount(g, proto, -52, 66, Math.PI / 2, 'kt_sign_height_mesh');
       // mesh 無字 → 代碼 overlay（限高 4.5／4.2）
       if (typeof kwSignLabeled === 'function') {
-        kwSignLabeled(g, -18, 2.55, -bzL + 26, 0.1, 1.7, 1.7, 0xf0f0f0, 'kt_sign_height_gate', '限高 4.5 m', { kind: 'height' });
+        kwSignLabeled(g, -26, 7.0, -bzL + 19, 0.1, 3.0, 3.0, 0xf0f0f0, 'kt_sign_height_gate', '限高 4.5 m', { kind: 'height' });
+        kwSignLabeled(g, 20, 7.0, -bzL + 19, -0.1, 3.0, 3.0, 0xf0f0f0, 'kt_sign_height_gate', '限高 4.5 m', { kind: 'height' });
         kwSignLabeled(g, -28, 2.55, 42, 0.1, 1.7, 1.7, 0xf0f0f0, 'kt_sign_height_gate', '限高 4.5 m', { kind: 'height' });
         kwSignLabeled(g, -52, 2.7, 66, Math.PI / 2, 1.5, 1.5, 0xf0f0f0, 'kt_sign_height_bridge', '限高 4.2 m', { kind: 'height' });
       }
