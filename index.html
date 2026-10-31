@@ -319,7 +319,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 /*__EMBEDDED_ASSETS_BEGIN__*/const EMBEDDED_ASSETS = {};/*__EMBEDDED_ASSETS_END__*/
 /* TIP_MARK geometry-fail knife · after b5e0865 · pier-first / defer-kenney · keep ?v=core28 */
 /* TIP_MARK paint-fail · tractor chase back halfLen+5.5 / CAM 12.5 · rear door detail · keep ?v=core28 */
-/* TIP_MARK d2b-readable · rev4 (16,-232)→(-2,-271) lateral · gate/height/weigh readable · KF · PH clear · STS · keep ?v=core28 */
+/* TIP_MARK room2-day-los · rev5 (32,-236) side-cam · force day/no rain · weigh 1-line · STS/PH/KF · keep ?v=core28 */
 const ASSET_BASE = 'assets/';
 const ASSET_FILES = {
   car: 'concept-car.glb',          // 開局黑色跑車：Khronos CarConcept（CC-BY 4.0；已去標誌／減面）；後備 kenney-sedan-sports.glb
@@ -423,17 +423,17 @@ const KWAI_GEO = {
   laiKingX: -1095, laiKingZ: -1101
 };
 function kwWorld(lx, lz) { return { x: KWAI_GEO.hubX + lx, z: KWAI_GEO.hubZ + lz }; }
-/** spawn-first-frame：對齊 data/kwai-spawn-first-frame-level.json rev4
- *  hub_local (16,-232) 望南閘側 (-2,-271)；偏側 ≥3 m 留閘牌視線；world = elbow hub + local（1:1 米）
+/** spawn-first-frame：對齊 data/kwai-spawn-first-frame-level.json rev5
+ *  hub_local (32,-236) 望南閘側 (-8,-271)；偏側＋側 cam 留閘牌；world = elbow hub + local（1:1 米）
  *  Origin = KWAI_GEO.hub (−1237,−145) 肘 —— 禁 geographic hub (−1390,332)／禁 ×1.5
- *  assert world ≈ (−1221,−377) tol≤2；廢 OSM／arcade 東推 Δx≈53 */
+ *  assert world ≈ (−1205,−381) tol≤2；廢 OSM／arcade 東推 Δx≈53 */
 function kwSpawnElbowGatePose() {
   const hx = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237);
   const hz = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145);
   const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280);
-  /* rev4：偏側 ≥3 m 唔擋閘牌；hub_local (16,-232)→(-2,-271)；world=肘+local 禁×1.5 */
-  const lx = 16, lz = -232;
-  const lookX = -2, lookZ = -bz + 9; /* ≈ (-2,-271) 南閘側 */
+  /* rev5 room2：更偏側；hub_local (32,-236)→(-8,-271)；world=肘+local 禁×1.5 */
+  const lx = 32, lz = -236;
+  const lookX = -8, lookZ = -bz + 9; /* ≈ (-8,-271) 南閘側，拖頭唔正中擋牌 */
   const heading = Math.atan2(lookX - lx, lookZ - lz);
   return { x: hx + lx, z: hz + lz, heading, lx, lz, lookX, lookZ };
 }
@@ -504,21 +504,34 @@ function kwEnforceElbowSpawnLock() {
 function kwSnapTractorChaseCam() {
   if (typeof car === 'undefined' || !car || !car.pos) return;
   const back = Math.max((typeof CAM_DRIVE !== 'undefined' ? CAM_DRIVE.back : 12.5) || 12.5, (car.halfLen || 4.6) + 5.5);
-  const h = Math.max((typeof CAM_DRIVE !== 'undefined' ? CAM_DRIVE.height : 3.2) || 3.2, 3.1);
+  const h = Math.max((typeof CAM_DRIVE !== 'undefined' ? CAM_DRIVE.height : 3.2) || 3.2, 3.4);
   let yaw = car.heading || 0;
   try { if (typeof state !== 'undefined' && state.camYaw != null) yaw = state.camYaw + (state.yawOffset || 0); } catch (e) { /* */ }
   const sx = Math.sin(yaw), cz = Math.cos(yaw);
-  const px = car.pos.x - sx * back, pz = car.pos.z - cz * back;
+  /* room2：側移 cam，視線繞過拖頭／櫃睇閘牌（禁正中擋「戲仿）」） */
+  const side = 8.5;
+  const px = car.pos.x - sx * back + cz * side;
+  const pz = car.pos.z - cz * back - sx * side;
+  let lx = car.pos.x + sx * 18, lz = car.pos.z + cz * 18;
+  try {
+    if (typeof kwSpawnElbowGatePose === 'function') {
+      const pose = kwSpawnElbowGatePose();
+      const hx = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237);
+      const hz = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145);
+      lx = hx + (pose.lookX != null ? pose.lookX : -8);
+      lz = hz + (pose.lookZ != null ? pose.lookZ : -271);
+    }
+  } catch (eL) { /* */ }
   try {
     if (typeof camState !== 'undefined') {
       camState.pos.set(px, h, pz);
-      camState.look.set(car.pos.x + sx * 3, 0.6, car.pos.z + cz * 3);
+      camState.look.set(lx, 2.8, lz);
       camState.fov = 50;
       camState.init = true;
     }
     if (typeof camera !== 'undefined') {
       camera.position.set(px, h, pz);
-      camera.lookAt(car.pos.x + sx * 3, 0.6, car.pos.z + cz * 3);
+      camera.lookAt(lx, 2.8, lz);
       camera.updateMatrixWorld();
     }
   } catch (e2) { /* */ }
@@ -527,7 +540,30 @@ function kwForceKwaiDayUnlessNight() {
   try {
     if (typeof URLQ !== 'undefined' && URLQ.has && URLQ.has('night')) return;
     if (typeof TOD !== 'undefined' && TOD._manual) return;
+    try {
+      if (typeof STORM !== 'undefined' && STORM.on && typeof stormSet === 'function') stormSet(0);
+    } catch (eS) { /* */ }
     if (typeof setTimeOfDay === 'function') setTimeOfDay('day', { silent: true });
+    try {
+      if (typeof rain !== 'undefined') rain.visible = false;
+      if (typeof splash !== 'undefined') splash.visible = false;
+    } catch (eR) { /* */ }
+    /* 延遲再鎖日：對抗 boot 預設 night／任務後 storm 搶夜 */
+    const bag = (typeof NT !== 'undefined' ? NT : (window.NT = window.NT || {}));
+    if (!bag._kwaiDayReassert) {
+      bag._kwaiDayReassert = true;
+      [400, 1500, 4000].forEach((ms) => {
+        setTimeout(() => {
+          try {
+            if (typeof URLQ !== 'undefined' && URLQ.has && URLQ.has('night')) return;
+            if (typeof TOD !== 'undefined' && TOD._manual) return;
+            if (typeof TOD !== 'undefined' && TOD.mode !== 'day' && typeof setTimeOfDay === 'function') setTimeOfDay('day', { silent: true });
+            if (typeof rain !== 'undefined') rain.visible = false;
+            if (typeof splash !== 'undefined') splash.visible = false;
+          } catch (e2) { /* */ }
+        }, ms);
+      });
+    }
   } catch (e) { /* */ }
 }
 function kwHubCol(cx, cz, hw, hd, h) {
@@ -10265,7 +10301,7 @@ HKM.go = function (id) {
     const hx = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237;
     const hz = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145;
     if (_pose) { x = _pose.x; z = _pose.z; h = _pose.heading; }
-    else { const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280); x = hx - 8; z = hz - 228; h = Math.atan2(0 - (-8), (-bz + 9) - (-228)); }
+    else { const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280); x = hx + 32; z = hz - 236; h = Math.atan2(-8 - 32, (-bz + 9) - (-236)); }
     try {
       if (typeof NT !== 'undefined') {
         NT._c27fLastGoId = 'kwai_tsing';
@@ -10274,6 +10310,8 @@ HKM.go = function (id) {
       }
     } catch (e) { /* */ }
     try { if (typeof kwForceKwaiDayUnlessNight === 'function') kwForceKwaiDayUnlessNight(); } catch (eD) { /* */ }
+    try { if (typeof kwBuildArtDensifyCore28a === 'function') kwBuildArtDensifyCore28a(); } catch (eDen) { /* */ }
+    try { if (typeof kwBuildDensityD2b === 'function') kwBuildDensityD2b(); } catch (eD2) { /* */ }
     // device-fail：開局主車＝拖頭／貨櫃車（唔用廂型當主）
     try {
       if (typeof kwApplySpawnTractorTruck === 'function' && !HKM._kwaiFleetSwapped) {
@@ -14952,7 +14990,16 @@ Object.assign(window.NT, {
  *  · 掛 HOOKS.tod(mode) 畀美術日／夜材質板
  * ========================================================================= */
 const TOD = {
-  mode: 'night',
+  mode: (function () {
+    try {
+      const q = new URLSearchParams(location.search);
+      if (q.has('night')) return 'night';
+      if (q.has('day')) return 'day';
+      const z = String(q.get('hkzone') || '').toLowerCase();
+      if (z === 'kwai' || z === 'kwai_tsing' || z === 'kt' || z === 'pier' || z === 'yard') return 'day';
+    } catch (e) { /* */ }
+    return 'night';
+  })(),
   sun: null,
   listeners: [],
   night: {
@@ -15808,7 +15855,14 @@ function stormSet(level) {
   // level: 0 | 8 | 10 | 'black'
   const on = !!level;
   if (on && TOD && TOD.mode === 'day' && typeof setTimeOfDay === 'function') {
-    setTimeOfDay('night', { silent: true }); // 暴雨夜
+    let kwaiDay = false;
+    try {
+      const z = (typeof URLQ !== 'undefined' && URLQ.get) ? String(URLQ.get('hkzone') || '').toLowerCase() : '';
+      kwaiDay = (z === 'kwai' || z === 'kwai_tsing' || z === 'kt' || z === 'pier' || z === 'yard')
+        && !(typeof URLQ !== 'undefined' && URLQ.has && URLQ.has('night'))
+        && !(typeof TOD !== 'undefined' && TOD._manual);
+    } catch (eK) { /* */ }
+    if (!kwaiDay) setTimeOfDay('night', { silent: true }); // 暴雨夜（kwai 預設日景例外）
   }
   STORM.on = on;
   STORM.level = level || 0;
@@ -17423,9 +17477,9 @@ const KWAI = {
   intMat: {},
   facTex: {},
   osmLayout: null,
-  /* device-fail knife：公屋遠景層 y 55–100；閘 80 m 內零 estate */
+  /* room2：公屋遠景層 y 55–100；閘 150 m 內零 estate／近閘工廈 */
   estateSkyY: 58,
-  estateGateClearM: 80
+  estateGateClearM: 150
 };
 
 function kwAtlas(mat, col, row, cols, rows) {
@@ -18733,8 +18787,8 @@ function kwEstateSlab(parent, x, z, w, h, d) {
   // 遠景層 y 55–100（art lock）；唔同閘口地面同層
   let skyY = (typeof KWAI !== 'undefined' && KWAI.estateSkyY != null) ? KWAI.estateSkyY : 58;
   skyY = Math.max(55, Math.min(100, skyY));
-  // 閘口 80 m 內零 estate——呼叫端應已推遠；雙重保險
-  const clearM = (typeof KWAI !== 'undefined' && KWAI.estateGateClearM != null) ? KWAI.estateGateClearM : 80;
+  // 閘口 150 m 內零 estate——呼叫端應已推遠；雙重保險
+  const clearM = (typeof KWAI !== 'undefined' && KWAI.estateGateClearM != null) ? KWAI.estateGateClearM : 150;
   const gatePts = [[-20, 38], [0, -((typeof BOUND !== 'undefined' ? BOUND.z : 280) - 18)]];
   for (const [gx, gz] of gatePts) {
     if (Math.hypot(x - gx, z - gz) < clearM) {
@@ -19331,9 +19385,9 @@ function kwBuildDensityD2b() {
   kwSignLabeled(g, -48, 2.1, 72, 0, 2.8, 0.8, 0x1a3a6a, 'kt_sign_ind_lane', COPY.ind);
   kwSignLabeled(g, -40, 2.1, 88, Math.PI * 0.9, 2.8, 0.8, 0x1a3a6a, 'kt_sign_ind_lane', COPY.ind);
   kwSignLabeled(g, -58, 2.0, 92, 0.3, 3.0, 0.85, 0xc8a000, 'kt_sign_works', COPY.works);
-  kwSignLabeled(g, -6.5, 2.6, 34.5, -0.2, 4.0, 1.05, 0x1a3a6a, 'kt_weigh_hint', COPY.weigh);
+  kwSignLabeled(g, -6.5, 2.6, 34.5, -0.2, 4.0, 1.05, 0x1a3a6a, 'kt_weigh_hint', COPY.weigh, { kind: 'weigh' });
   // device-fail：地磅旁再加一牌（跟 weighbridge 世界位；字高≥0.8 m）
-  kwSignLabeled(g, -12, 2.8, 37, 0.15, 4.4, 1.15, 0x1a3a6a, 'kt_weigh_hint', COPY.weigh);
+  kwSignLabeled(g, -12, 2.8, 37, 0.15, 4.4, 1.15, 0x1a3a6a, 'kt_weigh_hint', COPY.weigh, { kind: 'weigh' });
 
   // —— 2. barrier_yb ≥4 黃黑（南閘柱＋肘＋迴旋；禁白灰頂替）——
   if (typeof kwBarrierYB === 'function') {
@@ -21817,17 +21871,21 @@ function kwBuildArtDensifyCore28a() {
       ? kwCullByName(root, /kt_estate_skyline|public_housing/i, keepPh) : 0;
     stats.indFinal = countByName(/^kt_ind_block/);
     stats.housingFinal = countByName(/kt_estate_skyline|public_housing/i);
-    // device-fail：閘 80 m 內清晒 estate（含舊座標殘留）
+    // room2：閘前公屋／近閘大廈推遠（世界座標）
     {
-      const clearM = (KWAI.estateGateClearM != null) ? KWAI.estateGateClearM : 110; /* room2: 閘前公屋推遠 */
+      const clearM = (KWAI.estateGateClearM != null) ? KWAI.estateGateClearM : 150;
       const bzL = typeof BOUND !== 'undefined' ? BOUND.z : 280;
-      const gates = [[-20, 38], [0, -bzL + 18]];
+      const gates = [[-20, 38], [0, -bzL + 18], [-6, -bzL + 4]];
       const drop = [];
+      const _wp = new THREE.Vector3();
       root.traverse((o) => {
-        if (!o || !o.name || !/kt_estate_skyline|public_housing/i.test(o.name)) return;
-        const p = o.position;
+        if (!o || !o.name || !/kt_estate_skyline|public_housing|kt_ind_block/i.test(o.name)) return;
+        o.getWorldPosition(_wp);
+        const hx = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : 0);
+        const hz = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : 0);
+        const lx = _wp.x - hx, lz = _wp.z - hz;
         for (const [gx, gz] of gates) {
-          if (Math.hypot(p.x - gx, p.z - gz) < clearM) { drop.push(o); break; }
+          if (Math.hypot(lx - gx, lz - gz) < clearM) { drop.push(o); break; }
         }
       });
       for (const o of drop) { if (o.parent) o.parent.remove(o); }
@@ -26724,7 +26782,7 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
             const hx = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237;
             const hz = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145;
             if (_pose) { tx = _pose.x; tz = _pose.z; }
-            else { tx = hx - 8; tz = hz - 228; }
+            else { tx = hx + 32; tz = hz - 236; }
             try {
               NT._c27fLastGoId = 'kwai_tsing';
               const free = (typeof URLQ !== 'undefined' && URLQ.has) ? URLQ.has('free') : false;
@@ -26759,7 +26817,7 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
             // rev3：鎖死肘 hub world；禁 c28SnapRoad／OSM 區心／地理 hub (−1390,332)
             px = tx; pz = tz;
             const _poseY = (typeof kwSpawnElbowGatePose === 'function') ? kwSpawnElbowGatePose() : null;
-            yaw = _poseY ? _poseY.heading : Math.atan2(8, -43);
+            yaw = _poseY ? _poseY.heading : Math.atan2(-40, -35);
             if (_poseY) { px = _poseY.x; pz = _poseY.z; }
             try { if (typeof putPlayerInCar === 'function') putPlayerInCar(); } catch (eCar) { /* */ }
           } else if (s2) {
