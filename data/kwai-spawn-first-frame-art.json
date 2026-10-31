@@ -1,7 +1,7 @@
 {
   "id": "kwai_spawn_first_frame_art",
-  "updated": "2026-10-31T11:22:26+08:00",
-  "after_tip": "da0c5c6",
+  "updated": "2026-10-31T11:31:04+08:00",
+  "after_tip": "15344c0",
   "no_bump_v": true,
   "device_fail": {
     "seen": "night black / day gray wall corner; elbow/gate only after turn",
@@ -28,7 +28,20 @@
         "gate_parody_or_path_to_gate"
       ],
       "clear_forward_m": 25,
-      "no_wall_within_cone_deg": 40
+      "no_wall_within_cone_deg": 40,
+      "lateral_clear_m": 8,
+      "ban_shells_in_forward_cone": true,
+      "prefer_pos": "elbow corridor asphalt, not against ind/warehouse shell",
+      "ray_forward_m": 25,
+      "ray_must_hit": [
+        "gate_or_open_elbow",
+        "sky_or_road"
+      ],
+      "ray_ban_hit_first": [
+        "ind_wall",
+        "warehouse_shell",
+        "ph_shell"
+      ]
     },
     "lighting": {
       "hkzone_kwai_open": "day default for first look unless ?night",
@@ -46,6 +59,21 @@
     "cam": {
       "keep": "tractor back≥halfLen+5.5",
       "yaw": "toward GATE / elbow, not yard long axis, not wall normal"
+    },
+    "spawn_nudge": {
+      "note": "heading 對數唔等於畫面開闊——要側移離開最近牆≥8 m，再對閘；rev2 移近南閘開闊瀝青",
+      "fail_pos_15344c0": [
+        -1251,
+        -240
+      ],
+      "rev2_hub_local": [
+        -8.0,
+        -228.0
+      ],
+      "rev2_world": [
+        -1245.0,
+        -373.0
+      ]
     }
   },
   "qa_pull": [
@@ -53,5 +81,40 @@
     "日間可讀（除非 ?night）",
     "≤1 轉見 STS／D2b 套",
     "cam clear 維持"
-  ]
+  ],
+  "qa_fail_tip": "15344c0",
+  "qa_fail": {
+    "pose_ok": true,
+    "pos": [
+      -1251,
+      -240
+    ],
+    "heading": 3.06221,
+    "frame0": "青绿牆角填滿",
+    "need": "move spawn into clear elbow corridor OR yaw clear of shells"
+  },
+  "level_lock": {
+    "id": "kwai-spawn-first-frame-level",
+    "hub_local_spawn": [
+      -8.0,
+      -228.0
+    ],
+    "look_south_gate_local": [
+      0.0,
+      -271.0
+    ],
+    "replaces": [
+      [
+        -18,
+        14
+      ],
+      [
+        -14,
+        -95
+      ]
+    ],
+    "art_ok": true,
+    "note": "美術跟關卡 rev2：開闊望南閘；禁 (-14,-95) 牆角／cam 塞殼"
+  },
+  "coder_tip": "rev2 hub_local (-8,-228)→(0,-271); world≈(-1245,-373); clear≈44m; ban (-14,-95) teal shell"
 }

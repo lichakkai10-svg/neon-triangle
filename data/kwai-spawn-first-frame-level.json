@@ -1,52 +1,65 @@
 {
   "id": "kwai_spawn_first_frame_level",
-  "updated": "2026-10-31T11:25:00+08:00",
+  "rev": 2,
+  "updated": "2026-10-31T11:31:04+08:00",
   "aligns_art": "data/kwai-spawn-first-frame-art.json",
-  "after_tip": "da0c5c6",
+  "after_tip": "15344c0",
+  "qa_fail": "15344c0 第一幀仍青綠牆角；(-14,-95)→南閘視線被工廈／倉殼擋",
   "no_bump_v": true,
-  "coord": "hub_local → kwWorld(lx,lz); KWAI_GEO.hub",
+  "coord": "hub_local → kwWorld(lx,lz)",
   "spawn": {
     "hub_local": {
-      "x": -14.0,
-      "z": -95.0
+      "x": -8.0,
+      "z": -228.0
     },
     "look_at_hub_local": {
       "x": 0.0,
       "z": -271.0
     },
-    "heading_rad": 3.06221,
-    "heading_note": "atan2(Δx,Δz) 同現有 placeCar",
+    "heading_rad": 2.95765,
+    "clear_forward_m": 43.7,
     "vehicle": "tractor_container",
-    "cam_clear": "halfLen+5.5"
+    "cam_clear": "halfLen+5.5",
+    "note_zh": "貼近南閘北側開闊瀝青；第一幀要見閘牌／黃黑／限高輪廓，唔係倉牆"
   },
-  "locks": [
-    "第一幀面向南閘／肘入場（look_at 南閘 GATE_POS hub-local）",
-    "前方 clear ≥25 m（spawn→gate ≈ 177 m）",
-    "40° 錐內禁牆／倉殼填屏；spawn 左右 ≥8 m 無 colliders 擋視線",
-    "禁對準櫃堆 ±Z 長軸；禁貼牆轉角",
-    "hkzone=kwai 預設日景（除非 ?night）",
-    "≤1 轉（yaw±90°）可見 STS 岸 或 D2b 閘套"
-  ],
-  "replace_legacy": {
-    "old_hub_local": {
-      "x": -18,
-      "z": 14
-    },
-    "old_look": {
-      "x": -22,
-      "z": 38
-    },
-    "why_fail": "對準堆場北向／轉角，第一眼倉牆"
+  "clear_cone": {
+    "half_angle_deg": 40,
+    "forward_m": 30,
+    "ban_props": [
+      "kt_ind_block_*",
+      "indMassing",
+      "warehouse_shell",
+      "green_facade",
+      "alleyBlocker"
+    ],
+    "coder": "spawn 前方 30 m×40° 錐內清／搬開工廈塊；禁青綠牆填屏"
   },
-  "apply_sites": [
-    "MISSIONS.manifest.start placeCar",
-    "HKM hkzone=kwai boot placeCar",
-    "free=1&hkzone=kwai boot"
+  "replace": {
+    "r0": {
+      "hub_local": {
+        "x": -18,
+        "z": 14
+      },
+      "why": "堆場北轉角"
+    },
+    "r1_15344c0": {
+      "hub_local": {
+        "x": -14,
+        "z": -95
+      },
+      "why": "距離閘遠，視線中段青綠牆角／chase cam 塞殼"
+    }
+  },
+  "apply": [
+    "kwSpawnElbowGatePose()",
+    "manifest.start",
+    "hkzone=kwai",
+    "free=1&hkzone=kwai"
   ],
   "qa": [
-    "frame0 見閘向／彎廊瀝青，唔係貼牆轉角",
-    "日景可讀",
-    "拖頭 cam clear",
-    "≤1 轉 STS 或 D2b"
+    "frame0 見南閘／D2b 輪廓或開闊瀝青通往閘，唔係青綠牆角",
+    "前方≥25 m 開闊",
+    "日景",
+    "≤1 轉 STS"
   ]
 }

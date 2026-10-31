@@ -1,19 +1,19 @@
-# Kwai spawn 第一幀 · 關卡對齊（跟美術鎖）
+# Kwai spawn 第一幀 · 關卡 rev2（`15344c0` QA FAIL）
 
-對齊 `kwai-spawn-first-frame-art` · tip after `da0c5c6` · **唔升 ?v=**
+**唔升 ?v=** · 對齊美術鎖
 
-## 鎖位（hub_local）
+## FAIL
+tip `15344c0` 用 (-14,-95)→南閘，真機仍**青綠牆角填屏**。
+
+## rev2 鎖位（hub_local）
 | | lx | lz |
 |---|---|---|
-| **spawn** | **-14** | **-95** |
-| **look_at（南閘）** | **0** | **-271**（`−BOUND.z+9`） |
+| **spawn** | **-8.0** | **-228.0** |
+| **look_at 南閘** | **0** | **-271** |
 
-- `heading = atan2(Δx, Δz)` ≈ 朝南閘
-- 車：拖頭／貨櫃；cam clear halfLen+5.5
-- 前方開闊 ≥25 m；40° 錐禁牆填屏
-- 取代舊 `(-18, 14)`→`(-22, 38)`（堆場北向轉角 FAIL）
+- 距閘 ≈ **44 m**（≥25；貼閘開闊瀝青）
+- `heading = atan2(Δx,Δz)` ≈ 2.9576
+- 前方 30 m×40° 錐：**清／搬** `kt_ind_block`／工廈殼／alleyBlocker
+- 廢止 (-14,-95)
 
-## 套用
-`manifest.start`、`hkzone=kwai`、`?free=1&hkzone=kwai` 三處 `placeCar` 同一組。
-
-詳 JSON：`data/kwai-spawn-first-frame-level.json`
+改 `kwSpawnElbowGatePose()` 內 lx/lz 即可。

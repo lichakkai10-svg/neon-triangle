@@ -319,7 +319,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 /*__EMBEDDED_ASSETS_BEGIN__*/const EMBEDDED_ASSETS = {};/*__EMBEDDED_ASSETS_END__*/
 /* TIP_MARK geometry-fail knife · after b5e0865 · pier-first / defer-kenney · keep ?v=core28 */
 /* TIP_MARK paint-fail · tractor chase back halfLen+5.5 / CAM 12.5 · rear door detail · keep ?v=core28 */
-/* TIP_MARK spawn-first-frame · level (-14,-95)→南閘, day default kwai, ban c28snap yard yaw=0 · keep ?v=core28 */
+/* TIP_MARK spawn-first-frame · level rev2 (-8,-228)→南閘 clear≥25m, lateral off teal shell, day kwai · keep ?v=core28 */
 const ASSET_BASE = 'assets/';
 const ASSET_FILES = {
   car: 'concept-car.glb',          // 開局黑色跑車：Khronos CarConcept（CC-BY 4.0；已去標誌／減面）；後備 kenney-sedan-sports.glb
@@ -423,14 +423,15 @@ const KWAI_GEO = {
   laiKingX: -1095, laiKingZ: -1101
 };
 function kwWorld(lx, lz) { return { x: KWAI_GEO.hubX + lx, z: KWAI_GEO.hubZ + lz }; }
-/** spawn-first-frame：對齊 data/kwai-spawn-first-frame-level.json
- *  hub_local (-14,-95) 望南閘 GATE_POS (0,-271)；≥25 m 開闊；禁 (-18,14)→堆場北／貼牆 */
+/** spawn-first-frame：對齊 data/kwai-spawn-first-frame-level.json rev2
+ *  hub_local (-8,-228) 望南閘 (0,-271)；clear≈44 m；廢 (-14,-95) 青綠牆角／cam 塞殼
+ *  禁 (-18,14) 堆場北；側移離工廈殼≥8 m 入開闊瀝青 */
 function kwSpawnElbowGatePose() {
   const hx = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237);
   const hz = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145);
   const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280);
-  const lx = -14, lz = -95;
-  const lookX = 0, lookZ = -bz + 9; /* GATE_POS hub-local */
+  const lx = -8, lz = -228; /* rev2：貼近南閘北側開闊瀝青（唔係 (-14,-95) 牆角） */
+  const lookX = 0, lookZ = -bz + 9; /* GATE_POS hub-local ≈ (0,-271) */
   const heading = Math.atan2(lookX - lx, lookZ - lz);
   return { x: hx + lx, z: hz + lz, heading, lx, lz, lookX, lookZ };
 }
@@ -4432,7 +4433,7 @@ const MISSIONS = {
       cleanupWorld(); resetPlayerState();
       FLAGS.bol = false; FLAGS.safeOpen = false;
       /* spawn 掛 KWAI hub；spawn-first-frame：第一眼肘閘，主車拖頭／貨櫃車 */
-      { const _pose = (typeof kwSpawnElbowGatePose === 'function') ? kwSpawnElbowGatePose() : { x: (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : 0) - 14, z: (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : 0) - 95, heading: Math.atan2(14, -176) };
+      { const _pose = (typeof kwSpawnElbowGatePose === 'function') ? kwSpawnElbowGatePose() : { x: (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : 0) - 8, z: (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : 0) - 228, heading: Math.atan2(8, -43) };
         placeCar(_pose.x, _pose.z, _pose.heading); putPlayerInCar();
         try { if (typeof state !== 'undefined') { state.camYaw = _pose.heading; state.yawOffset = 0; } } catch (eY) { /* */ }
         try { if (typeof camState !== 'undefined') camState.init = false; } catch (eC) { /* */ }
@@ -10160,7 +10161,7 @@ HKM.go = function (id) {
     const hx = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237;
     const hz = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145;
     if (_pose) { x = _pose.x; z = _pose.z; h = _pose.heading; }
-    else { const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280); x = hx - 14; z = hz - 95; h = Math.atan2(0 - (-14), (-bz + 9) - (-95)); }
+    else { const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280); x = hx - 8; z = hz - 228; h = Math.atan2(0 - (-8), (-bz + 9) - (-228)); }
     try {
       if (typeof NT !== 'undefined') {
         NT._c27fLastGoId = 'kwai_tsing';
@@ -26505,7 +26506,7 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
             const hx = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237;
             const hz = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145;
             if (_pose) { tx = _pose.x; tz = _pose.z; }
-            else { tx = hx - 14; tz = hz - 95; }
+            else { tx = hx - 8; tz = hz - 228; }
             try {
               NT._c27fLastGoId = 'kwai_tsing';
               const free = (typeof URLQ !== 'undefined' && URLQ.has) ? URLQ.has('free') : false;
@@ -26540,7 +26541,7 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
             // 鎖死可玩碼頭座標；yaw 對肘閘（唔再用 0 望堆場長軸）
             px = tx; pz = tz;
             const _poseY = (typeof kwSpawnElbowGatePose === 'function') ? kwSpawnElbowGatePose() : null;
-            yaw = _poseY ? _poseY.heading : Math.atan2(14, -176);
+            yaw = _poseY ? _poseY.heading : Math.atan2(8, -43);
             try { if (typeof putPlayerInCar === 'function') putPlayerInCar(); } catch (eCar) { /* */ }
           } else if (s2) {
             px = s2[0].dx; pz = s2[0].dz;

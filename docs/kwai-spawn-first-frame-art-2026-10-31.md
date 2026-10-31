@@ -13,3 +13,6 @@
 5. 後備殼用 lit solid；禁 texture mismatch 死角當第一眼  
 
 關卡：spawn 位／朝向；代碼：cam yaw；美術：可讀剪影同材質。
+
+## FAIL tip `15344c0`
+pose 對數 OK（`(-1251,-240)` heading≈π）但仍青綠牆角。**側移≥8 m 離牆**入肘廊瀝青，再對閘；前方 ray 25 m 首碰禁工廈／倉殼。
