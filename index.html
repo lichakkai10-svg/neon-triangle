@@ -317,6 +317,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
  * 獨立版（index-standalone.html）：建置腳本會把下面的 EMBEDDED_ASSETS 填滿 base64 data URI，
  * 因此毋須伺服器，直接開單一檔案即可。 */
 /*__EMBEDDED_ASSETS_BEGIN__*/const EMBEDDED_ASSETS = {};/*__EMBEDDED_ASSETS_END__*/
+/* TIP_MARK geometry-fail knife · after b5e0865 · pier-first / defer-kenney · keep ?v=core28 */
 const ASSET_BASE = 'assets/';
 const ASSET_FILES = {
   car: 'concept-car.glb',          // 開局黑色跑車：Khronos CarConcept（CC-BY 4.0；已去標誌／減面）；後備 kenney-sedan-sports.glb
@@ -374,35 +375,35 @@ const KWAI_SCALE = {
     indBayH: 28
   },
   gltf: {
-    crane: 'gltf/hk-port/hk-sts-quay-crane.glb',
-    ship: 'gltf/hk-port/hk-port-ship-hull.glb',
-    wall: 'gltf/hk-port/hk-quay-wall-module.glb',
-    stack: 'gltf/hk-port/hk-container-yard-stack.glb',
-    flyover: 'gltf/hk-port/hk-flyover-undercroft-bay.glb',
-    tunnel: 'gltf/hk-port/hk-tunnel-portal.glb',
+    crane: 'assets/gltf/hk-port/hk-sts-quay-crane.glb',
+    ship: 'assets/gltf/hk-port/hk-port-ship-hull.glb',
+    wall: 'assets/gltf/hk-port/hk-quay-wall-module.glb',
+    stack: 'assets/gltf/hk-port/hk-container-yard-stack.glb',
+    flyover: 'assets/gltf/hk-port/hk-flyover-undercroft-bay.glb',
+    tunnel: 'assets/gltf/hk-port/hk-tunnel-portal.glb',
     indWall: 'assets/gltf/hk-buildings/hk-facade-industrial-shell.glb', // 厚殼 ≥0.45；覆寫紙片工廈牆
-    scaleJson: 'gltf/hk-port/hk-kwai-port-scale.json',
+    scaleJson: 'assets/gltf/hk-port/hk-kwai-port-scale.json',
     gisOverlay: 'assets/data/kwai-terminal-gis-overlay-p0.json',
     /* core28a densify props · assets/gltf/hk-port/hk-kwai-densify-props.json */
-    fender: 'gltf/hk-port/hk-quay-fender.glb',
-    bollard: 'gltf/hk-port/hk-quay-bollard.glb',
-    highMast: 'gltf/hk-port/hk-yard-high-mast.glb',
-    craneRail: 'gltf/hk-port/hk-sts-crane-rail-12m.glb',
-    weighbridge: 'gltf/hk-port/hk-gate-weighbridge.glb',
-    gateHut: 'gltf/hk-port/hk-gate-hut.glb',
-    barrierYb: 'gltf/hk-port/hk-barrier-yb-2m.glb',
-    lamp: 'gltf/hk-port/hk-street-lamp-9m.glb',
-    bin: 'gltf/hk-port/hk-street-bin.glb',
-    manhole: 'gltf/hk-port/hk-street-manhole.glb',
-    signHeight: 'gltf/hk-port/hk-sign-height.glb',
-    alleyBlocker: 'gltf/hk-port/hk-alley-cont-blocker.glb',
-    pallet: 'gltf/hk-port/hk-pallet-stack.glb',
-    canopy: 'gltf/hk-port/hk-loading-canopy.glb',
-    indMassing: 'gltf/hk-port/hk-industrial-massing-14x22.glb',
-    flyoverRamp: 'gltf/hk-port/hk-flyover-ramp-bay.glb',
-    acSplit: 'gltf/hk-port/hk-prop-ac-split.glb',
-    lightbox: 'gltf/hk-port/hk-prop-lightbox.glb',
-    densifyJson: 'gltf/hk-port/hk-kwai-densify-props.json'
+    fender: 'assets/gltf/hk-port/hk-quay-fender.glb',
+    bollard: 'assets/gltf/hk-port/hk-quay-bollard.glb',
+    highMast: 'assets/gltf/hk-port/hk-yard-high-mast.glb',
+    craneRail: 'assets/gltf/hk-port/hk-sts-crane-rail-12m.glb',
+    weighbridge: 'assets/gltf/hk-port/hk-gate-weighbridge.glb',
+    gateHut: 'assets/gltf/hk-port/hk-gate-hut.glb',
+    barrierYb: 'assets/gltf/hk-port/hk-barrier-yb-2m.glb',
+    lamp: 'assets/gltf/hk-port/hk-street-lamp-9m.glb',
+    bin: 'assets/gltf/hk-port/hk-street-bin.glb',
+    manhole: 'assets/gltf/hk-port/hk-street-manhole.glb',
+    signHeight: 'assets/gltf/hk-port/hk-sign-height.glb',
+    alleyBlocker: 'assets/gltf/hk-port/hk-alley-cont-blocker.glb',
+    pallet: 'assets/gltf/hk-port/hk-pallet-stack.glb',
+    canopy: 'assets/gltf/hk-port/hk-loading-canopy.glb',
+    indMassing: 'assets/gltf/hk-port/hk-industrial-massing-14x22.glb',
+    flyoverRamp: 'assets/gltf/hk-port/hk-flyover-ramp-bay.glb',
+    acSplit: 'assets/gltf/hk-port/hk-prop-ac-split.glb',
+    lightbox: 'assets/gltf/hk-port/hk-prop-lightbox.glb',
+    densifyJson: 'assets/gltf/hk-port/hk-kwai-densify-props.json'
   }
 };
 const ROAD_HALF = 7.0;                                // 行車道半闊（兩線雙程，每線 3.5 米）
@@ -17355,10 +17356,13 @@ function kwPortLoad(key, url) {
   const p = (async () => {
     try {
       let root = null;
+      const u = (!url || /^(https?:|blob:|data:)/i.test(url) || String(url).startsWith('assets/'))
+        ? url
+        : ('assets/' + url);
       if (typeof loadGLTF === 'function') {
-        root = await loadGLTF(url, 20000);
+        root = await loadGLTF(u, 20000);
       } else if (typeof gltfLoader !== 'undefined' && gltfLoader) {
-        root = await gltfLoader.loadAsync(url.startsWith('assets/') ? url : ('assets/' + url));
+        root = await gltfLoader.loadAsync(u);
       }
       // loadGLTF／GLTFLoader 回傳 { scene, … }；要解包先有 .traverse／.clone
       root = root && (root.scene || root.scenes && root.scenes[0] || root);
@@ -18497,49 +18501,60 @@ async function kwLoadP1() {
 
 /** Kenney City Kit Industrial（CC0）——工廈真 3D GLB */
 async function kwLoadKenney() {
+  /* geometry-fail knife：唔擋碼頭 densify；短名單＋短 timeout；失敗用程序／hk-facade */
   if (KWAI.kenney.ready) return true;
+  if (KWAI.kenney._loading) return KWAI.kenney._loading;
   if (typeof loadGLTF !== 'function') return false;
   const lite = (typeof IS_SAFARI !== 'undefined' && IS_SAFARI)
     || (typeof IS_IPHONE !== 'undefined' && IS_IPHONE)
-    || (typeof LOW_MEM !== 'undefined' && LOW_MEM);
-  const letters = lite
-    ? ['a', 'c', 'e', 'g', 'i', 'k', 'm', 'o']
-    : 'abcdefghijklmnopqrst'.split('');
-  const base = 'gltf/kenney-city-kit-industrial/';
-  const out = [];
-  const ms = lite ? 7000 : 12000;
-  for (const L of letters) {
-    try {
-      const g = await loadGLTF(base + 'building-' + L + '.glb', ms);
-      if (!g || !g.scene) continue;
-      const root = g.scene;
-      root.traverse((o) => {
-        if (!o.isMesh) return;
-        o.castShadow = o.receiveShadow = true;
-        o.userData.noMerge = true;
-        o.userData.kwaichung = true;
-      });
-      out.push(root);
-    } catch (e) {
-      console.warn('[kwai-kenney]', L, e && e.message);
-    }
-  }
-  KWAI.kenney.buildings = out;
-  // 煙囪／水塔／貨櫃點綴（可缺）
-  const extras = lite ? ['chimney-small.glb', 'shipping-container-a.glb']
-    : ['chimney-medium.glb', 'chimney-large.glb', 'water-tower.glb', 'shipping-container-a.glb', 'shipping-container-b.glb', 'detail-tank.glb'];
-  for (const f of extras) {
-    try {
-      const g = await loadGLTF(base + f, ms);
-      if (g && g.scene) {
-        g.scene.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.userData.noMerge = true; o.userData.kwaichung = true; } });
-        KWAI.kenney.extras.push(g.scene);
+    || (typeof LOW_MEM !== 'undefined' && LOW_MEM)
+    || (typeof URLQ !== 'undefined' && URLQ.has('kwailite'));
+  /* 優先碼頭：只抽少量工廈 GLB；其餘 procedural／hk-facade shell */
+  const letters = lite ? ['a', 'e', 'i'] : ['a', 'c', 'e', 'g', 'i', 'm'];
+  const base = 'assets/gltf/kenney-city-kit-industrial/';
+  const ms = lite ? 3500 : 5000;
+  const run = (async () => {
+    const out = [];
+    let fails = 0;
+    for (const L of letters) {
+      if (fails >= 2) break; /* 連續／累積 timeout 即停，唔再搶頻寬 */
+      try {
+        const g = await loadGLTF(base + 'building-' + L + '.glb', ms);
+        if (!g || !g.scene) { fails++; continue; }
+        const root = g.scene;
+        root.traverse((o) => {
+          if (!o.isMesh) return;
+          o.castShadow = o.receiveShadow = true;
+          o.userData.noMerge = true;
+          o.userData.kwaichung = true;
+        });
+        out.push(root);
+        fails = 0;
+      } catch (e) {
+        fails++;
+        console.warn('[kwai-kenney]', L, e && e.message);
       }
-    } catch (e) { /* optional */ }
-  }
-  KWAI.kenney.ready = out.length > 0;
-  console.info('[kwai-kenney]', out.length, 'buildings', KWAI.kenney.extras.length, 'extras');
-  return KWAI.kenney.ready;
+    }
+    KWAI.kenney.buildings = out;
+    /* extras 全延後／可缺——唔同 pier 搶 */
+    if (!lite && out.length) {
+      for (const f of ['chimney-small.glb', 'shipping-container-a.glb']) {
+        try {
+          const g = await loadGLTF(base + f, ms);
+          if (g && g.scene) {
+            g.scene.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.userData.noMerge = true; o.userData.kwaichung = true; } });
+            KWAI.kenney.extras.push(g.scene);
+          }
+        } catch (e) { /* optional */ }
+      }
+    }
+    KWAI.kenney.ready = out.length > 0;
+    KWAI.kenney._loading = null;
+    console.info('[kwai-kenney]', out.length, 'buildings', KWAI.kenney.extras.length, 'extras', lite ? 'lite' : 'cap');
+    return KWAI.kenney.ready;
+  })();
+  KWAI.kenney._loading = run;
+  return run;
 }
 
 function kwScaleGround(obj, w, h, d) {
@@ -21582,56 +21597,74 @@ function kwBuildArtDensifyCore28a() {
 
 
 {
+  /* geometry-fail knife：pier／gate／hub／densify 先；kenney 延後；禁 setInterval 重入搶頻寬 */
+  let _kwBootLock = false;
+  let _kwBootDone = false;
   const boot = async () => {
+    if (_kwBootDone) return true;
+    if (_kwBootLock) return false;
     if (typeof loadTex !== 'function' || typeof scene === 'undefined') return false;
-    const ok = await kwLoad();
-    if (ok) {
-      kwBuildDock();
-      kwApplyLandmarkFacade();
-      kwStripContainerLogos();
-    } else {
-      // 無貼圖仍落三區程序 stub（聽日可玩優先）
-      kwBuildThreePartStub();
+    _kwBootLock = true;
+    try {
+      const ok = await kwLoad();
+      if (ok) {
+        kwBuildDock();
+        kwApplyLandmarkFacade();
+        kwStripContainerLogos();
+      } else {
+        // 無貼圖仍落三區程序 stub（聽日可玩優先）
+        kwBuildThreePartStub();
+      }
+      if (!KWAI.threePart) kwBuildThreePartStub();
+      /* 門面 tile 輕量——先於 densify 但唔等 kenney */
+      try { await kwLoadFacadeTiles(); } catch (e) { console.warn('[kwai-fac]', e && e.message); }
+      try { await kwLoadP1(); } catch (e) { console.warn('[kwai-p1]', e && e.message); }
+      /* —— 碼頭幾何優先：density／D2b／art densify 唔等 kenney —— */
+      kwBuildP1Urban();
+      kwBuildDensityD1();
+      kwBuildDensityD2a();
+      kwBuildDensityD2b();
+      kwBuildDensityD3();
+      if (typeof kwBuildDensityD3Plus === 'function') kwBuildDensityD3Plus();
+      kwBuildDensityD4();
+      if (typeof kwEnforceElbowDrive === 'function') kwEnforceElbowDrive();
+      kwRegisterEnterables();
+      kwQuayEdgeSoft();
+      kwBuildDockPlus();
+      try { if (typeof kwBuildArtDensifyCore28a === 'function') kwBuildArtDensifyCore28a(); } catch (e) { console.warn('[kwai-densify28a]', e && e.message); }
+      try { kwApplyOsmFacadeDensity(); } catch (e) { console.warn('[kwai-osm-fac]', e && e.message); }
+      try { kwApplyKwaiBranchingRoads(); } catch (e) { console.warn('[kwai-branch]', e && e.message); }
+      /* OSM／interior 可與 pier 並行後載；kenney 延後 fire-and-forget */
+      Promise.resolve().then(async () => {
+        try { await kwLoadInteriorTiles(); } catch (e) { console.warn('[kwai-int]', e && e.message); }
+        try { await kwLoadOsmLayoutCore20(); } catch (e) { console.warn('[kwai-osm]', e && e.message); }
+        try { await kwLoadOsmNextYlHarbour(); } catch (e) { console.warn('[kwai-osm-next]', e && e.message); }
+        try { kwApplyOsmNextDensity(); } catch (e) { console.warn('[kwai-osm-next-dens]', e && e.message); }
+        try { await kwHangElbowArterialsFromSkeleton(); } catch (e) { console.warn('[kwai-skel-art]', e && e.message); }
+        try { kwBuildHk18Skeleton(); } catch (e) { console.warn('[kwai-hk18]', e && e.message); }
+        try { await kwLoadKenney(); } catch (e) { console.warn('[kwai-kenney]', e && e.message); }
+        if (typeof kwStripPhotoBoards === 'function') kwStripPhotoBoards();
+      });
+      if (typeof kwStripPhotoBoards === 'function') kwStripPhotoBoards();
+      if (typeof HOOKS !== 'undefined') {
+        HOOKS.tod = HOOKS.tod || [];
+        if (!HOOKS.tod._kwOnTod) { HOOKS.tod.push(kwOnTod); HOOKS.tod._kwOnTod = true; }
+      }
+      _kwBootDone = true;
+      return true;
+    } finally {
+      _kwBootLock = false;
     }
-    if (!KWAI.threePart) kwBuildThreePartStub();
-    try { await kwLoadP1(); } catch (e) { console.warn('[kwai-p1]', e && e.message); }
-    try { await kwLoadKenney(); } catch (e) { console.warn('[kwai-kenney]', e && e.message); }
-    try { await kwLoadFacadeTiles(); } catch (e) { console.warn('[kwai-fac]', e && e.message); }
-    try { await kwLoadInteriorTiles(); } catch (e) { console.warn('[kwai-int]', e && e.message); }
-    try { await kwLoadOsmLayoutCore20(); } catch (e) { console.warn('[kwai-osm]', e && e.message); }
-    try { await kwLoadOsmNextYlHarbour(); } catch (e) { console.warn('[kwai-osm-next]', e && e.message); }
-    kwBuildP1Urban();
-    kwBuildDensityD1();
-    kwBuildDensityD2a();
-    kwBuildDensityD2b();
-    kwBuildDensityD3();
-    if (typeof kwBuildDensityD3Plus === 'function') kwBuildDensityD3Plus();
-    kwBuildDensityD4();
-    if (typeof kwEnforceElbowDrive === 'function') kwEnforceElbowDrive();
-    kwRegisterEnterables();
-    kwQuayEdgeSoft();
-    kwBuildDockPlus();
-    try { if (typeof kwBuildArtDensifyCore28a === 'function') kwBuildArtDensifyCore28a(); } catch (e) { console.warn('[kwai-densify28a]', e && e.message); }
-    try { kwApplyOsmFacadeDensity(); } catch (e) { console.warn('[kwai-osm-fac]', e && e.message); }
-    try { kwApplyKwaiBranchingRoads(); } catch (e) { console.warn('[kwai-branch]', e && e.message); }
-    try { kwApplyOsmNextDensity(); } catch (e) { console.warn('[kwai-osm-next-dens]', e && e.message); }
-    try { await kwHangElbowArterialsFromSkeleton(); } catch (e) { console.warn('[kwai-skel-art]', e && e.message); }
-    try { kwBuildHk18Skeleton(); } catch (e) { console.warn('[kwai-hk18]', e && e.message); }
-    if (typeof kwStripPhotoBoards === 'function') kwStripPhotoBoards();
-    if (typeof HOOKS !== 'undefined') {
-      HOOKS.tod = HOOKS.tod || [];
-      HOOKS.tod.push(kwOnTod);
-    }
-    return ok;
   };
   const t0 = setInterval(() => {
+    if (_kwBootDone) { clearInterval(t0); return; }
     boot().then((ok) => {
-      if (ok) { clearInterval(t0); return; }
+      if (ok || _kwBootDone) { clearInterval(t0); return; }
       if (typeof NT !== 'undefined' && NT.ready) {
-        // LM 可能較遲；再試門面一次
+        // LM 可能較遲；再試門面一次（唔重跑 densify）
         kwApplyLandmarkFacade();
         if (typeof kwStripPhotoBoards === 'function') kwStripPhotoBoards();
-        clearInterval(t0);
+        if (!_kwBootLock) clearInterval(t0);
       }
     });
   }, 350);
