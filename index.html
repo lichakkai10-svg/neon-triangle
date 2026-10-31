@@ -319,7 +319,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 /*__EMBEDDED_ASSETS_BEGIN__*/const EMBEDDED_ASSETS = {};/*__EMBEDDED_ASSETS_END__*/
 /* TIP_MARK geometry-fail knife · after b5e0865 · pier-first / defer-kenney · keep ?v=core28 */
 /* TIP_MARK paint-fail · tractor chase back halfLen+5.5 / CAM 12.5 · rear door detail · keep ?v=core28 */
-/* TIP_MARK room2-rev6 · (36,-222)→(-2,-271) · chase side≥2.5s · STS ensure · weigh south · keep ?v=core28 */
+/* TIP_MARK room2-rev6b · (36,-222) · sideCam 45s freezeYaw · keep ?v=core28 */
 const ASSET_BASE = 'assets/';
 const ASSET_FILES = {
   car: 'concept-car.glb',          // 開局黑色跑車：Khronos CarConcept（CC-BY 4.0；已去標誌／減面）；後備 kenney-sedan-sports.glb
@@ -475,19 +475,22 @@ function kwArmElbowSpawnLock(ms) {
   if (typeof kwSpawnElbowGatePose !== 'function') return null;
   const pose = kwSpawnElbowGatePose();
   const bag = (typeof NT !== 'undefined' ? NT : (window.NT = window.NT || {}));
-  const until = (typeof performance !== 'undefined' ? performance.now() : Date.now()) + (ms == null ? 14000 : ms);
+  /* room2：側偏至少 45s（QA ~8s 後置中）；ms 只影響 spawn 位鎖 */
+  const untilPos = (typeof performance !== 'undefined' ? performance.now() : Date.now()) + (ms == null ? 14000 : ms);
+  const untilCam = (typeof performance !== 'undefined' ? performance.now() : Date.now()) + Math.max(45000, ms == null ? 45000 : ms);
   bag._kwaiSpawnLock = {
     x: pose.x, z: pose.z, heading: pose.heading,
-    until
+    until: untilPos
   };
   const hx = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237);
   const hz = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145);
   bag._kwaiSideCam = {
-    side: 11,
+    side: 14,
     lookX: hx + (pose.lookX != null ? pose.lookX : -2),
     lookZ: hz + (pose.lookZ != null ? pose.lookZ : -271),
-    gateY: 3.4,
-    until
+    gateY: 3.6,
+    heading: pose.heading,
+    until: untilCam
   };
   try { kwPurgeCollidersNearElbowSpawn(); } catch (e) { /* */ }
   return bag._kwaiSpawnLock;
@@ -2794,15 +2797,24 @@ function updateCamera(dt) {
     const camH = Math.max(CAM_DRIVE.height, (car.halfLen || 2.2) >= 4 ? 3.1 : CAM_DRIVE.height);
     desiredPos = car.pos.clone().addScaledVector(f, -back); desiredPos.y = camH;
     desiredLook = car.pos.clone().addScaledVector(f, 3.0); desiredLook.y = 0.6;
-    /* room2：spawn side-cam 每幀——禁 chase overlay 置中櫃切閘牌 */
+        /* room2：spawn side-cam 每幀≥45s——凍 yaw、硬跟側位，禁 ~8s 後置中 */
     try {
       const sc = (typeof NT !== 'undefined') ? NT._kwaiSideCam : null;
       const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
       if (sc && now <= sc.until) {
-        const right = new THREE.Vector3(f.z, 0, -f.x);
-        desiredPos.addScaledVector(right, sc.side || 11);
-        desiredLook.set(sc.lookX, sc.gateY != null ? sc.gateY : 3.2, sc.lookZ);
-        desiredPos.y = Math.max(desiredPos.y, 3.6);
+        if (sc.heading != null) {
+          state.camYaw = sc.heading;
+          state.yawOffset = 0;
+          const sx2 = Math.sin(sc.heading), cz2 = Math.cos(sc.heading);
+          f.set(sx2, 0, cz2);
+          const back2 = Math.max(CAM_DRIVE.back, (car.halfLen || 2.2) + 5.5);
+          desiredPos.set(car.pos.x - sx2 * back2 + cz2 * (sc.side || 14), Math.max(camH, 3.8), car.pos.z - cz2 * back2 - sx2 * (sc.side || 14));
+        } else {
+          const right = new THREE.Vector3(f.z, 0, -f.x);
+          desiredPos.addScaledVector(right, sc.side || 14);
+          desiredPos.y = Math.max(desiredPos.y, 3.8);
+        }
+        desiredLook.set(sc.lookX, sc.gateY != null ? sc.gateY : 3.6, sc.lookZ);
       } else if (sc && now > sc.until) {
         NT._kwaiSideCam = null;
       }
@@ -2827,11 +2839,17 @@ function updateCamera(dt) {
   }
   // 平滑追蹤（期望位置先平滑，再做碰撞，確保永不入牆）
   if (!camState.init) { camState.pos.copy(desiredPos); camState.look.copy(desiredLook); camState.fov = fov; camState.init = true; }
-  const aimSnap = state.mode === 'foot' ? lerp(9, 22, state.aimT) : 30; // 駕駛：近乎剛性跟隨（方向已平滑）
+  let aimSnap = state.mode === 'foot' ? lerp(9, 22, state.aimT) : 30; // 駕駛：近乎剛性跟隨（方向已平滑）
+  let lookSnap = state.mode === 'foot' ? 24 : 10;
+  try {
+    const sc = (typeof NT !== 'undefined') ? NT._kwaiSideCam : null;
+    const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    if (sc && now <= sc.until && state.mode === 'drive') { aimSnap = 80; lookSnap = 40; }
+  } catch (eAs) { /* */ }
   camState.pos.x = damp(camState.pos.x, desiredPos.x, aimSnap, dt);
   camState.pos.y = damp(camState.pos.y, desiredPos.y, aimSnap, dt);
   camState.pos.z = damp(camState.pos.z, desiredPos.z, aimSnap, dt);
-  camState.look.lerp(desiredLook, 1 - Math.exp(-(state.mode === 'foot' ? 24 : 10) * dt));
+  camState.look.lerp(desiredLook, 1 - Math.exp(-lookSnap * dt));
   camState.fov = damp(camState.fov, fov, 10, dt);
   const safePos = cameraCollide(pivot, camState.pos, includeCar, minDist);
   camera.position.copy(safePos);
@@ -2849,8 +2867,8 @@ function updateCamera(dt) {
         const sc = (typeof NT !== 'undefined') ? NT._kwaiSideCam : null;
         const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
         if (sc && now <= sc.until) {
-          px += cz * (sc.side || 11);
-          pz -= sx * (sc.side || 11);
+          px += cz * (sc.side || 14);
+          pz -= sx * (sc.side || 14);
         }
       } catch (eMb) { /* */ }
       camera.position.x = px;
@@ -26935,10 +26953,11 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
         /* rev3：kwai 第二輪只 re-arm 肘 lock／清 collider，唔准 OSM snap 改位 */
         try {
           if (id === 'kwai_tsing' || id === 'kwai' || id === 'kt') {
-            if (typeof kwArmElbowSpawnLock === 'function') kwArmElbowSpawnLock(8000);
+            if (typeof kwArmElbowSpawnLock === 'function') kwArmElbowSpawnLock(45000);
             if (typeof kwPurgeCollidersNearElbowSpawn === 'function') kwPurgeCollidersNearElbowSpawn();
             if (typeof kwEnforceElbowSpawnLock === 'function') kwEnforceElbowSpawnLock();
             if (typeof kwSnapTractorChaseCam === 'function') kwSnapTractorChaseCam();
+            try { if (typeof kwEnsureStsShoreWall === 'function') kwEnsureStsShoreWall(8); } catch (eS) { /* */ }
             return;
           }
         } catch (eRe) { /* */ }
