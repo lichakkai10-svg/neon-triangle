@@ -319,7 +319,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 /*__EMBEDDED_ASSETS_BEGIN__*/const EMBEDDED_ASSETS = {};/*__EMBEDDED_ASSETS_END__*/
 /* TIP_MARK geometry-fail knife · after b5e0865 · pier-first / defer-kenney · keep ?v=core28 */
 /* TIP_MARK paint-fail · tractor chase back halfLen+5.5 / CAM 12.5 · rear door detail · keep ?v=core28 */
-/* TIP_MARK room2-day-los · rev5 (32,-236) side-cam · force day/no rain · weigh 1-line · STS/PH/KF · keep ?v=core28 */
+/* TIP_MARK room2-day-los · rev5 (28,-228)→(-2,-271) side-cam · hard day · weigh 1-line · STS/PH/KF · keep ?v=core28 */
 const ASSET_BASE = 'assets/';
 const ASSET_FILES = {
   car: 'concept-car.glb',          // 開局黑色跑車：Khronos CarConcept（CC-BY 4.0；已去標誌／減面）；後備 kenney-sedan-sports.glb
@@ -424,16 +424,16 @@ const KWAI_GEO = {
 };
 function kwWorld(lx, lz) { return { x: KWAI_GEO.hubX + lx, z: KWAI_GEO.hubZ + lz }; }
 /** spawn-first-frame：對齊 data/kwai-spawn-first-frame-level.json rev5
- *  hub_local (32,-236) 望南閘側 (-8,-271)；偏側＋側 cam 留閘牌；world = elbow hub + local（1:1 米）
+ *  hub_local (28,-228) 望南閘側 (-2,-271)；偏側≥3 m＋側 cam；world = elbow hub + local（1:1 米）
  *  Origin = KWAI_GEO.hub (−1237,−145) 肘 —— 禁 geographic hub (−1390,332)／禁 ×1.5
- *  assert world ≈ (−1205,−381) tol≤2；廢 OSM／arcade 東推 Δx≈53 */
+ *  assert world ≈ (−1209,−373) tol≤2；廢 OSM／arcade 東推 Δx≈53 */
 function kwSpawnElbowGatePose() {
   const hx = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237);
   const hz = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145);
   const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280);
-  /* rev5 room2：更偏側；hub_local (32,-236)→(-8,-271)；world=肘+local 禁×1.5 */
-  const lx = 32, lz = -236;
-  const lookX = -8, lookZ = -bz + 9; /* ≈ (-8,-271) 南閘側，拖頭唔正中擋牌 */
+  /* rev5 關卡鎖：hub_local (28,-228)→(-2,-271)；偏側≥3 m；world=肘+local 禁×1.5 */
+  const lx = 28, lz = -228;
+  const lookX = -2, lookZ = -bz + 9; /* ≈ (-2,-271) 南閘側，拖頭唔正中擋牌 */
   const heading = Math.atan2(lookX - lx, lookZ - lz);
   return { x: hx + lx, z: hz + lz, heading, lx, lz, lookX, lookZ };
 }
@@ -518,7 +518,7 @@ function kwSnapTractorChaseCam() {
       const pose = kwSpawnElbowGatePose();
       const hx = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237);
       const hz = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145);
-      lx = hx + (pose.lookX != null ? pose.lookX : -8);
+      lx = hx + (pose.lookX != null ? pose.lookX : -2);
       lz = hz + (pose.lookZ != null ? pose.lookZ : -271);
     }
   } catch (eL) { /* */ }
@@ -10301,7 +10301,7 @@ HKM.go = function (id) {
     const hx = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237;
     const hz = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145;
     if (_pose) { x = _pose.x; z = _pose.z; h = _pose.heading; }
-    else { const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280); x = hx + 32; z = hz - 236; h = Math.atan2(-8 - 32, (-bz + 9) - (-236)); }
+    else { const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280); x = hx + 28; z = hz - 228; h = Math.atan2(-2 - 28, (-bz + 9) - (-228)); }
     try {
       if (typeof NT !== 'undefined') {
         NT._c27fLastGoId = 'kwai_tsing';
@@ -26782,7 +26782,7 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
             const hx = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237;
             const hz = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145;
             if (_pose) { tx = _pose.x; tz = _pose.z; }
-            else { tx = hx + 32; tz = hz - 236; }
+            else { tx = hx + 28; tz = hz - 228; }
             try {
               NT._c27fLastGoId = 'kwai_tsing';
               const free = (typeof URLQ !== 'undefined' && URLQ.has) ? URLQ.has('free') : false;

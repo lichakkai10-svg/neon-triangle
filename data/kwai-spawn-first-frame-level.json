@@ -1,8 +1,8 @@
 {
   "id": "kwai_spawn_first_frame_level",
   "rev": 5,
-  "updated": "2026-10-31T12:20:00+08:00",
-  "after_tip": "7b482b6",
+  "updated": "2026-10-31T12:25:00+08:00",
+  "after_tip": "857cccc",
   "gta_p0_fail": {
     "day_default": "預設夜晚暴雨——要日景預設",
     "tractor": "拖頭正中擋閘；戲仿）被櫃切",
@@ -22,19 +22,19 @@
   },
   "spawn": {
     "hub_local": {
-      "x": 32.0,
-      "z": -236.0
+      "x": 28.0,
+      "z": -228.0
     },
     "look_at_hub_local": {
-      "x": -8.0,
+      "x": -2.0,
       "z": -271.0
     },
     "world_assert": {
-      "x": -1205.0,
-      "z": -381.0,
+      "x": -1209.0,
+      "z": -373.0,
       "tol_m": 2
     },
-    "why": "rev5 更偏側＋側 cam；日景預設；拖頭唔正中擋牌"
+    "why": "關卡 rev5 (28,-228)→(-2,-271)；硬鎖日景；側 cam；偏側≥3 m"
   },
   "d2b_readability": {
     "kt_gate_title": "全文「貨櫃碼頭閘口（戲仿）」開場幀可讀；字面朝 spawn；高過車頂；禁被櫃切「戲仿）」",
@@ -56,10 +56,10 @@
     "min_dist": 12.5
   },
   "coder": [
-    "kwSpawnElbowGatePose → lx=32 lz=-236 look=(-8,-271)",
-    "kwSnapTractorChaseCam side=8.5 look gate",
-    "kwForceKwaiDayUnlessNight + storm ban + rain off",
-    "estateGateClearM=150；STS densify on go"
+    "kwSpawnElbowGatePose → lx=28 lz=-228 look=(-2,-271)",
+    "kwSnapTractorChaseCam side=8.5",
+    "kwForceKwaiDayUnlessNight hard day",
+    "weigh 單行「地磅 · 跟指示停」"
   ],
   "qa": [
     "frame0 日景",
