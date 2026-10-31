@@ -1,6 +1,6 @@
 {
   "id": "kwai_4263b75_rev7_didao_gov_art",
-  "updated": "2026-10-31T13:06:17+08:00",
+  "updated": "2026-10-31T13:22:31+08:00",
   "after_tip": "c301f26",
   "no_bump_v": true,
   "gov_fail": {
@@ -43,8 +43,8 @@
     },
     "chase_cam": {
       "note": "開場側偏後禁彈返置中——凍 yaw＋側偏鎖全程",
-      "side_bias_m_min": 14,
-      "hold_s": 45,
+      "side_bias_m_min": 16,
+      "hold_s": 90,
       "every_frame": true,
       "freeze_yaw": true,
       "hard_follow": true,
@@ -108,8 +108,8 @@
     ],
     "height_raise_m": 1.2,
     "height_forward_m": 0.8,
-    "chase_hold_s": 45,
-    "side_bias_m_min": 14,
+    "chase_hold_s": 90,
+    "side_bias_m_min": 16,
     "freeze_yaw": true,
     "keep": [
       "gate_parody",
@@ -118,7 +118,8 @@
       "kf"
     ],
     "sts_boom_frame0": true,
-    "ph_clear_m": 200
+    "ph_clear_m": 200,
+    "tip": "c301f26"
   },
   "didao_fail": {
     "pass": [
@@ -135,5 +136,57 @@
       "sts_boom_missing_frame0": true
     }
   },
-  "code_tip": "c301f26"
+  "code_tip": "c301f26",
+  "qa_pass": false,
+  "qa_pass_tip": null,
+  "qa_live": "room2-rev7",
+  "qa_via": "e49e397→room2-rev7",
+  "art_accept": false,
+  "pending_tip": "after c301f26 didao knife",
+  "got": {
+    "height_y": 7.2,
+    "chase_side_m": 16,
+    "chase_lock_s": 90,
+    "sts": 24,
+    "ph_near": 0,
+    "gate": true,
+    "weighbridge_single": true,
+    "barrier_yb": true,
+    "kf": true
+  },
+  "provisional_live": {
+    "tip": "e49e397",
+    "live": "room2-rev7",
+    "note": "QA PASS live only — wait dedicated c301f26 smoke before art accept"
+  },
+  "didao_fail_c301f26": {
+    "pass": [
+      "chase_side",
+      "gate",
+      "barrier_yb",
+      "kf",
+      "day"
+    ],
+    "fail": {
+      "height_4_5_not_clean": true,
+      "height_4_2_missing": true,
+      "weighbridge_dark_second_line": true,
+      "sts_boom_t0_and_side_zero": true,
+      "ph_right_towers_still": true,
+      "toast_model_fail": true
+    }
+  },
+  "next_knife": "kwai-c301f26-didao-fail-art.json",
+  "didao_fail_c301": {
+    "sts_boom_t0_side_0": true,
+    "height_45_not_clean_42_missing": true,
+    "weigh_dark_second_line": true,
+    "ph_right_building": true
+  },
+  "knife_rev7b": [
+    "STS sync boom yaw0 near look",
+    "h45+h42 south gate high",
+    "weigh single board single line",
+    "PH+ind right-fan cull"
+  ]
 }

@@ -8,3 +8,11 @@
 唔升 ?v=
 
 鎖檔：`data/kwai-4263b75-gov-fail-art.json`
+
+## rev7b（地道 FAIL `c301f26`）
+
+1. STS t0 sync boom · yaw=0 橫過南望
+2. 限高 4.5＋4.2 南閘抬清
+3. 地磅單牌單行
+4. 公屋／右側大廈扇形清
+唔升 ?v=
