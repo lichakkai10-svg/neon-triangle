@@ -1,0 +1,112 @@
+{
+  "id": "core28a_kwai_tip246e47c_fail_knife_art",
+  "updated": "2026-10-31T09:34:27+08:00",
+  "after_tip": "246e47c",
+  "no_bump_v": true,
+  "device_pass_keep": [
+    "elbow_entry",
+    "yard_stacks_3d",
+    "parody_gate_title",
+    "no_pier8_neon",
+    "no_HIT_MTL"
+  ],
+  "fails": {
+    "housing_same_level_at_gate": {
+      "fix": "公屋只遠景層；閘口 80 m 內零 estate mesh",
+      "y_m": [
+        55,
+        100
+      ],
+      "min_dist_from_gate_m": 80,
+      "count": [
+        6,
+        10
+      ],
+      "prefer": 8
+    },
+    "sts_wall_missing": {
+      "fix": "沿岸成排 STS gantry 牆感；真機第一眼見岸線吊",
+      "min_visible": 6,
+      "prefer": 8,
+      "along": "bent_quay_world",
+      "h_m": 70,
+      "note": "唔好只散點；要成岸線剪影",
+      "boom_row": true
+    },
+    "no_open_water": {
+      "fix": "閘／hub 南望見開闊水面色帶（港池）",
+      "band": "quay_west_open_water",
+      "min_visible_span_m": 120
+    },
+    "kf_name_device_miss": {
+      "text": "葵芳站（戲仿）",
+      "fix": "肘盡頭世界位大字／牌；真機可讀（字高≥1.2 m 或 HUD 近距）",
+      "at": "elbow_end_world",
+      "distant_ok": true,
+      "note": "遠景牌可；肘盡頭世界位；真機可讀"
+    },
+    "weighbridge_unreadable": {
+      "text": "地磅 · 跟指示停",
+      "fix": "地磅旁牌真機可讀；字對相機／字高≥0.8 m 或近距 sprite",
+      "at": "gate_weighbridge_world"
+    },
+    "spawn_fleet": {
+      "prefer": [
+        "拖頭",
+        "貨櫃車",
+        "重型貨車"
+      ],
+      "ban_near_gate_open": [
+        "黑廂型當主開局",
+        "板車當主開局",
+        "超跑"
+      ],
+      "note": "hkzone=kwai 開局主車偏拖頭／櫃車"
+    },
+    "barrier_yb_device": {
+      "asset": "hk-barrier-yb-2m.glb",
+      "fix": "閘角／地磅旁世界位黃黑欄真機可見 ≥4",
+      "ban": "白灰欄／肘本地隱形"
+    },
+    "gate_sign_placement": {
+      "text": "貨櫃碼頭閘口（戲仿）",
+      "ban_on": "housing_estate",
+      "at": "elbow_gate_world_only"
+    },
+    "spawn_first_look": {
+      "face": "bent_elbow_or_gate",
+      "ban": "aligned_to_yard_long_dashed_straight",
+      "note": "spawn 第一眼唔係直巷——面向彎肘／閘"
+    },
+    "housing_facade": {
+      "ban": [
+        "photo_board",
+        "window_photo_grid",
+        "HIT",
+        "MTL"
+      ],
+      "note": "禁公屋窗格相板紋"
+    }
+  },
+  "qa_device_pull": [
+    "閘口 80 m 內無公屋同層",
+    "南望見水面＋STS 岸吊牆≥6",
+    "地磅句＋葵芳站（戲仿）真機可讀",
+    "開局拖頭／貨櫃車",
+    "barrier_yb 真機可見≥4",
+    "閘牌唔貼公屋",
+    "葵芳遠景／肘盡頭牌可讀",
+    "spawn 第一眼彎肘／閘（唔對準櫃堆長直虛線）",
+    "公屋零相板窗格紋",
+    "STS≥8 岸吊牆＋吊臂列"
+  ],
+  "gov_add": {
+    "gate_title_height_pass": true,
+    "still_need": [
+      "weighbridge_readable_device",
+      "barrier_yb_visible_device",
+      "gate_sign_not_on_housing",
+      "kwai_fong_distant_sign"
+    ]
+  }
+}

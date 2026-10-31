@@ -169,5 +169,19 @@
     "when": "2026-10-31T09:00:20+08:00",
     "doc": "docs/kwai-d2b-land-knife-art-2026-10-31.md",
     "no_bump_v": true
+  },
+  "land_knife_246e47c_pass": {
+    "when": "2026-10-31T09:19:51+08:00",
+    "tip": "246e47c",
+    "d2b": true,
+    "section": true,
+    "sts": 15,
+    "barrier_yb": 27,
+    "kwai_fong": "葵芳站（戲仿）",
+    "no_bump_v": true
+  },
+  "device_fail_246e47c": {
+    "when": "2026-10-31T09:33:48+08:00",
+    "doc": "docs/kwai-device-fail-art-knife-2026-10-31.md"
   }
 }

@@ -1,6 +1,6 @@
 {
   "id": "kwai_d2b_gate_art_lock",
-  "updated": "2026-10-31T09:00:33+08:00",
+  "updated": "2026-10-31T09:19:51+08:00",
   "for_tip_after": "b0f4256",
   "no_bump_v": true,
   "gov_sample_fail": {
@@ -76,5 +76,7 @@
     "黃黑 barrier_yb ≥4",
     "零 HIT／MTL"
   ],
-  "knife": "core28a-kwai-d2b-land-knife"
+  "knife": "core28a-kwai-d2b-land-knife",
+  "qa_pass_tip": "246e47c",
+  "qa_pass": true
 }
