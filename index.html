@@ -248,7 +248,7 @@ body.aim #cross{transform:scale(.45)}
   <div id="cross"><i></i><i></i><i></i><i></i><b></b></div>
   <div id="hurt"></div>
   <div id="toast" class="panel"></div>
-  <div id="loc"><b>葵涌貨櫃碼頭</b><span>8號泊位 · 葵青區</span></div>
+  <div id="loc"><b>葵涌貨櫃碼頭</b><span>8號泊位 · 往葵芳</span></div>
   <div id="prompt"><b id="promptName"></b><span><kbd>E</kbd><span id="promptAct">進入</span></span></div>
   <div id="intro" class="panel"><h3 id="introName"></h3><div class="city" id="introCity"></div><p id="introDesc"></p></div>
 </div>
@@ -319,7 +319,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 /*__EMBEDDED_ASSETS_BEGIN__*/const EMBEDDED_ASSETS = {};/*__EMBEDDED_ASSETS_END__*/
 /* TIP_MARK geometry-fail knife · after b5e0865 · pier-first / defer-kenney · keep ?v=core28 */
 /* TIP_MARK paint-fail · tractor chase back halfLen+5.5 / CAM 12.5 · rear door detail · keep ?v=core28 */
-/* TIP_MARK room2-chase-side · rev5 keep · chase side lock 12s · PH/YB/STS/height/KF · keep ?v=core28 */
+/* TIP_MARK room2-rev6 · (36,-222)→(-2,-271) · chase side≥2.5s · STS ensure · weigh south · keep ?v=core28 */
 const ASSET_BASE = 'assets/';
 const ASSET_FILES = {
   car: 'concept-car.glb',          // 開局黑色跑車：Khronos CarConcept（CC-BY 4.0；已去標誌／減面）；後備 kenney-sedan-sports.glb
@@ -423,17 +423,17 @@ const KWAI_GEO = {
   laiKingX: -1095, laiKingZ: -1101
 };
 function kwWorld(lx, lz) { return { x: KWAI_GEO.hubX + lx, z: KWAI_GEO.hubZ + lz }; }
-/** spawn-first-frame：對齊 data/kwai-spawn-first-frame-level.json rev5
- *  hub_local (28,-228) 望南閘側 (-2,-271)；偏側≥3 m＋側 cam；world = elbow hub + local（1:1 米）
+/** spawn-first-frame：對齊 data/kwai-spawn-first-frame-level.json rev6
+ *  hub_local (36,-222) 望南閘側 (-2,-271)；側≥4 m＋chase side lock；world = elbow hub + local（1:1 米）
  *  Origin = KWAI_GEO.hub (−1237,−145) 肘 —— 禁 geographic hub (−1390,332)／禁 ×1.5
- *  assert world ≈ (−1209,−373) tol≤2；廢 OSM／arcade 東推 Δx≈53 */
+ *  assert world ≈ (−1201,−367) tol≤2；廢 OSM／arcade 東推 Δx≈53 */
 function kwSpawnElbowGatePose() {
   const hx = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237);
   const hz = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145);
   const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280);
-  /* rev5 關卡鎖：hub_local (28,-228)→(-2,-271)；偏側≥3 m；world=肘+local 禁×1.5 */
-  const lx = 28, lz = -228;
-  const lookX = -2, lookZ = -bz + 9; /* ≈ (-2,-271) 南閘側，拖頭唔正中擋牌 */
+  /* rev6 關卡鎖：hub_local (36,-222)→(-2,-271)；側≥4 m；world=肘+local 禁×1.5 */
+  const lx = 36, lz = -222;
+  const lookX = -2, lookZ = -bz + 9; /* ≈ (-2,-271)；chase 側偏≥2.5s */
   const heading = Math.atan2(lookX - lx, lookZ - lz);
   return { x: hx + lx, z: hz + lz, heading, lx, lz, lookX, lookZ };
 }
@@ -483,7 +483,7 @@ function kwArmElbowSpawnLock(ms) {
   const hx = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237);
   const hz = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145);
   bag._kwaiSideCam = {
-    side: 9.5,
+    side: 11,
     lookX: hx + (pose.lookX != null ? pose.lookX : -2),
     lookZ: hz + (pose.lookZ != null ? pose.lookZ : -271),
     gateY: 3.4,
@@ -2800,7 +2800,7 @@ function updateCamera(dt) {
       const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
       if (sc && now <= sc.until) {
         const right = new THREE.Vector3(f.z, 0, -f.x);
-        desiredPos.addScaledVector(right, sc.side || 9.5);
+        desiredPos.addScaledVector(right, sc.side || 11);
         desiredLook.set(sc.lookX, sc.gateY != null ? sc.gateY : 3.2, sc.lookZ);
         desiredPos.y = Math.max(desiredPos.y, 3.6);
       } else if (sc && now > sc.until) {
@@ -2849,8 +2849,8 @@ function updateCamera(dt) {
         const sc = (typeof NT !== 'undefined') ? NT._kwaiSideCam : null;
         const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
         if (sc && now <= sc.until) {
-          px += cz * (sc.side || 9.5);
-          pz -= sx * (sc.side || 9.5);
+          px += cz * (sc.side || 11);
+          pz -= sx * (sc.side || 11);
         }
       } catch (eMb) { /* */ }
       camera.position.x = px;
@@ -4054,7 +4054,7 @@ HOOKS.sim.push((dt) => {
 
 /* ---------- 地區名稱（GTA 式）：越過閘口時顯示 ---------- */
 let _zone = 'yard';
-const ZONES = { yard: ['葵涌貨櫃碼頭', '8號泊位 · 葵青區'], city: ['漆咸道', '九龍 · 油尖旺區'], tst: ['彌敦道', '尖沙咀 · 油尖旺區'] };
+const ZONES = { yard: ['葵涌貨櫃碼頭', '8號泊位 · 往葵芳'], city: ['漆咸道', '九龍 · 油尖旺區'], tst: ['彌敦道', '尖沙咀 · 油尖旺區'] };
 function zoneOf(p) { return p.z > -187 ? 'yard' : p.z > -333 ? 'city' : 'tst'; }
 HOOKS.sim.push(() => {
   if (INT.active) return;
@@ -10276,7 +10276,7 @@ HOOKS.frame.push((dt) => {
 });
 
 /* ---------- 9) 地區名、小地圖 ---------- */
-Object.assign(ZONES, { yardhub: ['葵涌交匯處', '葵青區 · 往油尖旺／荃灣'], ytmhub: ['窩打老道口', '油尖旺區 · 廣華坊醫院'] });
+Object.assign(ZONES, { yardhub: ['葵涌交匯處', '往葵芳／油尖旺／荃灣'], ytmhub: ['窩打老道口', '油尖旺區 · 廣華坊醫院'] });
 for (const [id, n] of Object.entries(ZINFO)) ZONES[id] = n;
 for (const R of HKR.list) ZONES['r:' + R.id] = [R.name, `${R.kind === 'tunnel' ? '海底隧道' : '封閉快速公路'} · 約 ${Math.max(1, Math.round(R.T / 60))} 分鐘`];
 {
@@ -10333,7 +10333,7 @@ HKM.go = function (id) {
     const hx = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237;
     const hz = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145;
     if (_pose) { x = _pose.x; z = _pose.z; h = _pose.heading; }
-    else { const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280); x = hx + 28; z = hz - 228; h = Math.atan2(-2 - 28, (-bz + 9) - (-228)); }
+    else { const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280); x = hx + 36; z = hz - 222; h = Math.atan2(-2 - 36, (-bz + 9) - (-222)); }
     try {
       if (typeof NT !== 'undefined') {
         NT._c27fLastGoId = 'kwai_tsing';
@@ -10344,6 +10344,8 @@ HKM.go = function (id) {
     try { if (typeof kwForceKwaiDayUnlessNight === 'function') kwForceKwaiDayUnlessNight(); } catch (eD) { /* */ }
     try { if (typeof kwBuildArtDensifyCore28a === 'function') kwBuildArtDensifyCore28a(); } catch (eDen) { /* */ }
     try { if (typeof kwBuildDensityD2b === 'function') kwBuildDensityD2b(); } catch (eD2) { /* */ }
+    try { if (typeof kwEnsureStsShoreWall === 'function') kwEnsureStsShoreWall(8); } catch (eSt) { /* */ }
+    try { if (typeof kwEnsureSouthWeighSign === 'function') kwEnsureSouthWeighSign(); } catch (eW) { /* */ }
     // device-fail：開局主車＝拖頭／貨櫃車（唔用廂型當主）
     try {
       if (typeof kwApplySpawnTractorTruck === 'function' && !HKM._kwaiFleetSwapped) {
@@ -21565,6 +21567,50 @@ function kwInSpawnForwardCone(lx, lz) {
  *  目標：STS≥8／岸牆≥20／櫃3–5×3巷只堆場／高架120–200／隧≥1／工廈12–20／公屋6–10／閘≥2＋D2b／葵芳戲仿
  *  禁相板；唔動任務閘 BootGeneric。
  */
+
+/** room2：唔理 densify 旗——岸線 STS 吊臂牆不足就補（禁 STS=0） */
+
+/** room2：南閘視線內強制單行地磅牌（唔靠 densify 旗） */
+function kwEnsureSouthWeighSign() {
+  try {
+    if (typeof KWAI !== 'undefined' && KWAI._southWeigh) return;
+    const root = (typeof kwEnsureGroup === 'function' ? kwEnsureGroup() : null) || (typeof KWAI !== 'undefined' ? KWAI.group : null);
+    if (!root || typeof kwSignLabeled !== 'function') return;
+    const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280);
+    const southZ = -bz + 18;
+    const copy = '地磅 · 跟指示停';
+    kwSignLabeled(root, 14, 3.6, southZ + 8, -0.25, 6.2, 1.55, 0x1a3a6a, 'kt_weigh_hint', copy, { kind: 'weigh' });
+    kwSignLabeled(root, -16, 3.4, southZ + 10, 0.2, 5.8, 1.45, 0x1a3a6a, 'kt_weigh_hint', copy, { kind: 'weigh' });
+    if (typeof KWAI !== 'undefined') KWAI._southWeigh = true;
+  } catch (e) { /* */ }
+}
+
+function kwEnsureStsShoreWall(minN) {
+  minN = minN == null ? 8 : minN;
+  try {
+    if (typeof scene === 'undefined' || typeof kwProcCrane !== 'function') return 0;
+    const root = (typeof kwEnsureGroup === 'function' ? kwEnsureGroup() : null) || (typeof KWAI !== 'undefined' ? KWAI.group : null);
+    if (!root) return 0;
+    let n = 0;
+    root.traverse((o) => { if (o && (o.name === 'kt-quay-crane' || o.name === 'kt-quay-crane-boot')) n++; });
+    try { scene.traverse((o) => { if (o && o.name === 'kt-quay-crane-boot') n++; }); } catch (e) { /* */ }
+    if (n >= minN) return 0;
+    const bx = (typeof BOUND !== 'undefined' ? BOUND.x : 140);
+    const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280);
+    const g = new THREE.Group(); g.name = 'kt_sts_ensure'; g.userData.kwaichung = true; g.userData.noMerge = true;
+    root.add(g);
+    const spots = [-bz + 35, -bz + 85, -bz + 135, -40, 20, 80, 140, 200];
+    let added = 0;
+    for (const cz of spots) {
+      if (n + added >= minN) break;
+      kwProcCrane(g, bx + 24, cz, 1.0, -Math.PI / 2);
+      added++;
+    }
+    console.info('[kwai] STS ensure +' + added + ' (was ' + n + ')');
+    return added;
+  } catch (e) { return 0; }
+}
+
 function kwBuildArtDensifyCore28a() {
   if (KWAI.artDensify28a || typeof scene === 'undefined') return;
   const root = (typeof kwEnsureGroup === 'function' ? kwEnsureGroup() : null) || KWAI.group;
@@ -25015,7 +25061,7 @@ Object.assign(window.NT || (window.NT = {}), { VO, playVo, playVoForSay, voCueFo
     kowloon_city: ['九龍城區', '進入：九龍城區'],
     wong_tai_sin: ['黃大仙區', '進入：黃大仙區'],
     kwun_tong: ['觀塘區', '進入：觀塘區'],
-    kwai_tsing: ['葵青區', '葵青區 · 貨櫃碼頭／葵芳一帶'],
+    kwai_tsing: ['葵涌碼頭', '往葵芳 · 貨櫃碼頭一帶'],
     tsuen_wan: ['荃灣區', '進入：荃灣區'],
     tuen_mun: ['屯門區', '進入：屯門區'],
     yuen_long: ['元朗區', '元朗區 · 大橋街市一帶（戲仿）'],
@@ -26824,7 +26870,7 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
             const hx = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237;
             const hz = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145;
             if (_pose) { tx = _pose.x; tz = _pose.z; }
-            else { tx = hx + 28; tz = hz - 228; }
+            else { tx = hx + 36; tz = hz - 222; }
             try {
               NT._c27fLastGoId = 'kwai_tsing';
               const free = (typeof URLQ !== 'undefined' && URLQ.has) ? URLQ.has('free') : false;
@@ -26833,6 +26879,9 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
                 try { if (typeof MS !== 'undefined') { MS.objText = NT.c27fPickObj('kwai_tsing'); } } catch (eM) { /* */ }
               }
               if (typeof kwForceKwaiDayUnlessNight === 'function') kwForceKwaiDayUnlessNight();
+              if (typeof kwEnsureStsShoreWall === 'function') kwEnsureStsShoreWall(8);
+              if (typeof kwEnsureSouthWeighSign === 'function') kwEnsureSouthWeighSign();
+              if (typeof kwBuildDensityD2b === 'function') kwBuildDensityD2b();
             } catch (eK) { /* */ }
           }
           // 中西：對齊外傭假日 gather（皇后像廣場／遮打）— 唔落碼頭／工業岸
@@ -27615,7 +27664,7 @@ body.cine #c27Dist,body.cine #c27Wanted,body.cine #c27Horn{visibility:hidden}`;
       });
     }
   } catch (e) { console.warn('[core27f-title]', e && e.message); }
-  const DIST = [['WC', '灣仔'], ['EAST', '東區'], ['SSP', '深水埗'], ['KCITY', '九龍城'], ['YTM', '油尖旺'], ['CW', '中西區'], ['KT', '葵青']];
+  const DIST = [['WC', '灣仔'], ['EAST', '東區'], ['SSP', '深水埗'], ['KCITY', '九龍城'], ['YTM', '油尖旺'], ['CW', '中西區'], ['KT', '葵芳']];
   const boxes = []; let lastD = null, dT = 0, boxT = 0;
   const box = () => { boxes.length = 0; for (const [k, zh] of DIST) { const D = window.NT && NT[k] && NT[k].data; const tr = D && D.drive_trunk; if (!tr || !tr.length) continue; const b = { min: { x: 1e9, z: 1e9 }, max: { x: -1e9, z: -1e9 } }; /* core27f：用主幹 OSM 點做框，唔用 group（group 有遠處嘢） */
     for (const t of tr) for (const q of (t.points || [])) { if (q.dx < b.min.x) b.min.x = q.dx; if (q.dx > b.max.x) b.max.x = q.dx; if (q.dz < b.min.z) b.min.z = q.dz; if (q.dz > b.max.z) b.max.z = q.dz; }

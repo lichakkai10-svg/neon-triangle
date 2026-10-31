@@ -1,75 +1,64 @@
 {
   "id": "kwai_spawn_first_frame_level",
-  "rev": 5,
-  "updated": "2026-10-31T12:25:00+08:00",
-  "after_tip": "857cccc",
-  "gta_p0_fail": {
-    "day_default": "預設夜晚暴雨——要日景預設",
-    "tractor": "拖頭正中擋閘；戲仿）被櫃切",
-    "height": "限高 4.5／4.2 讀唔到（紅圈＋柱切）",
-    "weighbridge": "見「地磅」「跟指示停」兩行——要全文「地磅 · 跟指示停」",
-    "barrier_yb": "PASS",
-    "sts_wall": "0——要 ≥8",
-    "housing": "閘後兩座大廈貼近——推遠 ≥110 m",
-    "kwai_fong": "未見",
-    "ban": "PASS（無 HIT／MTL／舊霓虹／超跑）"
-  },
+  "rev": 6,
+  "updated": "2026-10-31T12:40:00+08:00",
+  "after_tip": "9d9d0e3",
+  "landed_tip": "9d9d0e3",
+  "note": "主房 tip 9d9d0e3：chase 14s 每幀側偏；閘／限高／黃黑／公屋 180 m／STS 剪影／KF。等 TIP_MARK chase-side。",
   "no_bump_v": true,
   "env": {
     "day_default": true,
-    "ban_night_rain_on_first_load": true,
-    "note": "hkzone=kwai 開場日景；&day 可選但唔再靠參數先有日"
+    "force_day_on_load": true,
+    "hide_rain_on_load": true
   },
   "spawn": {
     "hub_local": {
-      "x": 28.0,
-      "z": -228.0
+      "x": 36.0,
+      "z": -222.0
     },
     "look_at_hub_local": {
       "x": -2.0,
       "z": -271.0
     },
     "world_assert": {
-      "x": -1209.0,
-      "z": -373.0,
+      "x": -1201.0,
+      "z": -367.0,
       "tol_m": 2
     },
-    "why": "關卡 rev5 (28,-228)→(-2,-271)；硬鎖日景；側 cam；偏側≥3 m"
+    "why": "rev6 (36,-222)；側≥4 m；chase side lock≥2.5s"
+  },
+  "cam_lock": {
+    "chase_side_bias_s": 14,
+    "chase_side_every_frame": true,
+    "ban_chase_center_on_trailer": true,
+    "cam_min_dist": 12.5,
+    "tip_mark_expect": "chase-side"
   },
   "d2b_readability": {
-    "kt_gate_title": "全文「貨櫃碼頭閘口（戲仿）」開場幀可讀；字面朝 spawn；高過車頂；禁被櫃切「戲仿）」",
-    "height_45_42": "限高 4.5 m／4.2 m 全文可讀；禁只紅圈／柱切；字高≥1.0 m",
-    "weighbridge": "定稿單行「地磅 · 跟指示停」——禁「堆場」、禁拆成兩行無中點",
-    "barrier_yb": "保持可見",
-    "tractor_offset": "拖頭偏側清閘牌≥3 m；唔停閘牌視線軸"
+    "kt_gate_title": "開場幀全文「貨櫃碼頭閘口（戲仿）」",
+    "height_45_42": "限高 4.5 m／4.2 m 米數字真機可讀",
+    "weighbridge": "單行「地磅 · 跟指示停」開場真機見",
+    "barrier_yb": "黃黑欄可見"
   },
   "sts_wall": {
     "min_count": 8,
-    "note": "岸吊牆開場可見≥8；禁只一灰腳"
+    "silhouette_ok": true
   },
   "housing": {
-    "gate_front_clear_m": 110,
-    "note": "閘正前方／閘後視線內公屋推遠≥110 m；只遠景"
+    "gate_front_clear_m": 180,
+    "near_count": 0
   },
-  "kwai_fong": "肘盡頭遠景「葵芳（戲仿）」開場幀或≤1 轉可見；禁葵涌站牌",
-  "cam": {
-    "min_dist": 12.5
-  },
-  "coder": [
-    "kwSpawnElbowGatePose → lx=28 lz=-228 look=(-2,-271)",
-    "kwSnapTractorChaseCam side=8.5",
-    "kwForceKwaiDayUnlessNight hard day",
-    "weigh 單行「地磅 · 跟指示停」"
-  ],
+  "kwai_fong": "葵芳（戲仿）可見",
   "qa": [
+    "TIP_MARK chase-side",
     "frame0 日景",
-    "讀到完整閘口戲仿句（唔被櫃切）",
-    "讀到限高 4.5／4.2 m",
-    "讀到「地磅 · 跟指示停」",
-    "黃黑在",
-    "STS≥8",
-    "閘前公屋唔貼近",
-    "葵芳遠景",
-    "拖頭唔擋牌"
+    "chase 唔置中櫃尾",
+    "閘戲仿全文",
+    "限高米數字",
+    "地磅單行真機見",
+    "黃黑",
+    "STS 剪影／吊臂≥8",
+    "公屋清≥180 m",
+    "葵芳"
   ]
 }

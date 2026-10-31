@@ -1,0 +1,112 @@
+{
+  "id": "kwai_27cb946_room2_fail_art",
+  "updated": "2026-10-31T12:35:17+08:00",
+  "after_tip": "27cb946",
+  "no_bump_v": true,
+  "room2_didao_fail": {
+    "chase_center_container_fill": true,
+    "chase_cuts_card_overlay": true,
+    "gate_title_not_full_on_open": true,
+    "height_m_digits_unreadable": true,
+    "barrier_white_only_no_yb": true,
+    "sts_boom_unconfirmed": true,
+    "ph_stuck_at_gate": true,
+    "kf_missing_minimap_shows_kwai_tsing": true,
+    "pass": [
+      "day",
+      "TIP_MARK",
+      "weighbridge_single_line"
+    ]
+  },
+  "copy": {
+    "gate_title": "貨櫃碼頭閘口（戲仿）",
+    "height_gate": "限高 4.5 m",
+    "height_inner": "限高 4.2 m",
+    "weighbridge": "地磅 · 跟指示停",
+    "kwai_fong": "葵芳站（戲仿）",
+    "minimap_ban": ["葵青", "Kwai Tsing as KF stand-in"]
+  },
+  "art_lock": {
+    "chase_cam": {
+      "note": "chase 唔好 overlay 掉側偏——frame0 用 spawn 側姿；櫃唔置中填屏",
+      "ban": [
+        "chase_recenter_container_fill",
+        "chase_yaw_override_side_bias",
+        "chase_cut_card_before_gate_readable"
+      ],
+      "delay_s_min": 2.5,
+      "keep_spawn_side_bias_until_chase": true,
+      "lateral_clear_to_sign_m": 4
+    },
+    "spawn_rev6": {
+      "hub_local": [36, -222],
+      "look": [-2, -271],
+      "side_bias_m_min": 4,
+      "cam_h_min": 12.5,
+      "supersedes": ["rev5", "28,-228"]
+    },
+    "gate_title": {
+      "text": "貨櫃碼頭閘口（戲仿）",
+      "full_string_visible_frame0": true,
+      "char_h_m_min": 1.4,
+      "ban_cut_by": ["pillar", "tractor", "container", "chase_reframe"]
+    },
+    "height_signs": {
+      "texts": ["限高 4.5 m", "限高 4.2 m"],
+      "char_h_m_min": 1.0,
+      "digits_device_readable": true,
+      "contrast": "dark_on_light_or_yellow_black",
+      "ban": "blur_subpixel_or_pillar_clip"
+    },
+    "barrier_yb": {
+      "stripes": "yellow_black",
+      "ban": ["white_only_rail", "plain_white_barrier"]
+    },
+    "sts": {
+      "wall_min": 8,
+      "boom_visible": true,
+      "ban": ["legs_only", "single_gray_leg", "boom_culled"]
+    },
+    "housing": {
+      "near_gate": 0,
+      "min_dist_gate_m": 150,
+      "ban_in_front_of_gate": true
+    },
+    "kwai_fong": {
+      "text": "葵芳站（戲仿）",
+      "visible_device": true,
+      "char_h_m_min": 1.2,
+      "minimap": "葵芳／KF only — ban 葵青 stand-in"
+    },
+    "weighbridge_copy": {
+      "exact": "地磅 · 跟指示停",
+      "layout": "single_line",
+      "keep": true
+    },
+    "lighting": {
+      "hard_day_kwai": true,
+      "ban": "boot night/rain default"
+    }
+  },
+  "level_lock": {
+    "rev": 6,
+    "hub_local_spawn": [36, -222],
+    "look": [-2, -271],
+    "ph_clear_m": 150,
+    "sts_wall_min": 8,
+    "sts_boom": true,
+    "barrier": "yb",
+    "chase_delay_s": 2.5,
+    "supersedes": ["27cb946", "rev5"]
+  },
+  "qa_pull": [
+    "frame0 側偏；chase≥2.5s 後先動，禁櫃填屏切牌",
+    "開場全文「貨櫃碼頭閘口（戲仿）」",
+    "限高 4.5／4.2 米數字真機可讀",
+    "barrier_yb 黃黑（禁只白欄）",
+    "STS 吊臂可見；岸牆≥8",
+    "公屋閘旁 near=0（清≥150 m）",
+    "葵芳站（戲仿）可見；小地圖禁葵青冒充"
+  ],
+  "doc": "docs/core28a-kwai-tip-27cb946-fail-knife.md"
+}
