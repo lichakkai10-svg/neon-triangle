@@ -1,0 +1,115 @@
+{
+  "id": "kwai_93e0822_gta_fail_art",
+  "updated": "2026-10-31T13:56:39+08:00",
+  "after_tip": "93e0822",
+  "live": "room2-rev7b",
+  "no_bump_v": true,
+  "gta_p0_fail": {
+    "pass": [
+      "TIP_MARK",
+      "day",
+      "gate",
+      "weighbridge",
+      "barrier_yb",
+      "kf"
+    ],
+    "fail": {
+      "sts_boom_t0_zero_empty_sky": true,
+      "chase_no_side_early_snap_center_~58s": true,
+      "ph_grid_towers_at_gate": true,
+      "height_4_5_pillar_cut_m_not_clean": true
+    }
+  },
+  "art_lock": {
+    "sts": {
+      "boom_visible_t0_device": true,
+      "t0_min": 8,
+      "ban": [
+        "empty_sky_t0",
+        "sts_0_gta",
+        "legs_only",
+        "boom_behind_horizon_only"
+      ],
+      "note": "rev8：視錐／截圖真機見臂≥8——禁空天、禁淨 STS 計數過關",
+      "frustum_visible_t0": true,
+      "screenshot_visible": true,
+      "ban_count_only": true,
+      "ndc_x": [
+        -0.75,
+        0.75
+      ],
+      "place_in": "chase_look_gate_cone"
+    },
+    "chase_cam": {
+      "side_bias_from_frame0": true,
+      "side_bias_m_min": 12,
+      "hold_s": 90,
+      "freeze_yaw": true,
+      "hard_lock_every_frame": true,
+      "ban": [
+        "no_side_bias_early",
+        "snap_center_container_tail_~58s",
+        "overlay_drop_side_mid_chase"
+      ]
+    },
+    "housing": {
+      "clear_m": 200,
+      "near_gate": 0,
+      "ban_grid_towers_at_gate": true,
+      "ban_right_estate_in_open_frame": true
+    },
+    "height_signs": {
+      "texts": [
+        "限高 4.5 m",
+        "限高 4.2 m"
+      ],
+      "full_string_including_m": true,
+      "ban_cut_by": [
+        "pillar",
+        "column",
+        "weighbridge_blue"
+      ],
+      "4_5_m_digits_clean": true,
+      "char_h_m_min": 1.0
+    },
+    "regress_keep": {
+      "gate": true,
+      "weighbridge_single": true,
+      "barrier_yb": true,
+      "kf": true,
+      "day": true,
+      "spawn": [
+        36,
+        -222
+      ]
+    }
+  },
+  "level_rev": 8,
+  "qa_pull": [
+    "t0 視錐／截圖見 STS 吊臂≥8（唔淨計數）",
+    "chase t0 起側偏≥12 m／90s 凍",
+    "公屋清 200 m",
+    "限高 4.5 m／4.2 m 全文無柱切"
+  ],
+  "doc": "docs/core28a-kwai-tip-93e0822-gta-fail-knife.md",
+  "level_lock": {
+    "rev": 8,
+    "sts_frustum_t0_min": 8,
+    "ph_clear_m": 200,
+    "height_full": [
+      "限高 4.5 m",
+      "限高 4.2 m"
+    ],
+    "chase_side_m_min": 12,
+    "chase_hold_s": 90,
+    "keep": [
+      "gate",
+      "weighbridge_single",
+      "barrier_yb",
+      "kf"
+    ]
+  },
+  "partial_pass_tip": "963dde8",
+  "next_knife": "kwai-963dde8-sts-frustum-art.json",
+  "knife_rev8": "STS on spawn→look ray ±≤8m; boom centered; tip 963dde8 FAIL ndc.x>1"
+}

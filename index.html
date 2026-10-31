@@ -319,7 +319,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 /*__EMBEDDED_ASSETS_BEGIN__*/const EMBEDDED_ASSETS = {};/*__EMBEDDED_ASSETS_END__*/
 /* TIP_MARK geometry-fail knife · after b5e0865 · pier-first / defer-kenney · keep ?v=core28 */
 /* TIP_MARK paint-fail · tractor chase back halfLen+5.5 / CAM 12.5 · rear door detail · keep ?v=core28 */
-/* TIP_MARK room2-rev7c · STS in-FOV boomY22 + chase 180s + height clear pillar + PH scene cull · keep ?v=core28 */
+/* TIP_MARK room2-rev8 · STS on look-ray (ndc) + chase hold · keep ?v=core28 */
 const ASSET_BASE = 'assets/';
 const ASSET_FILES = {
   car: 'concept-car.glb',          // 開局黑色跑車：Khronos CarConcept（CC-BY 4.0；已去標誌／減面）；後備 kenney-sedan-sports.glb
@@ -21651,7 +21651,7 @@ function kwEnsureSouthWeighSign() {
 }
 
 function kwEnsureStsSpawnBoomView() {
-  /* rev7c／gta P0：真機 FOV 內見臂——真尺 boomY≈62 超出 chase 望閘錐；開場用 boomY≈22 剪影≥8 */
+  /* rev8／QA：剪影必須落喺 chase 望閘錐——禁偏 +X（ndc.x>1）；沿 spawn→look 插值 ±小側偏 */
   try {
     if (typeof scene === 'undefined' || typeof THREE === 'undefined') return 0;
     const root = (typeof kwEnsureGroup === 'function' ? kwEnsureGroup() : null) || (typeof KWAI !== 'undefined' ? KWAI.group : null);
@@ -21659,9 +21659,8 @@ function kwEnsureStsSpawnBoomView() {
     let boomN = 0;
     try {
       root.traverse((o) => { if (o && o.name === 'kt_sts_boom_sil') boomN++; });
-      if (typeof scene !== 'undefined') scene.traverse((o) => { if (o && o.name === 'kt_sts_boom_sil') boomN++; });
     } catch (eC) { /* */ }
-    if (typeof KWAI !== 'undefined' && KWAI._stsSpawnView && boomN >= 8) return 0;
+    if (typeof KWAI !== 'undefined' && KWAI._stsSpawnViewRev === 8 && KWAI._stsSpawnView && boomN >= 8) return 0;
     let g = root.getObjectByName('kt_sts_spawn_view');
     if (g && g.parent) g.parent.remove(g);
     g = new THREE.Group();
@@ -21671,31 +21670,45 @@ function kwEnsureStsSpawnBoomView() {
     root.add(g);
     const steel = new THREE.MeshStandardMaterial({ color: 0x2a3036, roughness: 0.55, metalness: 0.65 });
     const gold = new THREE.MeshStandardMaterial({ color: 0xc9a000, roughness: 0.5, metalness: 0.4 });
-    /* hub_local：南望 FOV 內（Y 18–28；臂橫過 +X）；≥8 臂 */
-    const spots = [
-      [28, -248], [38, -258], [48, -268], [34, -238],
-      [44, -252], [54, -262], [22, -255], [58, -245]
-    ];
+    const sx = 36, sz = -222, lx = -2, lz = (typeof BOUND !== 'undefined' ? -BOUND.z + 9 : -271);
+    const dx = lx - sx, dz = lz - sz;
+    const len = Math.hypot(dx, dz) || 1;
+    const fx = dx / len, fz = dz / len; /* look fwd */
+    const rx = -fz, rz = fx; /* right */
+    /* t 沿視線 0.25–0.85；側偏 ≤8 m——對齊 sideCam 望閘 NDC */
+    const spots = [];
+    const ts = [0.28, 0.38, 0.48, 0.58, 0.68, 0.78, 0.42, 0.72];
+    const sides = [-6, 5, -3, 7, -7, 4, 2, -5];
+    for (let i = 0; i < 8; i++) {
+      const t = ts[i], s = sides[i];
+      spots.push([sx + fx * (len * t) + rx * s, sz + fz * (len * t) + rz * s]);
+    }
     for (const [cx, cz] of spots) {
       const cg = new THREE.Group();
       cg.position.set(cx, 0, cz);
+      /* 臂橫過視線：yaw 令 local +X ≈ world right */
+      cg.rotation.y = Math.atan2(rx, rz);
       cg.name = 'kt-quay-crane';
       cg.userData.kwaichung = true;
       cg.userData.noMerge = true;
       g.add(cg);
-      const boomY = 22, boomLen = 42, portalH = 26;
-      for (const lx of [-6, 6]) for (const lz of [-5, 5]) {
-        const leg = new THREE.Mesh(new THREE.BoxGeometry(1.6, portalH, 1.6), steel);
-        leg.position.set(lx, portalH / 2, lz); cg.add(leg);
+      const boomY = 20, boomLen = 28, portalH = 24;
+      for (const ox of [-5, 5]) for (const oz of [-4, 4]) {
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(1.4, portalH, 1.4), steel);
+        leg.position.set(ox, portalH / 2, oz); cg.add(leg);
       }
-      const boom = new THREE.Mesh(new THREE.BoxGeometry(boomLen, 2.8, 3.2), steel);
-      boom.position.set(boomLen * 0.32, boomY, 0);
+      const boom = new THREE.Mesh(new THREE.BoxGeometry(boomLen, 2.6, 2.8), steel);
+      boom.position.set(0, boomY, 0); /* 中心喺腳架上——唔再沿 +X 推出錐外 */
       boom.name = 'kt_sts_boom_sil'; boom.userData.kwaichung = true; cg.add(boom);
-      const tip = new THREE.Mesh(new THREE.BoxGeometry(4, 2.2, 2.8), gold);
-      tip.position.set(boomLen * 0.68, boomY, 0); tip.name = 'kt_sts_boom_tip'; cg.add(tip);
+      const tip = new THREE.Mesh(new THREE.BoxGeometry(3.5, 2.0, 2.4), gold);
+      tip.position.set(boomLen * 0.35, boomY, 0); tip.name = 'kt_sts_boom_tip'; cg.add(tip);
     }
-    if (typeof KWAI !== 'undefined') KWAI._stsSpawnView = true;
-    console.info('[kwai] STS spawn-view in-FOV boomY22 +' + spots.length);
+    if (typeof KWAI !== 'undefined') {
+      KWAI._stsSpawnView = true;
+      KWAI._stsSpawnViewRev = 8;
+      KWAI._stsSpawnViewN = spots.length;
+    }
+    console.info('[kwai] STS look-ray boom ×' + spots.length, spots.map((p) => p.map((v) => Math.round(v))));
     return spots.length;
   } catch (e) { return 0; }
 }
@@ -21827,9 +21840,10 @@ function kwBuildArtDensifyCore28a() {
       kwProcCrane(g, bx + 22, cz, 1.0, -Math.PI / 2);
       stats.sts++;
     }
-    for (const [cx, cz] of [[42, -252], [52, -272], [48, -242]]) {
-      kwProcCrane(g, cx, cz, 1.0, 0);
-      stats.sts++;
+    /* rev8：望閘錐沿線；唔再偏 +X */
+    if (typeof kwEnsureStsSpawnBoomView === 'function') {
+      KWAI._stsSpawnView = false;
+      stats.sts += kwEnsureStsSpawnBoomView() || 0;
     }
   }
 
