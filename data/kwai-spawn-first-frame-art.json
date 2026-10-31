@@ -1,0 +1,57 @@
+{
+  "id": "kwai_spawn_first_frame_art",
+  "updated": "2026-10-31T11:22:26+08:00",
+  "after_tip": "da0c5c6",
+  "no_bump_v": true,
+  "device_fail": {
+    "seen": "night black / day gray wall corner; elbow/gate only after turn",
+    "missing": [
+      "STS",
+      "height_signs",
+      "weighbridge",
+      "barrier_yb",
+      "kwai_fong"
+    ],
+    "toast": "部分模型載入失敗",
+    "note": "texture mismatch; no GLTF timeout"
+  },
+  "art_lock": {
+    "spawn_first_frame": {
+      "face": "elbow_gate_world",
+      "ban": [
+        "wall_corner_fill_frame",
+        "warehouse_shell_only",
+        "asphalt_only"
+      ],
+      "must_read_in_frame": [
+        "bent_elbow_road",
+        "gate_parody_or_path_to_gate"
+      ],
+      "clear_forward_m": 25,
+      "no_wall_within_cone_deg": 40
+    },
+    "lighting": {
+      "hkzone_kwai_open": "day default for first look unless ?night",
+      "ban": "spawn into underexposed alley as first paint"
+    },
+    "silhouette_p0": [
+      "STS quay ≥6 visible after ≤1 turn OR along look",
+      "D2b gate kit",
+      "barrier_yb"
+    ],
+    "materials": {
+      "fallback_shells": "hk-facade / industrial shells solid lit; ban broken texture pink/black mismatch as primary fill",
+      "toast": "timeout／mismatch 唔好焗出死角牆當第一眼"
+    },
+    "cam": {
+      "keep": "tractor back≥halfLen+5.5",
+      "yaw": "toward GATE / elbow, not yard long axis, not wall normal"
+    }
+  },
+  "qa_pull": [
+    "frame0 見彎肘／閘向（唔係貼牆轉角）",
+    "日間可讀（除非 ?night）",
+    "≤1 轉見 STS／D2b 套",
+    "cam clear 維持"
+  ]
+}

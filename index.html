@@ -319,6 +319,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 /*__EMBEDDED_ASSETS_BEGIN__*/const EMBEDDED_ASSETS = {};/*__EMBEDDED_ASSETS_END__*/
 /* TIP_MARK geometry-fail knife · after b5e0865 · pier-first / defer-kenney · keep ?v=core28 */
 /* TIP_MARK paint-fail · tractor chase back halfLen+5.5 / CAM 12.5 · rear door detail · keep ?v=core28 */
+/* TIP_MARK spawn-first-frame · level (-14,-95)→南閘, day default kwai, ban c28snap yard yaw=0 · keep ?v=core28 */
 const ASSET_BASE = 'assets/';
 const ASSET_FILES = {
   car: 'concept-car.glb',          // 開局黑色跑車：Khronos CarConcept（CC-BY 4.0；已去標誌／減面）；後備 kenney-sedan-sports.glb
@@ -422,6 +423,24 @@ const KWAI_GEO = {
   laiKingX: -1095, laiKingZ: -1101
 };
 function kwWorld(lx, lz) { return { x: KWAI_GEO.hubX + lx, z: KWAI_GEO.hubZ + lz }; }
+/** spawn-first-frame：對齊 data/kwai-spawn-first-frame-level.json
+ *  hub_local (-14,-95) 望南閘 GATE_POS (0,-271)；≥25 m 開闊；禁 (-18,14)→堆場北／貼牆 */
+function kwSpawnElbowGatePose() {
+  const hx = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237);
+  const hz = (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145);
+  const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280);
+  const lx = -14, lz = -95;
+  const lookX = 0, lookZ = -bz + 9; /* GATE_POS hub-local */
+  const heading = Math.atan2(lookX - lx, lookZ - lz);
+  return { x: hx + lx, z: hz + lz, heading, lx, lz, lookX, lookZ };
+}
+function kwForceKwaiDayUnlessNight() {
+  try {
+    if (typeof URLQ !== 'undefined' && URLQ.has && URLQ.has('night')) return;
+    if (typeof TOD !== 'undefined' && TOD._manual) return;
+    if (typeof setTimeOfDay === 'function') setTimeOfDay('day', { silent: true });
+  } catch (e) { /* */ }
+}
 function kwHubCol(cx, cz, hw, hd, h) {
   if (typeof addCollider === 'function') addCollider(KWAI_GEO.hubX + cx, KWAI_GEO.hubZ + cz, hw, hd, h);
 }
@@ -4412,10 +4431,12 @@ const MISSIONS = {
       if (INT.active) exitInterior(true);
       cleanupWorld(); resetPlayerState();
       FLAGS.bol = false; FLAGS.safeOpen = false;
-      /* spawn 掛 KWAI hub；device-fail：第一眼肘閘，主車拖頭／貨櫃車 */
-      { const _sp = (typeof kwWorld === 'function') ? kwWorld(-18, 14) : { x: (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : 0) - 18, z: (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : 0) + 14 };
-        const _hd = Math.atan2((-22) - (-18), 38 - 14);
-        placeCar(_sp.x, _sp.z, _hd); putPlayerInCar();
+      /* spawn 掛 KWAI hub；spawn-first-frame：第一眼肘閘，主車拖頭／貨櫃車 */
+      { const _pose = (typeof kwSpawnElbowGatePose === 'function') ? kwSpawnElbowGatePose() : { x: (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : 0) - 14, z: (typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : 0) - 95, heading: Math.atan2(14, -176) };
+        placeCar(_pose.x, _pose.z, _pose.heading); putPlayerInCar();
+        try { if (typeof state !== 'undefined') { state.camYaw = _pose.heading; state.yawOffset = 0; } } catch (eY) { /* */ }
+        try { if (typeof camState !== 'undefined') camState.init = false; } catch (eC) { /* */ }
+        try { if (typeof kwForceKwaiDayUnlessNight === 'function') kwForceKwaiDayUnlessNight(); } catch (eD) { /* */ }
         try {
           if (typeof kwApplySpawnTractorTruck === 'function') kwApplySpawnTractorTruck();
           else if (typeof loadVehicle === 'function') loadVehicle('gltf/delivery-van-cc0.glb').catch(() => loadVehicle('van-black.glb').catch(() => null));
@@ -10134,13 +10155,12 @@ HKM.go = function (id) {
   else if (id === 'ckm') { const q = YL(6, -372); x = q.x; z = q.z; h = -Math.PI / 2; }
   else if (id === 'ckm2') { const q = YL(5, -332); x = q.x; z = q.z; h = Math.PI; }
   else if (id === 'kwai' || id === 'kwai_tsing' || id === 'kt' || id === 'pier' || id === 'yard') {
-    // 可玩葵涌碼頭：掛 KWAI_GEO.hub；device-fail：第一眼對準肘彎／閘，禁對準櫃堆長直虛線
+    // 可玩葵涌碼頭：spawn-first-frame 對 kt_elbow_trunk／肘閘；禁堆場長軸／貼牆轉角
+    const _pose = (typeof kwSpawnElbowGatePose === 'function') ? kwSpawnElbowGatePose() : null;
     const hx = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237;
     const hz = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145;
-    // hub 相對：肘前西側，望向閘房／肘彎（-22,38）
-    const lx = -18, lz = 14;
-    x = hx + lx; z = hz + lz;
-    h = Math.atan2((-22) - lx, 38 - lz); // 面向肘閘
+    if (_pose) { x = _pose.x; z = _pose.z; h = _pose.heading; }
+    else { const bz = (typeof BOUND !== 'undefined' ? BOUND.z : 280); x = hx - 14; z = hz - 95; h = Math.atan2(0 - (-14), (-bz + 9) - (-95)); }
     try {
       if (typeof NT !== 'undefined') {
         NT._c27fLastGoId = 'kwai_tsing';
@@ -10148,6 +10168,7 @@ HKM.go = function (id) {
         NT._c27fKwaiExploreOnly = !!(free && !(typeof MS !== 'undefined' && MS.id));
       }
     } catch (e) { /* */ }
+    try { if (typeof kwForceKwaiDayUnlessNight === 'function') kwForceKwaiDayUnlessNight(); } catch (eD) { /* */ }
     // device-fail：開局主車＝拖頭／貨櫃車（唔用廂型當主）
     try {
       if (typeof kwApplySpawnTractorTruck === 'function' && !HKM._kwaiFleetSwapped) {
@@ -14970,8 +14991,13 @@ window.addEventListener('keydown', (e) => {
     const q = new URLSearchParams(location.search);
     if (q.has('day')) setTimeOfDay('day', { silent: true });
     else if (q.has('night')) setTimeOfDay('night', { silent: true });
-    // 預設保持 night（現有畫面）
-    else setTimeOfDay('night', { silent: true });
+    else {
+      const z = String(q.get('hkzone') || '').toLowerCase();
+      const kwai = z === 'kwai' || z === 'kwai_tsing' || z === 'kt' || z === 'pier' || z === 'yard';
+      // spawn-first-frame：hkzone=kwai 預設日景可讀（?night 先夜）
+      if (kwai) setTimeOfDay('day', { silent: true });
+      else setTimeOfDay('night', { silent: true });
+    }
     return true;
   };
   const t0 = setInterval(() => { if (boot()) clearInterval(t0); }, 200);
@@ -26474,11 +26500,12 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
           let tx = d.x, tz = d.z;
           // 葵青 hkzone=kwai：落可玩碼頭（BOUND 原點岸區），唔落 OSM 區心；探索 objective，唔開冷錢包
           if (id === 'kwai_tsing' || id === 'kwai' || id === 'kt') {
-            const bz = typeof BOUND !== 'undefined' ? BOUND.z : 280;
-            const bx = typeof BOUND !== 'undefined' ? BOUND.x : 90;
+            /* spawn-first-frame：對肘／閘；禁南閘內側 yaw=0 望堆場（灰轉角／直虛線） */
+            const _pose = (typeof kwSpawnElbowGatePose === 'function') ? kwSpawnElbowGatePose() : null;
             const hx = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubX : -1237;
             const hz = typeof KWAI_GEO !== 'undefined' ? KWAI_GEO.hubZ : -145;
-            tx = hx + Math.min(12, bx * 0.15); tz = hz - bz + 36; // hub 南閘內側，面向堆場
+            if (_pose) { tx = _pose.x; tz = _pose.z; }
+            else { tx = hx - 14; tz = hz - 95; }
             try {
               NT._c27fLastGoId = 'kwai_tsing';
               const free = (typeof URLQ !== 'undefined' && URLQ.has) ? URLQ.has('free') : false;
@@ -26486,6 +26513,7 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
               if (NT._c27fKwaiExploreOnly) {
                 try { if (typeof MS !== 'undefined') { MS.objText = NT.c27fPickObj('kwai_tsing'); } } catch (eM) { /* */ }
               }
+              if (typeof kwForceKwaiDayUnlessNight === 'function') kwForceKwaiDayUnlessNight();
             } catch (eK) { /* */ }
           }
           // 中西：對齊外傭假日 gather（皇后像廣場／遮打）— 唔落碼頭／工業岸
@@ -26509,8 +26537,11 @@ html body.hud2 #mTimer{top:${SA('top', 52)} !important;font-size:22px !important
               if (dRoad < 90) { px = s2[0].dx; pz = s2[0].dz; }
             }
           } else if (id === 'kwai_tsing' || id === 'kwai' || id === 'kt') {
-            // 鎖死可玩碼頭座標；唔再 snap 去 KT OSM 主幹（會離 pier）
-            px = tx; pz = tz; yaw = 0;
+            // 鎖死可玩碼頭座標；yaw 對肘閘（唔再用 0 望堆場長軸）
+            px = tx; pz = tz;
+            const _poseY = (typeof kwSpawnElbowGatePose === 'function') ? kwSpawnElbowGatePose() : null;
+            yaw = _poseY ? _poseY.heading : Math.atan2(14, -176);
+            try { if (typeof putPlayerInCar === 'function') putPlayerInCar(); } catch (eCar) { /* */ }
           } else if (s2) {
             px = s2[0].dx; pz = s2[0].dz;
             yaw = Math.atan2(s2[1].dx - s2[0].dx, s2[1].dz - s2[0].dz);
