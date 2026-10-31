@@ -18699,15 +18699,14 @@ function kwBuildDensityD1() {
   // 路心約 x=-38；北側（路北／−Z 感用 z 較小）同南側錯開進退
   // dense_p1：工廈高 28–52m；沿肘形密排
   const HIND = [28, 36, 45, 52, 32, 40, 48, 36];
+  /* core28a cap：D1 工廈 ~10（P1／infra 另計）；densify 再 cull 至 12–20 */
   const indSpecs = [
-    // 路「外側」（更 −X）一排 · 碼頭路（戲仿）
+    // 路「外側」· 碼頭路（戲仿）— 縮至 5
     [-48, 42, 14, HIND[0], 11], [-50, 52, 13, HIND[1], 12], [-47, 62, 15, HIND[2], 13], [-51, 72, 12, HIND[3], 11],
-    [-49, 82, 16, HIND[4], 12], [-52, 92, 14, HIND[5], 13], [-48, 102, 13, HIND[6], 11], [-50, 112, 15, HIND[1], 12],
-    // 路「內側」一排
+    [-49, 82, 16, HIND[4], 12],
+    // 路「內側」— 縮至 5
     [-26, 44, 12, HIND[2], 10], [-24, 54, 14, HIND[0], 11], [-28, 64, 13, HIND[3], 12], [-25, 74, 15, HIND[5], 11],
-    [-27, 84, 12, HIND[1], 10], [-23, 94, 14, HIND[4], 12], [-26, 104, 13, HIND[2], 11],
-    // 近站／迴旋
-    [-62, 60, 14, HIND[3], 12], [-66, 78, 13, HIND[6], 11], [-70, 95, 15, HIND[0], 12]
+    [-27, 84, 12, HIND[1], 10]
   ];
   const indTex = null; // 禁相
   const signs = ['工業中心', '物流中心', '貨倉', '工業中心', '物流'];
@@ -18726,16 +18725,8 @@ function kwBuildDensityD1() {
     }
   }
 
-  // —— 布局 fidelity：工廈牆填縫（貼真連續牆，唔移山假捷徑）——
+  // —— 布局 fidelity：貨台短墊（填縫 ind 已砍，避超 12–20）——
   {
-    const gapFills = [
-      [-49, 47, 10, 22, 9], [-48.5, 67, 11, 26, 10], [-50, 87, 10, 24, 9],
-      [-25, 49, 9, 20, 8], [-26.5, 69, 10, 24, 9], [-25, 89, 9, 22, 8]
-    ];
-    for (const [x, z, w, h, d] of gapFills) {
-      kwIndBlock(root, x, z, w, h, d, null);
-    }
-    // 貨台對位短墊（外側排，跟 D2a／D3 bay z）
     const bayMat = new THREE.MeshStandardMaterial({ color: 0x3a3e40, roughness: 0.95 });
     for (const z of [52, 72, 92, 112]) {
       const ramp = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.55, 5.5), bayMat);
@@ -18745,13 +18736,12 @@ function kwBuildDensityD1() {
 
   // —— 公屋成排：兩排錯落（前矮後高），近站內陸 ——
   // dense_p1：公屋 70–110m；前矮後高
+  /* core28a cap：D1 公屋 ~6（P1 另計）；densify cull 至 6–10 */
   const front = [
-    [-100, 88, 26, 70, 10], [-100, 108, 28, 78, 10], [-100, 128, 24, 72, 10],
-    [-98, 148, 27, 85, 10]
+    [-100, 88, 26, 70, 10], [-100, 108, 28, 78, 10], [-100, 128, 24, 72, 10]
   ];
   const back = [
-    [-118, 95, 30, 95, 11], [-118, 118, 32, 110, 11], [-116, 140, 28, 100, 11],
-    [-120, 160, 26, 90, 10], [-115, 78, 29, 105, 11]
+    [-118, 95, 30, 95, 11], [-118, 118, 32, 110, 11], [-116, 140, 28, 100, 11]
   ];
   for (const s of front) kwEstateSlab(root, s[0], s[1], s[2], s[3], s[4]);
   for (const s of back) kwEstateSlab(root, s[0], s[1], s[2], s[3], s[4]);
@@ -18761,7 +18751,7 @@ function kwBuildDensityD1() {
       new THREE.BoxGeometry(55, 4, 22),
       new THREE.MeshStandardMaterial({ color: 0x9a9590, roughness: 0.85 })
     );
-    plat.position.set(-105, 2, 115); plat.name = 'kt_estate_podium'; plat.userData.kwaichung = true;
+    plat.position.set(-105, 2, 115); plat.name = 'kt_mall_podium'; plat.userData.kwaichung = true;
     root.add(plat);
   }
 
@@ -18823,7 +18813,7 @@ function kwBuildDensityD1() {
   KWAI.zones = Object.assign(KWAI.zones || {}, {
     density_ind: 'kt_ind_block_n',
     density_estate: 'kt_estate_skyline',
-    density_podium: 'kt_estate_podium',
+    density_podium: 'kt_mall_podium',
     density_svc: 'kt_service_road'
   });
 }
@@ -20929,12 +20919,9 @@ function kwBuildP1Urban() {
     } catch (e) { /* */ }
   }
 
-  // 對面公屋：3D 排樓 dense_p1 高度（70–110）
+  // 對面公屋：core28a 縮至 2（D1 已有 ~6；總目標 6–10）
   kwEstateSlab(root, -98, 95, 28, 78, 10);
   kwEstateSlab(root, -110, 78, 22, 95, 10);
-  kwEstateSlab(root, -92, 112, 26, 85, 10);
-  kwEstateSlab(root, -118, 100, 30, 110, 11);
-  kwEstateSlab(root, -105, 125, 24, 90, 10);
 
   // 葵芳站（戲仿）——肘形盡頭
   kwStationKwaiFong(root, -1367.6, 312.7, null); // 葵芳站 OSM hkGeo（禁站相／舊 −913 無乘 K）
@@ -20992,6 +20979,26 @@ function kwBuildP1Urban() {
   });
 }
 
+
+/** 超標命名 mesh 封頂：遠 hub 先砍，保留肘廊近景剖面 */
+function kwCullByName(root, re, keepMax) {
+  if (!root || !(keepMax >= 0)) return 0;
+  const hits = [];
+  root.traverse((o) => { if (o && o.name && re.test(o.name)) hits.push(o); });
+  if (hits.length <= keepMax) return 0;
+  hits.sort((a, b) => {
+    const da = Math.hypot(a.position.x || 0, a.position.z || 0);
+    const db = Math.hypot(b.position.x || 0, b.position.z || 0);
+    return db - da; // farthest from hub-local origin first
+  });
+  let removed = 0;
+  const drop = hits.length - keepMax;
+  for (let i = 0; i < drop; i++) {
+    const o = hits[i];
+    if (o && o.parent) { o.parent.remove(o); removed++; }
+  }
+  return removed;
+}
 
 /** core28a · 美術＋關卡 densify 掛 tip（唔升 ?v=）
  *  對齊：docs/kwai-terminal-art-densify-core28a.md
@@ -21160,7 +21167,7 @@ function kwBuildArtDensifyCore28a() {
     }).catch(() => {});
   }
 
-  // —— 6. 工廈連續牆加密（12–20；massing 14×22＋既有 D1）——
+  // —— 6. 工廈連續牆加密（12–20；已超標唔加，稍後 cull）——
   {
     let indN = countByName(/^kt_ind_block/);
     const wantInd = lite ? 12 : 16;
@@ -21169,26 +21176,30 @@ function kwBuildArtDensifyCore28a() {
       [-26, 40], [-24, 58], [-28, 76], [-25, 94], [-27, 112],
       [-62, 55], [-68, 78], [-72, 100], [-40, 120]
     ];
-    kwPortLoad('indMassing', KWAI_SCALE.gltf.indMassing).then((proto) => {
-      if (!proto || !g.parent) return;
-      let added = 0;
-      for (const [x, z] of massPts) {
-        if (indN + added >= wantInd) break;
-        kwPortMount(g, proto, x, z, Math.PI / 2, 'kt_ind_block_n');
-        if (typeof addCollider === 'function') addCollider(x, z, 7, 5, 14);
-        added++;
-        stats.ind++;
-        stats.props++;
-      }
-    }).catch(() => {
-      // 程序後備
-      if (typeof kwIndBlock === 'function') {
-        for (const [x, z] of massPts.slice(0, Math.max(0, wantInd - indN))) {
-          kwIndBlock(g, x, z, 14, 22, 11, null);
+    if (indN < wantInd) {
+      kwPortLoad('indMassing', KWAI_SCALE.gltf.indMassing).then((proto) => {
+        if (!proto || !g.parent) return;
+        let live = 0;
+        root.traverse((o) => { if (o.name && /^kt_ind_block/.test(o.name)) live++; });
+        let added = 0;
+        for (const [x, z] of massPts) {
+          if (live + added >= wantInd) break;
+          kwPortMount(g, proto, x, z, Math.PI / 2, 'kt_ind_block_n');
+          if (typeof addCollider === 'function') addCollider(x, z, 7, 5, 14);
+          added++;
           stats.ind++;
+          stats.props++;
         }
-      }
-    });
+      }).catch(() => {
+        if (typeof kwIndBlock === 'function') {
+          let live = countByName(/^kt_ind_block/);
+          for (const [x, z] of massPts.slice(0, Math.max(0, wantInd - live))) {
+            kwIndBlock(g, x, z, 14, 22, 11, null);
+            stats.ind++;
+          }
+        }
+      });
+    }
     // 貨台棚＋卡板（工廈側疏）
     kwPortLoad('canopy', KWAI_SCALE.gltf.canopy).then((proto) => {
       if (!proto || !g.parent) return;
@@ -21206,9 +21217,9 @@ function kwBuildArtDensifyCore28a() {
     }).catch(() => {});
   }
 
-  // —— 7. 公屋遠景 6–10（唔入堆場）——
+  // —— 7. 公屋遠景 6–10（已超標唔加；稍後 cull）——
   {
-    let phN = countByName(/kt_estate|public_housing/i);
+    let phN = countByName(/kt_estate_skyline|public_housing/i);
     const wantPh = lite ? 6 : 8;
     if (phN < wantPh && typeof kwEstateSlab === 'function') {
       const extras = [
@@ -21300,6 +21311,17 @@ function kwBuildArtDensifyCore28a() {
   }
 
   root.add(g);
+  // 封頂：舊 D1／P1／infra 可能已超 12–20／6–10 —— 遠 hub 先砍
+  {
+    const keepInd = lite ? 12 : 16;
+    const keepPh = lite ? 6 : 8;
+    stats.indCull = (typeof kwCullByName === 'function')
+      ? kwCullByName(root, /^kt_ind_block/, keepInd) : 0;
+    stats.housingCull = (typeof kwCullByName === 'function')
+      ? kwCullByName(root, /kt_estate_skyline|public_housing/i, keepPh) : 0;
+    stats.indFinal = countByName(/^kt_ind_block/);
+    stats.housingFinal = countByName(/kt_estate_skyline|public_housing/i);
+  }
   KWAI._colHub = false;
   KWAI.artDensify28a = true;
   KWAI.zones = Object.assign(KWAI.zones || {}, {
